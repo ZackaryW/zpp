@@ -1,0 +1,8 @@
+# governance tooling is set up at user level, never committed
+.claude/
+
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+dist/
