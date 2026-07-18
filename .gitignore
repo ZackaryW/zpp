@@ -1,6 +1,9 @@
 # governance tooling is set up at user level, never committed
 .claude/
 
+# .cc-history: the VSCode chat-archiving extension's store, not project content
+.cc-history/
+
 __pycache__/
 *.egg-info/
 .venv/
