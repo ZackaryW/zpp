@@ -71,7 +71,7 @@ def sync_plan(name: str) -> dict:
         "removed": removed,
         "moved": moved,
         "destructive": {
-            n: meta for n, meta in removed.items() if "store" in meta
+            n: meta for n, meta in removed.items() if "profile" in meta
         },
     }
 
@@ -90,27 +90,6 @@ def sync_apply(name: str, plan: dict) -> None:
     sidecar.save(name, side)
 
 
-def bind(name: str, member: str, store_id: str | None) -> None:
-    """store_id None unbinds."""
-    side = sidecar.load(name)
-    if side is None:
-        raise WorksetError(f"no sidecar for '{name}'")
-    if member not in side.get("members", {}):
-        known = ", ".join(side.get("members", {})) or "none"
-        raise WorksetError(f"unknown member '{member}' (members: {known})")
-    if store_id is not None:
-        stores = adapter.store_list()
-        if store_id not in stores:
-            known = ", ".join(sorted(stores)) or "none"
-            raise WorksetError(f"unknown store '{store_id}' (registered: {known})")
-    snapshot.take(name, "bind" if store_id else "unbind")
-    if store_id is None:
-        side["members"][member].pop("store", None)
-    else:
-        side["members"][member]["store"] = store_id
-    sidecar.save(name, side)
-
-
 def remove(name: str) -> None:
     if name in adapter.workset_list():
         adapter.workset_remove(name)
@@ -119,22 +98,29 @@ def remove(name: str) -> None:
 
 
 def status(name: str) -> dict:
+    from . import governance
+
     side = sidecar.load(name)
     if side is None:
         raise WorksetError(f"no sidecar for '{name}'")
+    _, pointers, home = sidecar.profiles_and_pointers(side)
     members = []
     for member_name, meta in side.get("members", {}).items():
         path = Path(meta.get("path", ""))
+        resolved = governance.resolve(path) if path.is_dir() else {"mode": "unknown", "store": None}
         members.append(
             {
                 "name": member_name,
                 "path": str(path),
                 "exists": path.is_dir(),
-                "store": meta.get("store"),
+                "mode": resolved["mode"],
+                "store": resolved.get("store"),
+                "profile": pointers.get(member_name) or "default",
                 "is_store": adapter.is_store(path),
             }
         )
-    return {"name": name, "workspace": side.get("workspace"), "members": members}
+    return {"name": name, "workspace": side.get("workspace"),
+            "home": home, "members": members}
 
 
 def doctor() -> list[dict]:
@@ -162,8 +148,23 @@ def doctor() -> list[dict]:
                     "fix": "restore the file or zpp workset remove",
                 }
             )
+        profiles, pointers, home = sidecar.profiles_and_pointers(side)
+        if home == "shared":
+            # correspondence: every shared-file member entry must name a real
+            # workspace member - typos are otherwise silently ignored
+            for pointer_name in pointers:
+                if pointer_name not in side.get("members", {}):
+                    findings.append(
+                        {
+                            "workset": name,
+                            "problem": f"shared file names '{pointer_name}', "
+                                       f"which is not a member of the workspace",
+                            "fix": "fix the member name in the .zpp-workset or add the folder",
+                        }
+                    )
         for member_name, meta in side.get("members", {}).items():
-            if not Path(meta.get("path", "")).is_dir():
+            member_path = Path(meta.get("path", ""))
+            if not member_path.is_dir():
                 findings.append(
                     {
                         "workset": name,
@@ -171,13 +172,34 @@ def doctor() -> list[dict]:
                         "fix": "zpp workset sync",
                     }
                 )
-            store = meta.get("store")
+            pointer = pointers.get(member_name)
+            if pointer and pointer not in profiles:
+                findings.append(
+                    {
+                        "workset": name,
+                        "problem": f"member '{member_name}' points at undefined profile '{pointer}'",
+                        "fix": f"define [profiles.{pointer}] or drop the pointer",
+                    }
+                )
+            # a repo governed only by a member's multi-workset home
+            others = [w for w in sidecar.worksets_containing(member_path) if w != name]
+            if others and name == min([name, *others]):
+                findings.append(
+                    {
+                        "workset": name,
+                        "problem": f"member '{member_name}' is in multiple worksets "
+                                   f"({', '.join(sorted([name, *others]))}); '{name}' wins (first)",
+                        "fix": "remove the member from the extra worksets, or accept the winner",
+                    }
+                )
+        for profile_name, cfg in profiles.items():
+            store = cfg.get("governance", {}).get("store")
             if store and store not in stores:
                 findings.append(
                     {
                         "workset": name,
-                        "problem": f"member '{member_name}' bound to unregistered store '{store}'",
-                        "fix": f"zpp workset bind {member_name} <store>  # or unbind",
+                        "problem": f"profile '{profile_name}' binds unregistered store '{store}'",
+                        "fix": "register the store or fix the profile binding",
                     }
                 )
     for name in openspec_worksets:

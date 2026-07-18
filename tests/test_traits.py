@@ -41,8 +41,9 @@ def test_content_reads_winning_source(zpp_home):
 def test_effective_attributes_introducing_tier(zpp_home, tmp_path):
     repo = tmp_path / "selfgov"
     (repo / "openspec").mkdir(parents=True)
-    (repo / "zpp.default.toml").write_text('[traits]\napply = ["ponytail"]\n')
-    (repo / "zpp.toml").write_text('[traits]\napply = ["structure"]\n')
+    (repo / "zpp.toml").write_text(
+        '[traits]\napply = ["structure"]\n'
+        '[profiles.default.traits]\napply = ["ponytail"]\n')
     result = traits.effective(repo)
     tiers = {item["name"]: item["tier"] for item in result["applied"]}
     assert tiers == {"ponytail": "store", "structure": "repo"}

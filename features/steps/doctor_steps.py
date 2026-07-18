@@ -19,11 +19,9 @@ def step_doctor_exclude(context, cmd):
 @given('a self-governed repo whose store tier adds doctor tool "{a}" and whose repo tier adds doctor tool "{b}"')
 def step_doctor_tier_union(context, a, b):
     repo = _self_governed(context)
-    (repo / "zpp.default.toml").write_text(
-        f'[[doctor.more]]\nwhich = "{a}"\nsuccessnote = "from store"\n'
-    )
     (repo / "zpp.toml").write_text(
         f'[[doctor.more]]\nwhich = "{b}"\nsuccessnote = "from repo"\n'
+        f'[[profiles.default.doctor.more]]\nwhich = "{a}"\nsuccessnote = "from store"\n'
     )
 
 

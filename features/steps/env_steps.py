@@ -14,10 +14,10 @@ def step_workset_bound(context, workset_trait, repo_trait):
     worksets_dir = zpp_home() / "worksets"
     worksets_dir.mkdir(parents=True, exist_ok=True)
     (worksets_dir / "demo.toml").write_text(
-        f'version = 1\n'
+        f'version = 2\n'
         f'workspace = "{context.tmp / "demo.code-workspace"}"\n'
-        f'[members.member]\npath = "{member}"\nstore = "gov"\n'
-        f'[overlay.traits]\napply = ["{workset_trait}"]\n'
+        f'[members.member]\npath = "{member}"\n'
+        f'[profiles.default.traits]\napply = ["{workset_trait}"]\n'
     )
     context.repo = member
 

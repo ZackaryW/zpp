@@ -30,11 +30,9 @@ def test_more_entries_map_to_detect_only(zpp_home, tmp_path):
 
 def test_tiers_union_more_entries(zpp_home, tmp_path):
     repo = _self_governed(tmp_path)
-    (repo / "zpp.default.toml").write_text(
-        '[[doctor.more]]\nwhich = "git"\nsuccessnote = "store"\n'
-    )
     (repo / "zpp.toml").write_text(
         '[[doctor.more]]\nwhich = "gh"\nsuccessnote = "repo"\n'
+        '[[profiles.default.doctor.more]]\nwhich = "git"\nsuccessnote = "store"\n'
     )
     table, _ = toolchain.effective_tools(repo)
     cmds = {t["cmd"] for t in table}

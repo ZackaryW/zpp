@@ -28,18 +28,6 @@ def _repo_binding(path: Path) -> tuple[Path, str] | None:
     return None
 
 
-def _sidecar_binding(path: Path) -> tuple[str, str, str] | None:
-    """(workset, member, store) whose bound member contains path."""
-    resolved = path.resolve()
-    for name in sidecar.list_names():
-        side = sidecar.load(name)
-        for member_name, meta in side.get("members", {}).items():
-            store = meta.get("store")
-            if store and resolved.is_relative_to(Path(meta.get("path", "/\0"))):
-                return name, member_name, store
-    return None
-
-
 def _stores_or_warn(result: dict) -> dict[str, str]:
     """Registry read that degrades when the openspec CLI is unavailable -
     resolution classifies without it, it just can't validate store ids."""
@@ -67,18 +55,20 @@ def resolve(path: Path) -> dict:
         if store not in stores:
             result["warnings"].append(f"dangling store: '{store}' is not registered")
         return result
-    personal = _sidecar_binding(path)
-    if personal is not None:
-        workset_name, member, store = personal
-        result |= {"mode": "externally-governed", "rule": 3, "store": store,
-                   "binding": "personal", "workset": workset_name, "member": member}
-        if store not in stores:
-            result["warnings"].append(f"dangling store: '{store}' is not registered")
-        return result
+    prof = sidecar.resolved_profile(path)
+    if prof is not None:
+        store = prof["config"].get("governance", {}).get("store")
+        if store:
+            result |= {"mode": "externally-governed", "rule": 3, "store": store,
+                       "binding": "profile", "workset": prof["workset"],
+                       "member": prof["member"], "profile": prof["profile"]}
+            if store not in stores:
+                result["warnings"].append(f"dangling store: '{store}' is not registered")
+            return result
     return result
 
 
-# --- layered config: repo zpp.toml -> sidecar overlay -> store zpp.default.toml ---
+# --- layered config: repo zpp.toml -> member profile -> store zpp.default.toml ---
 
 
 def _merge(base: dict, over: dict, source: str, origins: dict, prefix: str = "") -> dict:
@@ -94,12 +84,31 @@ def _merge(base: dict, over: dict, source: str, origins: dict, prefix: str = "")
             origins[path] = f"{origins.get(path, '?')}+{source}"
         else:
             out[key] = value
-            origins[path] = source
+            # record leaf origins even when an upper tier introduces a whole
+            # section the base lacked, so origins stay complete
+            if isinstance(value, dict):
+                _record_origins(value, source, origins, f"{path}.")
+            else:
+                origins[path] = source
     return out
 
 
 def _load_toml(path: Path) -> dict:
     return tomllib.loads(path.read_text()) if path.is_file() else {}
+
+
+def _store_published(root: Path) -> dict:
+    """What a store publishes to the repos it governs: its zpp.toml's
+    `default` profile (extends-resolved). There is no zpp.default.toml -
+    default is a profile, at the store tier like everywhere else."""
+    profiles = _load_toml(root / "zpp.toml").get("profiles", {})
+    return sidecar.profile_config(profiles, "default")
+
+
+def _repo_tier(root: Path) -> dict:
+    """A repo's own committed config: zpp.toml top-level, minus the profiles
+    it publishes (those are the store tier, never the repo's self-config)."""
+    return {k: v for k, v in _load_toml(root / "zpp.toml").items() if k != "profiles"}
 
 
 def _record_origins(data: dict, source: str, origins: dict, prefix: str = "") -> None:
@@ -114,32 +123,33 @@ def resolve_config(path: Path) -> dict:
     """Effective config with per-value source attribution."""
     mode = resolve(path)
     origins: dict[str, str] = {}
+    # Middle tier applies by workset MEMBERSHIP, independent of governance mode:
+    # a self-governed or committed-bound member still gets its workset profile.
+    prof = sidecar.resolved_profile(path)
     if mode["mode"] == "self-governed":
-        store_default = _load_toml(Path(mode["root"]) / "zpp.default.toml")
-        repo_cfg = _load_toml(Path(mode["root"]) / "zpp.toml")
-        overlay = {}
+        store_default = _store_published(Path(mode["root"]))
+        repo_root = Path(mode["root"])
     else:
         stores = _stores_or_warn(mode)
         store_root = stores.get(mode.get("store") or "")
-        store_default = _load_toml(Path(store_root) / "zpp.default.toml") if store_root else {}
-        repo_root = Path(mode.get("root", path))
-        repo_cfg = _load_toml(repo_root / "zpp.toml")
-        side = sidecar.load(mode["workset"]) if mode.get("workset") else None
-        overlay = (side or {}).get("overlay", {})
-    overlay_source = "workset"
+        store_default = _store_published(Path(store_root)) if store_root else {}
+        repo_root = Path(mode.get("root") or (prof and prof["member_path"]) or path)
+    repo_cfg = _repo_tier(repo_root)
+    profile_cfg = dict(prof["config"]) if prof else {}
+    tier_source = "workset"
     if "ZPP_TRAITS" in os.environ:
-        # Per-session override: replaces the personal tier ONLY (mirrors the
-        # PVA_ALLOW_NO_STORE ephemeral-bypass doctrine); committed tiers
-        # always survive, so discipline lives in store/repo config.
+        # Per-session override: replaces the workset (profile) tier ONLY
+        # (mirrors the PVA_ALLOW_NO_STORE ephemeral-bypass doctrine); committed
+        # tiers always survive, so discipline lives in store/repo config.
         names = [n.strip() for n in os.environ["ZPP_TRAITS"].split(",") if n.strip()]
-        overlay = {"traits": {"apply": names}}
-        overlay_source = "env"
+        profile_cfg = {"traits": {"apply": names}}
+        tier_source = "env"
     _record_origins(store_default, "store", origins)
-    effective = _merge(store_default, overlay, overlay_source, origins)
+    effective = _merge(store_default, profile_cfg, tier_source, origins)
     effective = _merge(effective, repo_cfg, "repo", origins)
     return {
         "mode": mode,
         "effective": effective,
         "origins": origins,
-        "layers": {"store": store_default, overlay_source: overlay, "repo": repo_cfg},
+        "layers": {"store": store_default, tier_source: profile_cfg, "repo": repo_cfg},
     }

@@ -33,18 +33,27 @@ zpp bootstrap              # installs the rest of the toolchain (idempotent)
    file's own directory); `sync` is one-way reconciliation from it. Sharing
    and restoration = commit the workspace file, `zpp workset import` on the
    next machine. There is no export — the file already is the artifact.
-3. **Semantics truth lives in the sidecar** (`~/.zpp/worksets/<name>.toml`):
-   store bindings, detected roles, config overlays. Machine-local, personal,
-   never committed, never written into member folders. A zpp workset shares
-   its name — and identity — with the `openspec workset` it wraps.
+3. **Workset config lives in profiles.** A workset holds named
+   `[profiles.<name>]` blocks (zpp.toml-shaped). Every member resolves to
+   `default` unless it points elsewhere (`profile = "<name>"`); a store
+   binding is just `[governance] store` inside a profile — there is no
+   separate bind command. Profiles live either in the machine-local sidecar
+   (`~/.zpp/worksets/<name>.toml`, personal) or in a committed
+   `<stem>.zpp-workset` file beside the `.code-workspace` (shared with
+   collaborators, members referenced by **name only** so paths stay
+   portable). When the shared file exists it wins entirely. Member *paths*
+   are always machine-local (sidecar); the shared file never carries a path.
 4. **Snapshots are a camera for zpp state only.** Auto-taken before every
    mutation; `restore` rewrites zpp-owned files, touching the user-owned
    workspace file only with `--workspace-file`. Not a backup, not a stash,
    not a distribution mechanism.
-5. **Config layering**: repo `zpp.toml` → workset sidecar overlay → store
-   `zpp.default.toml`. Scalars override, lists union. zpp reads only its own
-   protocol files — `pva.toml` stays with the legacy compose stack until it
-   migrates to zpp's resolution.
+5. **Config layering**: repo `zpp.toml` → member's workset profile → the
+   store's published `default` profile. Scalars override, lists union.
+   **Default is a profile at every tier** — there is no `zpp.default.toml`:
+   a store publishes by putting `[profiles.default]` (and others, with
+   one-level `extends`) in its own `zpp.toml`; the top level of that file
+   stays the store repo's self-config. zpp reads only its own protocol
+   files — `pva.toml` stays with the legacy compose stack.
 6. **Traits are queried in realtime — there is no composer.** Content comes
    from four sources with precedence `user > builtin > plugin > saucepan`
    (`~/.zpp/user/`, traits shipped in the package, agent-surface plugins, and
@@ -67,8 +76,6 @@ zpp bootstrap              # installs the rest of the toolchain (idempotent)
 ```
 zpp workset import <file.code-workspace> [--name ID] [--partial]
 zpp workset sync <name> [--plan] [--yes]
-zpp workset bind <member> <store-id> [--workset NAME]
-zpp workset unbind <member> [--workset NAME]
 zpp workset list|open|remove|status|doctor
 zpp snapshot take|list|restore [--workspace-file]
 zpp trait list [--tool T] [--json]   # every trait: source, shadowing, version

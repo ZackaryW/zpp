@@ -44,8 +44,8 @@ def sync(
     for m in plan["added"]:
         typer.echo(f"  + {m['name']}  {m['path']}")
     for n, meta in plan["removed"].items():
-        bound = f"  (drops binding -> {meta['store']})" if "store" in meta else ""
-        typer.echo(f"  - {n}  {meta.get('path')}{bound}")
+        dropped = f"  (drops profile pointer -> {meta['profile']})" if "profile" in meta else ""
+        typer.echo(f"  - {n}  {meta.get('path')}{dropped}")
     for m in plan["moved"]:
         typer.echo(f"  ~ {m['name']}  -> {m['path']}")
     if not changes:
@@ -61,31 +61,6 @@ def sync(
         raise typer.Exit(1)
     worksets.sync_apply(name, plan)
     typer.echo("synced")
-
-
-@app.command()
-def bind(
-    member: str,
-    store_id: str,
-    workset: str = typer.Option(None, help="workset name (required outside a single-workset context)"),
-):
-    """Record that a member is governed by a store (sidecar, personal)."""
-    _bind(member, store_id, workset)
-
-
-@app.command()
-def unbind(member: str, workset: str = typer.Option(None)):
-    """Remove a member's store binding."""
-    _bind(member, None, workset)
-
-
-def _bind(member: str, store_id: str | None, workset: str | None) -> None:
-    name = workset or only_workset()
-    try:
-        worksets.bind(name, member, store_id)
-    except (worksets.WorksetError, adapter.OpenspecError) as e:
-        fail(str(e))
-    typer.echo(f"{member} {'->' if store_id else 'unbound'} {store_id or ''}".rstrip())
 
 
 @app.command("list")
@@ -132,7 +107,7 @@ def workset_remove(name: str, yes: bool = typer.Option(False, "--yes")):
 
 @app.command()
 def status(name: str = typer.Argument(None), as_json: bool = typer.Option(False, "--json")):
-    """Members, governance modes, bindings, detected store roles."""
+    """Members with live governance resolution, profile, and config home."""
     name = name or only_workset()
     try:
         data = worksets.status(name)
@@ -140,13 +115,14 @@ def status(name: str = typer.Argument(None), as_json: bool = typer.Option(False,
         fail(str(e))
 
     def human(d):
-        typer.echo(f"workset: {d['name']}")
+        typer.echo(f"workset: {d['name']}  (profiles from {d['home']})")
         typer.echo(f"source:  {d['workspace']}")
         for m in d["members"]:
             flags = "".join([
                 "" if m["exists"] else "  MISSING",
                 "  [store]" if m["is_store"] else "",
-                f"  -> {m['store']}" if m["store"] else "",
+                f"  profile={m['profile']}",
+                f"  {m['mode']}" + (f"->{m['store']}" if m["store"] else ""),
             ])
             typer.echo(f"  {m['name']}  {m['path']}{flags}")
 

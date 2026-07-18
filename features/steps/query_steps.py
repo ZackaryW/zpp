@@ -7,8 +7,12 @@ from behave import given, then
 def step_self_governed_tiers(context, store_trait, repo_trait):
     repo = context.tmp / "selfgov"
     (repo / "openspec").mkdir(parents=True, exist_ok=True)
-    (repo / "zpp.default.toml").write_text(f'[traits]\napply = ["{store_trait}"]\n')
-    (repo / "zpp.toml").write_text(f'[traits]\napply = ["{repo_trait}"]\n')
+    # one file: the store tier is the published default PROFILE, the repo tier
+    # is the top-level config (no zpp.default.toml - default is a profile)
+    (repo / "zpp.toml").write_text(
+        f'[traits]\napply = ["{repo_trait}"]\n'
+        f'[profiles.default.traits]\napply = ["{store_trait}"]\n'
+    )
     context.repo = repo
 
 
