@@ -30,6 +30,31 @@ TOOLS: list[dict] = [
 ]
 
 
+def _doctor_config(path: Path) -> tuple[dict, str | None]:
+    """The resolved [doctor] section for a context. Resolution failures degrade
+    to no config - doctor must work on the machines that need it most."""
+    from . import governance
+
+    try:
+        return governance.resolve_config(path)["effective"].get("doctor", {}), None
+    except Exception as e:
+        return {}, f"config resolution failed ({e}) - using builtin table"
+
+
+def effective_tools(path: Path = Path(".")) -> tuple[list[dict], str | None]:
+    """The one table both doctor and bootstrap consume: builtins minus
+    [doctor] exclude, plus [[doctor.more]] entries as detect-only rows -
+    exclude binds both commands by construction."""
+    config, warning = _doctor_config(path)
+    exclude = set(config.get("exclude", []))
+    table = [tool for tool in TOOLS if tool["cmd"] not in exclude]
+    for entry in config.get("more", []):
+        if entry.get("which"):
+            table.append({"cmd": entry["which"], "detect_only": True,
+                          "note": entry.get("successnote", "")})
+    return table, warning
+
+
 def _saucepan_mode() -> str:
     from . import governance
 
@@ -62,10 +87,20 @@ def _version(cmd: str) -> str:
         return ""
 
 
-def doctor() -> list[dict]:
-    """Detect-only: one entry per tool, never mutates."""
+def doctor(path: Path = Path(".")) -> tuple[list[dict], str | None]:
+    """Detect-only: one entry per effective-table tool, never mutates.
+    Returns (report, degradation-warning-or-None)."""
     report = []
-    for tool in TOOLS:
+    table, warning = effective_tools(path)
+    for tool in table:
+        if tool.get("detect_only"):
+            present = shutil.which(tool["cmd"]) is not None
+            report.append({
+                "tool": tool["cmd"], "present": present,
+                "version": tool["note"] if present else None,
+                "hint": None, "detect_only": True,
+            })
+            continue
         if tool.get("managed"):
             present, provenance = _managed_present(tool)
             report.append({
@@ -81,14 +116,19 @@ def doctor() -> list[dict]:
             "version": _version(tool["cmd"]) if present else None,
             "hint": None if present else tool["hint"],
         })
-    return report
+    return report, warning
 
 
-def bootstrap(dry_run: bool = False) -> tuple[list[str], list[str]]:
-    """Install missing tools; returns (installed, manual-steps-remaining)."""
+def bootstrap(dry_run: bool = False, path: Path = Path(".")) -> tuple[list[str], list[str], str | None]:
+    """Install missing effective-table tools; returns (installed,
+    manual-steps-remaining, degradation-warning-or-None). Detect-only
+    [[doctor.more]] entries are never installed nor counted as manual."""
     installed, manual = [], []
     is_darwin = platform.system() == "Darwin"
-    for tool in TOOLS:
+    table, warning = effective_tools(path)
+    for tool in table:
+        if tool.get("detect_only"):
+            continue
         if tool.get("managed"):
             if _managed_present(tool)[0]:
                 continue
@@ -120,4 +160,4 @@ def bootstrap(dry_run: bool = False) -> tuple[list[str], list[str]]:
             installed.append(tool["cmd"])
         else:
             manual.append(f"{tool['cmd']}: {tool['hint']}")
-    return installed, manual
+    return installed, manual, warning

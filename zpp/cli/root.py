@@ -27,9 +27,14 @@ def resolve(path: Path = typer.Argument(Path(".")), as_json: bool = typer.Option
     emit(result, as_json, human)
 
 
-def bootstrap(dry_run: bool = typer.Option(False, "--dry-run", help="show what would install")):
+def bootstrap(
+    path: Path = typer.Argument(Path("."), help="context for the [doctor] config"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="show what would install"),
+):
     """Install the governance toolchain (idempotent; uv is the one prerequisite)."""
-    installed, manual = toolchain.bootstrap(dry_run)
+    installed, manual, warning = toolchain.bootstrap(dry_run, path)
+    if warning:
+        typer.secho(f"warning: {warning}", fg="yellow")
     for item in installed:
         typer.echo(f"installed: {item}")
     if not installed and not manual:
@@ -40,14 +45,22 @@ def bootstrap(dry_run: bool = typer.Option(False, "--dry-run", help="show what w
         raise typer.Exit(2)
 
 
-def doctor(as_json: bool = typer.Option(False, "--json")):
-    """Verify the governance toolchain (detect-only)."""
-    report = toolchain.doctor()
+def doctor(
+    path: Path = typer.Argument(Path("."), help="context for the [doctor] config"),
+    as_json: bool = typer.Option(False, "--json"),
+):
+    """Verify the governance toolchain (detect-only, config-aware)."""
+    report, warning = toolchain.doctor(path)
+    if warning:
+        typer.secho(f"warning: {warning}", fg="yellow")
 
     def human(rows):
         for r in rows:
             mark = "✓" if r["present"] else "✗"
-            detail = r["version"] or "" if r["present"] else f"missing - {r['hint']}"
+            if r["present"]:
+                detail = r["version"] or ""
+            else:
+                detail = f"missing - {r['hint']}" if r["hint"] else "missing"
             typer.echo(f"{mark} {r['tool']}  {detail}".rstrip())
 
     emit(report, as_json, human)

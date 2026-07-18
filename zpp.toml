@@ -6,3 +6,7 @@ stack = "python"
 
 [bdd]
 stack = "python"
+
+[[doctor.more]]
+which = "git"
+successnote = "present - commits in this repo follow the zmem grammar (zmem-commit skill)"

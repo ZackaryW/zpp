@@ -77,11 +77,18 @@ zpp trait effective [PATH] [--tool T] [--json]  # applied set, with tier provena
 zpp trait fetch <ref>                # fetch a remote pack via saucepan
 zpp config resolve [PATH] [--sources] [--json]
 zpp resolve [PATH] [--json]        # governance mode: which rule matched
-zpp bootstrap [--dry-run]          # install toolchain
-zpp doctor [--json]                # verify toolchain, detect-only
+zpp bootstrap [PATH] [--dry-run]   # install toolchain (config-aware)
+zpp doctor [PATH] [--json]         # verify toolchain, detect-only, config-aware
 ```
 
 `--json` is available wherever output matters to agents and skills.
+
+The toolchain is configurable via a `[doctor]` section in the config tiers
+(store → workset → repo, lists union): `exclude = ["<cmd>"]` removes builtin
+tools from **both** doctor and bootstrap, and repeatable `[[doctor.more]]`
+entries (`which = "<cmd>"`, `successnote = "<note>"`) add detect-only tools —
+never installed by bootstrap; the note is shown when the tool is *present*, as
+usage guidance. Broken config degrades to the builtin table with a warning.
 
 ## Development
 
