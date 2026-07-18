@@ -10,6 +10,7 @@ Modes, first hit wins:
   4. none                              -> ungoverned (explicit, not an error)
 """
 
+import os
 import tomllib
 from pathlib import Path
 
@@ -39,13 +40,25 @@ def _sidecar_binding(path: Path) -> tuple[str, str, str] | None:
     return None
 
 
+def _stores_or_warn(result: dict) -> dict[str, str]:
+    """Registry read that degrades when the openspec CLI is unavailable -
+    resolution classifies without it, it just can't validate store ids."""
+    try:
+        return adapter.store_list()
+    except adapter.OpenspecError:
+        result.setdefault("warnings", []).append(
+            "openspec CLI unavailable - store ids not validated"
+        )
+        return {}
+
+
 def resolve(path: Path) -> dict:
     result = {"path": str(path.resolve()), "mode": "ungoverned", "rule": None,
               "store": None, "warnings": []}
     root = adapter.find_openspec_root(path)
     if root is not None:
         return {**result, "mode": "self-governed", "rule": 1, "root": str(root)}
-    stores = adapter.store_list()
+    stores = _stores_or_warn(result)
     repo = _repo_binding(path)
     if repo is not None:
         repo_root, store = repo
@@ -106,14 +119,27 @@ def resolve_config(path: Path) -> dict:
         repo_cfg = _load_toml(Path(mode["root"]) / "zpp.toml")
         overlay = {}
     else:
-        stores = adapter.store_list()
+        stores = _stores_or_warn(mode)
         store_root = stores.get(mode.get("store") or "")
         store_default = _load_toml(Path(store_root) / "zpp.default.toml") if store_root else {}
         repo_root = Path(mode.get("root", path))
         repo_cfg = _load_toml(repo_root / "zpp.toml")
         side = sidecar.load(mode["workset"]) if mode.get("workset") else None
         overlay = (side or {}).get("overlay", {})
+    overlay_source = "workset"
+    if "ZPP_TRAITS" in os.environ:
+        # Per-session override: replaces the personal tier ONLY (mirrors the
+        # PVA_ALLOW_NO_STORE ephemeral-bypass doctrine); committed tiers
+        # always survive, so discipline lives in store/repo config.
+        names = [n.strip() for n in os.environ["ZPP_TRAITS"].split(",") if n.strip()]
+        overlay = {"traits": {"apply": names}}
+        overlay_source = "env"
     _record_origins(store_default, "store", origins)
-    effective = _merge(store_default, overlay, "workset", origins)
+    effective = _merge(store_default, overlay, overlay_source, origins)
     effective = _merge(effective, repo_cfg, "repo", origins)
-    return {"mode": mode, "effective": effective, "origins": origins}
+    return {
+        "mode": mode,
+        "effective": effective,
+        "origins": origins,
+        "layers": {"store": store_default, overlay_source: overlay, "repo": repo_cfg},
+    }

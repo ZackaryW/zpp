@@ -6,6 +6,7 @@ prerequisite zpp may assume."""
 import platform
 import shutil
 import subprocess
+from pathlib import Path
 
 # (command, darwin install, fallback install-or-None-for-manual, manual hint)
 TOOLS: list[dict] = [
@@ -24,7 +25,32 @@ TOOLS: list[dict] = [
     {"cmd": "openspec", "darwin": ["npm", "install", "-g", "@fission-ai/openspec"],
      "fallback": ["npm", "install", "-g", "@fission-ai/openspec"],
      "hint": "npm install -g @fission-ai/openspec"},
+    {"cmd": "saucepan", "managed": True, "darwin": None, "fallback": None,
+     "hint": "release binary; managed mode fetches it to ~/.zpp/bin on first use"},
 ]
+
+
+def _saucepan_mode() -> str:
+    from . import governance
+
+    try:
+        return (governance.resolve_config(Path("."))["effective"]
+                .get("traits", {}).get("saucepan", "managed"))
+    except Exception:
+        return "managed"
+
+
+def _managed_present(tool: dict) -> tuple[bool, str | None]:
+    """(present, provenance) for a managed-mode-capable tool."""
+    from . import sauce
+
+    mode = _saucepan_mode()
+    managed = sauce.managed_binary()
+    if managed.is_file():
+        return True, f"managed ({managed})"
+    if shutil.which(tool["cmd"]):
+        return True, f"{mode} (PATH)"
+    return False, None
 
 
 def _version(cmd: str) -> str:
@@ -40,6 +66,14 @@ def doctor() -> list[dict]:
     """Detect-only: one entry per tool, never mutates."""
     report = []
     for tool in TOOLS:
+        if tool.get("managed"):
+            present, provenance = _managed_present(tool)
+            report.append({
+                "tool": tool["cmd"], "present": present,
+                "version": provenance,
+                "hint": None if present else tool["hint"],
+            })
+            continue
         present = shutil.which(tool["cmd"]) is not None
         report.append({
             "tool": tool["cmd"],
@@ -55,6 +89,23 @@ def bootstrap(dry_run: bool = False) -> tuple[list[str], list[str]]:
     installed, manual = [], []
     is_darwin = platform.system() == "Darwin"
     for tool in TOOLS:
+        if tool.get("managed"):
+            if _managed_present(tool)[0]:
+                continue
+            if _saucepan_mode() == "system":
+                manual.append(f"{tool['cmd']}: {tool['hint']}")
+                continue
+            if dry_run:
+                installed.append(f"{tool['cmd']}: would fetch release binary to ~/.zpp/bin")
+                continue
+            from . import sauce
+
+            try:
+                binary, _ = sauce.ensure_binary("managed")
+                installed.append(f"{tool['cmd']} ({binary})")
+            except sauce.SauceError as e:
+                manual.append(f"{tool['cmd']}: {e}")
+            continue
         if shutil.which(tool["cmd"]):
             continue
         strategy = tool["darwin"] if is_darwin else tool["fallback"]

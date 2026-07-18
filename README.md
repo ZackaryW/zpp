@@ -38,7 +38,19 @@ zpp bootstrap              # installs the rest of the toolchain (idempotent)
    `zpp.default.toml`. Scalars override, lists union. zpp reads only its own
    protocol files — `pva.toml` stays with the legacy compose stack until it
    migrates to zpp's resolution.
-6. **Governance tooling is user-level.** `.claude/` and peers are never
+6. **Traits are queried in realtime — there is no composer.** Content comes
+   from four sources with precedence `user > builtin > plugin > saucepan`
+   (`~/.zpp/user/`, traits shipped in the package, agent-surface plugins, and
+   `~/.zpp/saucepan/`); neither a remote pack nor a plugin can shadow shipped
+   discipline. The `plugin` source is gathered **live** and only when you pass
+   `--tool <surface>` (e.g. `--tool claude`), reading each installed plugin's
+   `traits/` folder — no `--tool` means no plugin gathering, and nothing is
+   cached to disk. Per-surface base dirs auto-resolve per OS, overridable via
+   `[traits] plugins = { claude = "...", codex = "..." }`. Which traits
+   *apply* comes from the config tiers (`[traits] apply`, lists union);
+   `ZPP_TRAITS` replaces the personal tier for one session — committed tiers
+   always survive.
+7. **Governance tooling is user-level.** `.claude/` and peers are never
    committed (see `.gitignore`).
 7. **Dogfood**: every zpp command is valid against the zpp repo itself — it
    is self-governed by its own local openspec root.
@@ -52,6 +64,10 @@ zpp workset bind <member> <store-id> [--workset NAME]
 zpp workset unbind <member> [--workset NAME]
 zpp workset list|open|remove|status|doctor
 zpp snapshot take|list|restore [--workspace-file]
+zpp trait list [--tool T] [--json]   # every trait: source, shadowing, version
+zpp trait show <name> [--tool T]     # one trait's content (winning source)
+zpp trait effective [PATH] [--tool T] [--json]  # applied set, with tier provenance
+zpp trait fetch <ref>                # fetch a remote pack via saucepan
 zpp config resolve [PATH] [--sources] [--json]
 zpp resolve [PATH] [--json]        # governance mode: which rule matched
 zpp bootstrap [--dry-run]          # install toolchain

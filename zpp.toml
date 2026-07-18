@@ -1,0 +1,8 @@
+# zpp's own protocol config. The repo declares its discipline (self-governed,
+# rule 1: the local openspec root wins; this file adds config, not a binding).
+
+[tdd]
+stack = "python"
+
+[bdd]
+stack = "python"
