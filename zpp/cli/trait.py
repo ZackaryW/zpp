@@ -73,7 +73,8 @@ def effective(
     """The applied trait set for a context, concatenated in application order."""
     result = traits.effective(path, tool)
     for name in result["unknown"]:
-        typer.secho(f"warning: unknown trait '{name}' - skipped", fg="yellow", err=False)
+        # stderr, so --json stdout stays parseable
+        typer.secho(f"warning: unknown trait '{name}' - skipped", fg="yellow", err=True)
     if as_json:
         typer.echo(json.dumps(result, indent=2))
         return

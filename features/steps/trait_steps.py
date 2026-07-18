@@ -122,7 +122,8 @@ def step_all_listed(context, names, source):
 
 @then('the output warns about unknown trait "{name}"')
 def step_warns_unknown(context, name):
-    out = context.result.output
+    err = getattr(context.result, "stderr", "") or ""
+    out = context.result.output + err
     assert "unknown" in out.lower() and name in out, out
 
 
