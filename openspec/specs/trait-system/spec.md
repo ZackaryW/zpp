@@ -41,15 +41,20 @@ zpp SHALL serve trait content in realtime through `zpp trait list` (every availa
 - **THEN** `zpp trait effective` reports the unknown name as a warning and continues with the remaining traits
 
 ### Requirement: Trait application tiers with session env override
-The active trait set SHALL be computed from the existing config layering — store defaults, then the workset sidecar overlay, then repo `zpp.toml` — as a `[traits] apply` list per tier, unioned in tier order. When the `ZPP_TRAITS` environment variable is set (comma-separated names), it SHALL replace the workset sidecar tier only, for that invocation; store and repo tiers SHALL always survive an env override.
+The active trait set SHALL be computed from the existing config layering — store defaults, then the member's resolved workset profile, then repo `zpp.toml` — as a `[traits] apply` list per tier, unioned in tier order. When the `ZPP_TRAITS` environment variable is set (comma-separated names), it SHALL replace the workset-profile tier only, for that invocation; store and repo tiers SHALL always survive an env override.
 
 #### Scenario: Env replaces only the personal tier
-- **WHEN** the workset overlay applies `["coverage"]`, the repo applies `["structure"]`, and `ZPP_TRAITS=ponytail` is set
+- **WHEN** the member's profile applies `["coverage"]`, the repo applies `["structure"]`, and `ZPP_TRAITS=ponytail` is set
 - **THEN** the effective set is the store tier plus `ponytail` plus `structure` — `coverage` is absent and `structure` cannot be removed by the env
+
+#### Scenario: Profile-applied traits reach every member
+- **WHEN** a workset's `default` profile applies `["ponytail"]` and a member repo applies nothing itself
+- **THEN** that member's `zpp trait effective` includes ponytail attributed to the workset tier
 
 #### Scenario: Provenance names the env tier
 - **WHEN** `ZPP_TRAITS` is active
 - **THEN** `zpp trait effective --json` attributes env-applied traits to `env`, not `workset`
+
 
 ### Requirement: saucepan-backed remote sources in managed mode
 zpp SHALL fetch remote trait packs via the saucepan CLI, invoked through an adapter. In the default `managed` mode, zpp SHALL fetch the saucepan release binary for the current platform into `~/.zpp/bin/` on first use and invoke it from there; with `[traits] saucepan = "system"`, zpp SHALL require saucepan on PATH and never install it. Remote refs SHALL be bare names; sources are declared centrally in saucepan's configuration, never inside trait refs.
