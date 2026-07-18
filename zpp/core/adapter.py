@@ -24,15 +24,25 @@ def _run(args: list[str]) -> str:
     return proc.stdout
 
 
+def _run_json(args: list[str]):
+    """_run + parse. Non-JSON output (e.g. a first-run notice) becomes an
+    OpenspecError so callers degrade rather than crash on JSONDecodeError."""
+    out = _run(args)
+    try:
+        return json.loads(out)
+    except json.JSONDecodeError:
+        raise OpenspecError(f"openspec {' '.join(args)} did not return JSON")
+
+
 def store_list() -> dict[str, str]:
     """Registered stores: id -> root path. Read-only."""
-    data = json.loads(_run(["store", "list", "--json"]))
+    data = _run_json(["store", "list", "--json"])
     return {s["id"]: s["root"] for s in data.get("stores", [])}
 
 
 def workset_list() -> dict[str, list[dict]]:
     """Saved worksets: name -> members [{name, path}]."""
-    data = json.loads(_run(["workset", "list", "--json"]))
+    data = _run_json(["workset", "list", "--json"])
     worksets = data.get("worksets", data) if isinstance(data, dict) else data
     if isinstance(worksets, list):  # tolerate list-shaped output
         return {w["name"]: w.get("members", []) for w in worksets}
