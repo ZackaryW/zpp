@@ -1,9 +1,16 @@
 # zpp — zack's project protocol
 
-One CLI that answers the questions the governance toolchain left unowned:
-which workset am I in, which store governs this repo, what is the effective
-config, and is my environment sane. zpp **wraps** openspec, zmem, and
-codegraph — it never replaces them.
+One CLI over the governance toolchain, with two jobs:
+
+- **Wraps openspec** — worksets, the store registry, and governance resolution
+  — to answer *which workset am I in, which store governs this repo, what is the
+  effective config*. This is the only tool zpp calls at runtime.
+- **Bootstraps and health-checks the rest** — `zpp bootstrap` installs the
+  toolchain (node, jq, ripgrep, uv/zmem, codegraph, the openspec CLI, saucepan)
+  and `zpp doctor` verifies each is present and sane. These are services zpp
+  installs and checks, not libraries it wraps.
+
+It never replaces any of them.
 
 ## Install
 
@@ -52,7 +59,7 @@ zpp bootstrap              # installs the rest of the toolchain (idempotent)
    always survive.
 7. **Governance tooling is user-level.** `.claude/` and peers are never
    committed (see `.gitignore`).
-7. **Dogfood**: every zpp command is valid against the zpp repo itself — it
+8. **Dogfood**: every zpp command is valid against the zpp repo itself — it
    is self-governed by its own local openspec root.
 
 ## Commands
