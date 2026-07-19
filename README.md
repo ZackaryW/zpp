@@ -126,6 +126,40 @@ entries (`which = "<cmd>"`, `successnote = "<note>"`) add detect-only tools —
 never installed by bootstrap; the note is shown when the tool is *present*, as
 usage guidance. Broken config degrades to the builtin table with a warning.
 
+## Authoring `zpp.toml`
+
+`zpp.toml` is owner-authored — zpp never writes it for you. When
+`zpp config resolve` reports nothing, there is no config to layer yet; author
+this file at the repo root (every section is optional):
+
+```toml
+# Bind this repo to a governing store (rule 2). Omit if self-governed
+# (a local openspec/ root) or ungoverned.
+[governance]
+store = "governance-of-agents-1v2"
+
+# Which discipline traits apply here (lists union across tiers).
+[traits]
+apply = ["ponytail", "structure", "coverage", "commit-stage"]
+
+# BDD/TDD stack the good-bdd / good-tdd baselines load a fragment for.
+[tdd]
+stack = "typescript"   # python | dart-flutter | typescript | ...
+[bdd]
+stack = "typescript"
+
+# Toolchain doctor overrides: drop builtin tools, or add detect-only ones.
+[doctor]
+exclude = []                       # e.g. ["codegraph"]
+# [[doctor.more]]
+# which = "gh"
+# successnote = "gh drives PRs"
+```
+
+A store publishes shared defaults by putting `[profiles.default]` (and other
+profiles) in *its own* `zpp.toml`; a governed repo's top-level keys override
+them. See **Protocol rules** above.
+
 ## Development
 
 ```sh
