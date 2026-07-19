@@ -25,8 +25,8 @@ TOOLS: list[dict] = [
     {"cmd": "openspec", "darwin": ["npm", "install", "-g", "@fission-ai/openspec"],
      "fallback": ["npm", "install", "-g", "@fission-ai/openspec"],
      "hint": "npm install -g @fission-ai/openspec"},
-    {"cmd": "saucepan", "managed": True, "darwin": None, "fallback": None,
-     "hint": "release binary; managed mode fetches it to ~/.zpp/bin on first use"},
+    {"cmd": "saucepan", "managed": True, "optional": True, "darwin": None, "fallback": None,
+     "hint": "release binary; fetched lazily on first `zpp trait fetch`"},
 ]
 
 
@@ -107,6 +107,7 @@ def doctor(path: Path = Path(".")) -> tuple[list[dict], str | None]:
                 "tool": tool["cmd"], "present": present,
                 "version": provenance,
                 "hint": None if present else tool["hint"],
+                "optional": tool.get("optional", False),
             })
             continue
         present = shutil.which(tool["cmd"]) is not None
@@ -130,6 +131,8 @@ def bootstrap(dry_run: bool = False, path: Path = Path(".")) -> tuple[list[str],
         if tool.get("detect_only"):
             continue
         if tool.get("managed"):
+            if tool.get("optional"):
+                continue  # provisioned lazily at point of use, never by bootstrap
             if _managed_present(tool)[0]:
                 continue
             if _saucepan_mode() == "system":

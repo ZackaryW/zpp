@@ -1,12 +1,31 @@
 from pathlib import Path
 
+from typer.testing import CliRunner
+
+from zpp.cli import app
 from zpp.core import toolchain
+
+runner = CliRunner()
 
 
 def _self_governed(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
     (repo / "openspec").mkdir(parents=True)
     return repo
+
+
+def test_doctor_exits_zero_when_only_optional_missing(zpp_home, tmp_path, monkeypatch):
+    """An absent optional tool must not fail `zpp doctor` - it reports the row
+    but the command still succeeds."""
+    report = [
+        {"tool": "node", "present": True, "version": "v20", "hint": None},
+        {"tool": "saucepan", "present": False, "version": None, "hint": "h",
+         "optional": True},
+    ]
+    monkeypatch.setattr(toolchain, "doctor", lambda path=Path("."): (report, None))
+    result = runner.invoke(app, ["doctor", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    assert "saucepan" in result.output
 
 
 def test_exclude_filters_the_effective_table(zpp_home, tmp_path):

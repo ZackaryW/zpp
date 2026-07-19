@@ -39,6 +39,11 @@ def step_invalid_config(context):
     (repo / "zpp.toml").write_text("[doctor\nthis is not toml")
 
 
+@given("a plain self-governed repo")
+def step_plain_self_governed(context):
+    _self_governed(context)
+
+
 @given("PATH is emptied so every tool is missing")
 def step_empty_path(context):
     empty = context.tmp / "empty-bin"

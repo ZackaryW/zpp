@@ -41,3 +41,8 @@ Feature: Configurable doctor and bootstrap via the [doctor] config section
     When I run "zpp bootstrap --dry-run" against that repo
     Then the command succeeds
     And the output does not contain "definitely-absent-tool-xyz"
+
+  Scenario: Bootstrap never touches the optional saucepan tool
+    Given a plain self-governed repo
+    When I run "zpp bootstrap --dry-run" against that repo
+    Then the output does not contain "saucepan"

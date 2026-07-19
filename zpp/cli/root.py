@@ -56,6 +56,9 @@ def doctor(
 
     def human(rows):
         for r in rows:
+            if not r["present"] and r.get("optional"):
+                typer.echo(f"○ {r['tool']}  optional - {r['hint']}".rstrip())
+                continue
             mark = "✓" if r["present"] else "✗"
             if r["present"]:
                 detail = r["version"] or ""
@@ -64,5 +67,7 @@ def doctor(
             typer.echo(f"{mark} {r['tool']}  {detail}".rstrip())
 
     emit(report, as_json, human)
-    if any(not r["present"] for r in report):
+    # optional tools (e.g. saucepan) never fail doctor - they are fetched
+    # lazily at point of use, not required to be present.
+    if any(not r["present"] and not r.get("optional") for r in report):
         raise typer.Exit(1)

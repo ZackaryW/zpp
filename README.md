@@ -6,9 +6,11 @@ One CLI over the governance toolchain, with two jobs:
   — to answer *which workset am I in, which store governs this repo, what is the
   effective config*. This is the only tool zpp calls at runtime.
 - **Bootstraps and health-checks the rest** — `zpp bootstrap` installs the
-  toolchain (node, jq, ripgrep, uv/zmem, codegraph, the openspec CLI, saucepan)
+  required toolchain (node, jq, ripgrep, uv/zmem, codegraph, the openspec CLI)
   and `zpp doctor` verifies each is present and sane. These are services zpp
-  installs and checks, not libraries it wraps.
+  installs and checks, not libraries it wraps. saucepan is **optional**:
+  bootstrap never fetches it and its absence never fails doctor — it is
+  provisioned lazily on the first `zpp trait fetch`.
 
 It never replaces any of them.
 
