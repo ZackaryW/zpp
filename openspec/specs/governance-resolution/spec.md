@@ -3,9 +3,7 @@
 ## Purpose
 
 Give every directory exactly one governance answer: which of the four modes it is in, which store governs it, and what its effective layered configuration is. This fills the binding gap openspec deliberately leaves open (openspec models stores and local roots, never project→store bindings).
-
 ## Requirements
-
 ### Requirement: Four-mode governance resolution
 Given a directory, zpp SHALL resolve its governance mode by the first matching rule: (1) an `openspec/` root in the directory's ancestry → self-governed; (2) an in-repo `zpp.toml` binding to a store → externally governed by committed fact; (3) the directory is a workset member whose resolved profile declares `[governance] store` → externally governed by workset profile; (4) otherwise → ungoverned. The resolution result SHALL name the mode, the governing store id (when applicable), and which rule matched.
 
@@ -35,6 +33,12 @@ Any store id used in resolution SHALL be validated against openspec's store regi
 ### Requirement: Layered config resolution
 `zpp config resolve` SHALL compute the effective configuration by layering, in order of decreasing precedence: the governed repo's `zpp.toml` (top level, excluding `[profiles.*]`), the member's resolved workset profile, and the governing store's published `default` profile — declared as `[profiles.default]` (with one-level `extends` resolved) inside the store's own `zpp.toml`. There is no separate store defaults file. Scalar values SHALL override lower layers; list values SHALL union with lower layers. The output SHALL be available as JSON and SHALL identify, on request, which layer supplied each value.
 
+When the effective configuration is empty, the human-readable output SHALL
+append a one-line authoring hint — no `zpp.toml` was found; author one, see
+the documented template. The hint SHALL appear only on the human surface:
+JSON output SHALL remain the bare empty result, and zpp SHALL NOT create the
+file itself (owner-authored by doctrine).
+
 #### Scenario: Scalar override
 - **WHEN** the store default sets `zmem.mode = "present"` and the repo `zpp.toml` sets `zmem.mode = "apply"`
 - **THEN** the effective value is `"apply"` sourced from the repo layer
@@ -50,3 +54,11 @@ Any store id used in resolution SHALL be validated against openspec's store regi
 #### Scenario: Self-governed repo config
 - **WHEN** the repo is self-governed (rule 1)
 - **THEN** its own `zpp.toml` serves both layers - `[profiles.default]` as the store tier, the top level as the repo tier - without requiring an external store
+
+#### Scenario: Empty config carries the authoring hint
+- **WHEN** `zpp config resolve` runs in a context with no `zpp.toml`, no
+  applicable profile, and no store default
+- **THEN** the human output states the configuration is empty and hints at
+  authoring a `zpp.toml` from the documented template, while `--json` returns
+  the empty result unchanged and no file is created
+
