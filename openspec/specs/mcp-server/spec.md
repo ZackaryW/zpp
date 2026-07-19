@@ -1,7 +1,14 @@
-# Delta: mcp-server
+# mcp-server Specification
 
-## ADDED Requirements
+## Purpose
+The `zpp-mcp` workspace subproject: a stdio MCP server that serves the zpp
+governance mount — read-only `resolve`/`trait_list`/`trait_effective`/
+`trait_content`/`doctor` tools plus the `zpp-governance` prompt — to the
+Claude Desktop chat surface, which has no session-start hook. Packaged off
+zpp core (its own uv workspace member and MCP SDK dependency), CLI-parity in
+output, and degrading silently rather than crashing.
 
+## Requirements
 ### Requirement: Workspace subproject packaging
 The MCP server SHALL live in a `zpp-mcp/` uv workspace subproject with its
 own `pyproject.toml`, distribution name `zpp-mcp`, and console entry point
@@ -51,3 +58,4 @@ mode is reported as a mode, not a failure.
 - **WHEN** the `zpp-governance` prompt is requested for an ungoverned path
 - **THEN** the server returns a well-formed result stating ungoverned mode
   with no trait content and no error
+
