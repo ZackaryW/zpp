@@ -18,6 +18,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["zpp"]
 
+# zpp-mcp is a workspace member, not a core dependency: the MCP server and its
+# SDK dep live there, so `uv tool install zpp` stays typer + tomli-w only.
+[tool.uv.workspace]
+members = ["zpp-mcp"]
+
 [dependency-groups]
 dev = [
     "behave>=1.3.3",
