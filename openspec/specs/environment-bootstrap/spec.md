@@ -3,9 +3,7 @@
 ## Purpose
 
 Install and verify the governance toolchain cross-platform from one codebase, replacing the duplicated `.sh`/`.ps1` setup and doctor scripts. uv is the sole prerequisite; doctor and bootstrap share one tool table so they can never disagree.
-
 ## Requirements
-
 ### Requirement: Data-driven toolchain table
 zpp SHALL maintain one table of governance tools — at minimum node, jq, ripgrep, zmem (via uv), codegraph, and the OpenSpec CLI — each entry pairing a detect predicate with per-OS install strategies. `zpp doctor` and `zpp bootstrap` SHALL both consume this table so verification and installation can never disagree about what the toolchain is.
 
@@ -34,6 +32,8 @@ zpp SHALL maintain one table of governance tools — at minimum node, jq, ripgre
 ### Requirement: Managed tool mode
 For tools that ship release binaries, a toolchain entry MAY declare a managed mode: zpp fetches the pinned release binary into `~/.zpp/bin/` and invokes it from there, instead of requiring the tool on PATH. The mode SHALL be configurable per tool (`system` = PATH-provided, never installed by zpp; `managed` = zpp-fetched under `~/.zpp/bin/`). `zpp doctor` SHALL report, for such tools, the active mode and which binary would be used. saucepan is the first managed-mode tool, defaulting to `managed`.
 
+A managed tool MAY additionally be marked **optional**: `zpp bootstrap` SHALL NOT fetch it, count it as a manual step, or fail because of it — it is provisioned lazily at its point of use (saucepan: on first `zpp trait fetch`). `zpp doctor` SHALL still report an optional tool's presence, mode, and provenance, but its absence SHALL NOT contribute to doctor's failure exit. saucepan is optional.
+
 #### Scenario: Doctor reports mode and provenance
 - **WHEN** saucepan runs in managed mode with a fetched binary present
 - **THEN** `zpp doctor` reports saucepan as present, mode `managed`, with the `~/.zpp/bin/` path
@@ -41,6 +41,14 @@ For tools that ship release binaries, a toolchain entry MAY declare a managed mo
 #### Scenario: System mode respects the user's toolchain
 - **WHEN** a tool is configured `system` and is present on PATH
 - **THEN** zpp uses the PATH binary and never writes to `~/.zpp/bin/` for that tool
+
+#### Scenario: Bootstrap ignores optional tools
+- **WHEN** `zpp bootstrap` runs with saucepan absent and its release unreachable
+- **THEN** the run neither fetches saucepan nor fails because of it, and no saucepan manual step is emitted
+
+#### Scenario: Doctor does not fail on optional absence
+- **WHEN** `zpp doctor` runs with every core tool present and saucepan absent
+- **THEN** the report shows saucepan as absent-optional and the command exits 0
 
 ### Requirement: Config-driven toolchain filtering
 The doctor/bootstrap toolchain SHALL be configurable through a `[doctor]` section resolved through the standard config tiers (the store's published `default` profile → workset profile → repo `zpp.toml`, lists unioned), with `zpp doctor [PATH]` and `zpp bootstrap [PATH]` resolving the section for their context. `doctor.exclude` SHALL remove the named builtin tools from the effective table consumed by **both** doctor and bootstrap — an excluded tool is neither checked nor installed. When config resolution fails, both commands SHALL degrade to the builtin table with a warning rather than fail.
@@ -57,7 +65,6 @@ The doctor/bootstrap toolchain SHALL be configurable through a `[doctor]` sectio
 - **WHEN** config resolution fails for the given path
 - **THEN** doctor runs against the builtin table and reports the degradation as a warning
 
-
 ### Requirement: Additional detect-only tools
 Repeatable `[[doctor.more]]` entries SHALL add tools to the doctor report in the form `which = "<cmd>"`, `successnote = "<note>"`. `more` tools are detect-only: doctor SHALL check presence via PATH lookup, and bootstrap SHALL never install them nor count them as manual steps. When a `more` tool is present, doctor SHALL display its `successnote` as usage guidance; when missing, doctor SHALL report it plainly with no hint and a failing exit status.
 
@@ -72,3 +79,4 @@ Repeatable `[[doctor.more]]` entries SHALL add tools to the doctor report in the
 #### Scenario: Bootstrap ignores more-tools
 - **WHEN** a declared `more` tool is missing and `zpp bootstrap` runs
 - **THEN** bootstrap neither installs it nor lists it as a remaining manual step
+
