@@ -127,7 +127,13 @@ usage guidance. Broken config degrades to the builtin table with a warning.
 ## Development
 
 ```sh
-uv sync && uv run pytest
+uv sync --all-packages && uv run pytest    # workspace incl. zpp-mcp
+uv run behave                              # BDD suite
+uv run python scripts/bump.py minor        # bump zpp + zpp-mcp in lockstep, re-lock
 ```
+
+`scripts/bump.py <patch|minor|major>` moves both workspace packages together
+(they release as one) via `uv version` and re-locks. VS Code users get the
+same as tasks (`.vscode/tasks.json` → **uv: bump version**, plus test/bdd/sync).
 
 Governed by OpenSpec: see `openspec/` (this repo is self-governed — rule 1).

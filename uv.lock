@@ -923,7 +923,7 @@ wheels = [
 
 [[package]]
 name = "zpp"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "tomli-w" },
@@ -950,7 +950,7 @@ dev = [
 
 [[package]]
 name = "zpp-mcp"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "zpp-mcp" }
 dependencies = [
     { name = "mcp" },

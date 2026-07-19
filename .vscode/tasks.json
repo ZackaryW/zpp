@@ -1,0 +1,43 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "uv: bump version",
+      "detail": "Bump zpp + zpp-mcp in lockstep and re-lock (scripts/bump.py)",
+      "type": "shell",
+      "command": "uv run python scripts/bump.py ${input:bumpPart}",
+      "problemMatcher": []
+    },
+    {
+      "label": "uv: sync (all packages)",
+      "detail": "Sync the workspace venv, including zpp-mcp",
+      "type": "shell",
+      "command": "uv sync --all-packages",
+      "problemMatcher": []
+    },
+    {
+      "label": "uv: test",
+      "detail": "Run the pytest suite",
+      "type": "shell",
+      "command": "uv run pytest",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "uv: bdd",
+      "detail": "Run the behave feature suite",
+      "type": "shell",
+      "command": "uv run behave",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "bumpPart",
+      "type": "pickString",
+      "description": "Semver part to bump",
+      "options": ["patch", "minor", "major"],
+      "default": "patch"
+    }
+  ]
+}
