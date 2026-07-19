@@ -93,9 +93,9 @@ zpp doctor [PATH] [--json]         # verify toolchain, detect-only, config-aware
 ## zpp-mcp — the Desktop chat surface
 
 Governance mounts on Claude Code, Codex, and Kimi through session-start hooks.
-The Claude **Desktop chat surface** has no hook (its only extension path is an
-MCP server via a Desktop Extension), so the `zpp-mcp/` workspace subproject
-serves the same mount over stdio MCP:
+The Claude **Desktop chat surface** has no hook — it is reached by registering
+a local MCP server — so the `zpp-mcp/` workspace subproject serves the same
+mount over stdio MCP:
 
 - **Tools** (read-only, CLI-parity JSON): `resolve`, `trait_list`,
   `trait_effective`, `trait_content`, `doctor` — each a thin wrapper over
@@ -112,9 +112,10 @@ dependency lives only here:
 uv tool install zpp-mcp     # provides the `zpp-mcp` stdio server
 ```
 
-The `governance-of-agents-1v2` store ships the `.mcpb` Desktop Extension that
-invokes this server (system-dependency posture). Every tool/prompt takes an
-explicit `path` — the chat surface has no working directory.
+The `governance-of-agents-1v2` store ships a `claude_desktop_config.json`
+snippet that registers this server (system-dependency posture — the store
+carries no bundle, just the snippet). Every tool/prompt takes an explicit
+`path` — the chat surface has no working directory.
 
 The toolchain is configurable via a `[doctor]` section in the config tiers
 (store → workset → repo, lists union): `exclude = ["<cmd>"]` removes builtin
