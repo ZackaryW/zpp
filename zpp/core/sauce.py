@@ -16,9 +16,12 @@ from pathlib import Path
 from ..utils.paths import zpp_home
 
 RELEASE_URL_ENV = "ZPP_SAUCEPAN_URL"
-DEFAULT_RELEASE_URL = (
-    "https://github.com/ZackaryW/saucepan/releases/latest/download/saucepan-{os}-{arch}"
-)
+# saucepan publishes release assets under Rust target triples, not
+# {os}-{arch}. macOS: one universal binary covers both arches (no arch-token
+# to mismatch); Windows: per-arch msvc build with a .exe suffix; Linux: no
+# asset is published, so managed mode cannot resolve one. See
+# github.com/ZackaryW/saucepan/releases.
+RELEASE_BASE = "https://github.com/ZackaryW/saucepan/releases/latest/download"
 
 
 class SauceError(RuntimeError):
@@ -29,10 +32,25 @@ def managed_binary() -> Path:
     return zpp_home() / "bin" / "saucepan"
 
 
-def _release_url() -> str:
-    return os.environ.get(RELEASE_URL_ENV) or DEFAULT_RELEASE_URL.format(
-        os=platform.system().lower(), arch=platform.machine().lower()
+def _asset_name(system: str, machine: str) -> str:
+    """The release asset for a platform, matching saucepan's published names."""
+    if system == "darwin":
+        return "saucepan-universal-apple-darwin"
+    if system == "windows":
+        arch = "aarch64" if machine in ("arm64", "aarch64") else "x86_64"
+        return f"saucepan-{arch}-pc-windows-msvc.exe"
+    raise SauceError(
+        f"no managed saucepan binary is published for {system}-{machine}; "
+        'install saucepan and set [traits] saucepan = "system", or set '
+        f"{RELEASE_URL_ENV} to a binary URL"
     )
+
+
+def _release_url() -> str:
+    override = os.environ.get(RELEASE_URL_ENV)
+    if override:
+        return override
+    return f"{RELEASE_BASE}/{_asset_name(platform.system().lower(), platform.machine().lower())}"
 
 
 def ensure_binary(mode: str) -> tuple[Path, bool]:
