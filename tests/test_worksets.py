@@ -36,6 +36,36 @@ def test_import_starts_with_no_profiles(fake_openspec, workspace_file):
     assert all("profile" not in m for m in side["members"].values())
 
 
+def test_import_allows_no_dedicated_store(fake_openspec, workspace_file):
+    name, _ = worksets.do_import(workspace_file)
+    assert name == "demo"
+
+
+def test_import_allows_one_dedicated_store(fake_openspec, workspace_file, tmp_path):
+    marker = tmp_path / "repo-a" / ".openspec-store"
+    marker.mkdir()
+    (marker / "store.yaml").write_text("id: store-a\n")
+
+    name, _ = worksets.do_import(workspace_file)
+
+    assert name == "demo"
+
+
+def test_import_rejects_multiple_dedicated_stores_before_creating_state(
+    fake_openspec, workspace_file, tmp_path
+):
+    for repo in ("repo-a", "repo-b"):
+        marker = tmp_path / repo / ".openspec-store"
+        marker.mkdir()
+        (marker / "store.yaml").write_text(f"id: {repo}\n")
+
+    with pytest.raises(worksets.WorksetError, match="multiple dedicated stores"):
+        worksets.do_import(workspace_file)
+
+    assert fake_openspec["worksets"] == {}
+    assert sidecar.load("demo") is None
+
+
 def test_sync_folder_added(fake_openspec, workspace_file, tmp_path):
     worksets.do_import(workspace_file)
     (tmp_path / "repo-c").mkdir()
@@ -48,6 +78,31 @@ def test_sync_folder_added(fake_openspec, workspace_file, tmp_path):
     worksets.sync_apply("demo", plan)
     assert "repo-c" in sidecar.load("demo")["members"]
     assert len(fake_openspec["worksets"]["demo"]) == 3
+
+
+def test_sync_plan_rejects_multiple_dedicated_stores(fake_openspec, workspace_file, tmp_path):
+    worksets.do_import(workspace_file)
+    for repo in ("repo-a", "repo-b"):
+        marker = tmp_path / repo / ".openspec-store"
+        marker.mkdir()
+        (marker / "store.yaml").write_text(f"id: {repo}\n")
+
+    with pytest.raises(worksets.WorksetError, match="multiple dedicated stores"):
+        worksets.sync_plan("demo")
+
+
+def test_doctor_flags_existing_workset_with_multiple_dedicated_stores(
+    fake_openspec, workspace_file, tmp_path
+):
+    worksets.do_import(workspace_file)
+    for repo in ("repo-a", "repo-b"):
+        marker = tmp_path / repo / ".openspec-store"
+        marker.mkdir()
+        (marker / "store.yaml").write_text(f"id: {repo}\n")
+
+    problems = [finding["problem"] for finding in worksets.doctor()]
+
+    assert any("multiple dedicated stores" in problem for problem in problems)
 
 
 def test_sync_labeled_rename_preserves_profile_pointer(fake_openspec, workspace_file, tmp_path):

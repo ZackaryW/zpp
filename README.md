@@ -72,6 +72,23 @@ zpp bootstrap              # installs the rest of the toolchain (idempotent)
    committed (see `.gitignore`).
 8. **Dogfood**: every zpp command is valid against the zpp repo itself — it
    is self-governed by its own local openspec root.
+9. **One dedicated governance store per workset.** A dedicated store is a
+   member containing `.openspec-store/store.yaml`; ordinary project
+   `openspec/` roots do not count. Import and sync reject two stores, while
+   `doctor` identifies legacy violations.
+10. **Alternate clones inherit logical membership, not stored paths.** Exact
+    path containment wins; otherwise zpp accepts a unique Git common-directory
+    or normalized `origin` match. Ambiguous remotes fail closed and require
+    `--member`.
+11. **Store-backed project branches use isolated governance worktrees.**
+    `resolve`, config resolution, status, and doctor are read-only. They report
+    `provisioning-required` until `zpp workset open NAME --project PATH`
+    creates/reuses `<member>/<project-branch>` from the store's `origin/HEAD`.
+    The global OpenSpec store registration remains on its stable base checkout.
+12. **Governance writes are leased.** `zpp lease` provides machine-local
+    shared-read/exclusive-write leases keyed by effective root and branch.
+    Live leases cannot be stolen; stale holders require explicit recovery.
+    New governance change ids use `cYYMMDD-<descriptive-name>`.
 
 ## Commands
 
@@ -79,6 +96,9 @@ zpp bootstrap              # installs the rest of the toolchain (idempotent)
 zpp workset import <file.code-workspace> [--name ID] [--partial]
 zpp workset sync <name> [--plan] [--yes]
 zpp workset list|open|remove|status|doctor
+zpp workset open <name> [--project PATH] [--member NAME] [--branch REF] [--base REF] [--checkout PATH]
+zpp workset cleanup <session-view>
+zpp lease acquire|renew|release|status|recover <effective-root> <branch>
 zpp snapshot take|list|restore [--workspace-file]
 zpp trait list [--tool T] [--json]   # every trait: source, shadowing, version
 zpp trait show <name> [--tool T]     # one trait's content (winning source)

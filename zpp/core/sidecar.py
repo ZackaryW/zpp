@@ -13,9 +13,14 @@ from pathlib import Path
 import tomli_w
 
 from ..utils.paths import sidecar_path, worksets_dir
+from . import adapter
 
 WORKSPACE_SUFFIX = ".code-workspace"
 SHARED_SUFFIX = ".zpp-workset"
+
+
+class MemberResolutionError(RuntimeError):
+    """A Git alias points to multiple workset members."""
 
 
 def load(name: str) -> dict | None:
@@ -86,18 +91,70 @@ def worksets_containing(path: Path) -> list[str]:
     return [name for name, _, _ in _members_containing(path)]
 
 
+def resolve_member(path: Path, member_override: str | None = None) -> dict | None:
+    """Resolve a path to one workset member without ever guessing an alias.
+
+    Exact member-path containment retains its existing precedence. Otherwise a
+    linked worktree shares a common Git directory, and a separately cloned
+    checkout may match a unique normalized ``origin`` remote. More than one
+    candidate is deliberately an error unless the caller names a member.
+    """
+    hits = _members_containing(path)
+    if hits:
+        name, member, member_path = hits[0]
+        return {"workset": name, "member": member, "member_path": member_path, "match": "path"}
+
+    target = adapter.git_identity(path)
+    if target is None:
+        return None
+    candidates: list[dict] = []
+    for name in list_names():
+        side = load(name) or {}
+        for member, meta in side.get("members", {}).items():
+            member_path = meta.get("path")
+            if not member_path:
+                continue
+            identity = adapter.git_identity(Path(member_path))
+            if identity is None:
+                continue
+            match = None
+            if identity["common_dir"] == target["common_dir"]:
+                match = "git-common-dir"
+            elif identity.get("remote") and identity.get("remote") == target.get("remote"):
+                match = "git-remote"
+            if match:
+                candidates.append({
+                    "workset": name,
+                    "member": member,
+                    "member_path": member_path,
+                    "match": match,
+                })
+
+    if member_override:
+        candidates = [candidate for candidate in candidates if candidate["member"] == member_override]
+    if not candidates:
+        return None
+    if len(candidates) > 1:
+        labels = ", ".join(f"{c['workset']}/{c['member']}" for c in candidates)
+        raise MemberResolutionError(f"ambiguous Git identity for {path}: {labels}")
+    return candidates[0]
+
+
 def resolved_profile(path: Path) -> dict | None:
     """The member's resolved profile for `path`: the alphabetically-first
     containing workset wins. Returns {workset, member, member_path, profile,
     config, home} or None when `path` is not a workset member."""
-    hits = _members_containing(path)
-    if not hits:
+    resolved = resolve_member(path)
+    if not resolved:
         return None
-    name, member, member_path = hits[0]
+    name = resolved["workset"]
+    member = resolved["member"]
+    member_path = resolved["member_path"]
     profiles, pointers, home = profiles_and_pointers(load(name))
     profile_name = pointers.get(member) or "default"
     return {
         "workset": name, "member": member, "member_path": member_path,
+        "match": resolved["match"],
         "profile": profile_name,
         "config": profile_config(profiles, profile_name),
         "home": home,

@@ -21,6 +21,15 @@ def resolve(path: Path = typer.Argument(Path(".")), as_json: bool = typer.Option
         if r.get("root"):
             line += f"  root={r['root']}"
         typer.echo(line)
+        isolation = r.get("isolation")
+        if isolation:
+            typer.echo(
+                f"isolation={isolation['state']}  "
+                f"branch={isolation.get('governance_branch', '-')}  "
+                f"effective={isolation.get('effective_root', '-')}"
+            )
+            if isolation.get("remediation"):
+                typer.echo(f"remediation: {isolation['remediation']}")
         for w in r["warnings"]:
             typer.secho(f"warning: {w}", fg="yellow")
 

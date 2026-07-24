@@ -18,3 +18,12 @@ def sidecar_path(name: str) -> Path:
 
 def snapshots_dir(name: str) -> Path:
     return worksets_dir() / name / "snapshots"
+
+
+def governance_worktrees_dir(name: str) -> Path:
+    """zpp-owned roots for generated governance checkouts."""
+    return worksets_dir() / name / "governance-worktrees"
+
+
+def leases_dir() -> Path:
+    return zpp_home() / "leases"
