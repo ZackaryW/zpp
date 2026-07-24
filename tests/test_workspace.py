@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from zpp.utils.workspace import _strip_jsonc, load_members
 
@@ -11,6 +12,6 @@ def test_jsonc_comments_and_trailing_commas():
 def test_members_resolved_against_file_directory(workspace_file):
     members = load_members(workspace_file)
     assert [m["name"] for m in members] == ["alpha", "repo-b"]
-    assert all(m["path"].startswith("/") for m in members)
+    assert all(Path(m["path"]).is_absolute() for m in members)
     assert members[0]["labeled"] and not members[1]["labeled"]
-    assert members[0]["path"].endswith("/repo-a")
+    assert Path(members[0]["path"]).name == "repo-a"

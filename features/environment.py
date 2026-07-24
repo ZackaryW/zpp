@@ -17,6 +17,7 @@ def before_scenario(context, scenario):
     # (Path.home()/.claude) lands inside the hermetic temp tree - the real
     # resolution path is exercised, no test-only base-dir seam needed.
     os.environ["HOME"] = str(context.tmp)
+    os.environ["USERPROFILE"] = str(context.tmp)
     os.environ.pop("ZPP_TRAITS", None)
     os.environ.pop("ZPP_SAUCEPAN_URL", None)
 
@@ -59,7 +60,20 @@ def make_fake_saucepan_release(context) -> str:
     """A tiny executable standing in for the saucepan release binary; steps
     point ZPP_SAUCEPAN_URL at it (file://) so managed fetch is exercised for
     real - download, chmod, invoke - without the network."""
-    fake = context.tmp / "fake-saucepan"
-    fake.write_text("#!/bin/sh\necho '{\"ok\": true}'\n")
-    fake.chmod(0o755)
+    if os.name == "nt":
+        # A native PE remains executable after urllib copies it to the
+        # extensionless managed-binary path. `where.exe install ...` exits
+        # successfully because the fixture supplies an `install.cmd` marker
+        # on PATH; `where` safely ignores the additional pack ref.
+        source = Path(os.environ["SystemRoot"]) / "System32" / "where.exe"
+        if not source.is_file():
+            raise RuntimeError("where.exe is required for the Windows BDD fixture")
+        fake = context.tmp / "fake-saucepan.exe"
+        shutil.copyfile(source, fake)
+        (context.tmp / "install.cmd").write_text("@exit /b 0\n")
+        os.environ["PATH"] = f"{context.tmp}{os.pathsep}{os.environ['PATH']}"
+    else:
+        fake = context.tmp / "fake-saucepan"
+        fake.write_text("#!/bin/sh\necho '{\"ok\": true}'\n")
+        fake.chmod(0o755)
     return fake.as_uri()

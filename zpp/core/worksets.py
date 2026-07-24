@@ -17,6 +17,18 @@ def derive_name(workspace_file: Path) -> str:
     return workspace_file.stem.lower().replace("_", "-").replace(" ", "-")
 
 
+def dedicated_stores(members: list[dict]) -> list[dict]:
+    """Members that are registered OpenSpec-store checkouts, not local roots."""
+    return [member for member in members if adapter.is_store(Path(member["path"]))]
+
+
+def _require_at_most_one_store(members: list[dict]) -> None:
+    stores = dedicated_stores(members)
+    if len(stores) > 1:
+        names = ", ".join(member["name"] for member in stores)
+        raise WorksetError(f"multiple dedicated stores in one workset: {names}")
+
+
 def do_import(
     workspace_file: Path, name: str | None = None, partial: bool = False
 ) -> tuple[str, list[dict]]:
@@ -37,6 +49,7 @@ def do_import(
     members = [m for m in members if m not in missing]
     if not members:
         raise WorksetError("no member folders exist on this machine")
+    _require_at_most_one_store(members)
     snapshot.take(name, "import")
     adapter.workset_create(name, members)
     sidecar.save(name, sidecar.new(workspace_file, members))
@@ -56,6 +69,7 @@ def sync_plan(name: str) -> dict:
         raise WorksetError(f"source workspace file moved or deleted: {workspace_file}")
     current = side.get("members", {})
     desired = workspace.load_members(workspace_file)
+    _require_at_most_one_store(desired)
     desired_names = {m["name"] for m in desired}
     added = [m for m in desired if m["name"] not in current]
     removed = {n: meta for n, meta in current.items() if n not in desired_names}
@@ -77,6 +91,7 @@ def sync_plan(name: str) -> dict:
 
 
 def sync_apply(name: str, plan: dict) -> None:
+    _require_at_most_one_store(plan["desired"])
     snapshot.take(name, "sync")
     if name in adapter.workset_list():
         adapter.workset_remove(name)
@@ -119,8 +134,20 @@ def status(name: str) -> dict:
                 "is_store": adapter.is_store(path),
             }
         )
+    known = adapter.workset_list()
+    sessions = []
+    for session_name, session in side.get("sessions", {}).items():
+        root_exists = Path(session.get("effective_root", "")).is_dir()
+        view_exists = session_name in known
+        sessions.append({
+            "name": session_name,
+            **session,
+            "state": "ready" if root_exists and view_exists else "interrupted",
+            "root_exists": root_exists,
+            "view_exists": view_exists,
+        })
     return {"name": name, "workspace": side.get("workspace"),
-            "home": home, "members": members}
+            "home": home, "members": members, "sessions": sessions}
 
 
 def doctor() -> list[dict]:
@@ -129,8 +156,10 @@ def doctor() -> list[dict]:
     openspec_worksets = adapter.workset_list()
     stores = adapter.store_list()
     names = sidecar.list_names()
+    owned_session_names = set()
     for name in names:
         side = sidecar.load(name)
+        owned_session_names.update(side.get("sessions", {}))
         if name not in openspec_worksets:
             findings.append(
                 {
@@ -162,6 +191,31 @@ def doctor() -> list[dict]:
                             "fix": "fix the member name in the .zpp-workset or add the folder",
                         }
                     )
+        store_members = dedicated_stores([
+            {"name": member_name, "path": meta.get("path", "")}
+            for member_name, meta in side.get("members", {}).items()
+            if meta.get("path")
+        ])
+        if len(store_members) > 1:
+            names_text = ", ".join(member["name"] for member in store_members)
+            findings.append(
+                {
+                    "workset": name,
+                    "problem": f"multiple dedicated stores in one workset: {names_text}",
+                    "fix": "keep one .openspec-store member or split the workset",
+                }
+            )
+        for session_name, session in side.get("sessions", {}).items():
+            root_exists = Path(session.get("effective_root", "")).is_dir()
+            view_exists = session_name in openspec_worksets
+            if not root_exists or not view_exists:
+                findings.append({
+                    "workset": name,
+                    "problem": f"interrupted session '{session_name}' "
+                               f"(root={'present' if root_exists else 'missing'}, "
+                               f"view={'present' if view_exists else 'missing'})",
+                    "fix": f"zpp workset cleanup {session_name}",
+                })
         for member_name, meta in side.get("members", {}).items():
             member_path = Path(meta.get("path", ""))
             if not member_path.is_dir():
@@ -203,7 +257,7 @@ def doctor() -> list[dict]:
                     }
                 )
     for name in openspec_worksets:
-        if name not in names:
+        if name not in names and name not in owned_session_names:
             findings.append(
                 {
                     "workset": name,

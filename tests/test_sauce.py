@@ -69,10 +69,17 @@ def test_release_url_env_override_wins(monkeypatch):
 
 
 def test_install_invokes_binary_with_ref(zpp_home, tmp_path, monkeypatch):
-    log = tmp_path / "argv.log"
     binary = zpp_home / "bin" / "saucepan"
     binary.parent.mkdir(parents=True)
-    binary.write_text(f'#!/bin/sh\necho "$@" > {log}\n')
-    binary.chmod(0o755)
+    binary.write_bytes(b"fixture")
+    called = {}
+
+    def fake_run(args, **kwargs):
+        called["args"] = args
+        called["cwd"] = kwargs["cwd"]
+        return type("Completed", (), {"returncode": 0, "stderr": "", "stdout": ""})()
+
+    monkeypatch.setattr(sauce.subprocess, "run", fake_run)
     sauce.install(binary, "acme-pack")
-    assert "install acme-pack" in log.read_text()
+    assert called["args"] == [str(binary), "install", "acme-pack"]
+    assert called["cwd"] == zpp_home / "saucepan"

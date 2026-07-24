@@ -4,7 +4,7 @@ from pathlib import Path
 
 import typer
 
-from ..core import adapter, sidecar, worksets
+from ..core import adapter, isolation, sidecar, worksets
 from .common import emit, fail, only_workset
 
 app = typer.Typer(
@@ -85,11 +85,31 @@ def workset_list(as_json: bool = typer.Option(False, "--json")):
 
 
 @app.command("open")
-def workset_open(name: str, tool: str = typer.Option(None, help="open with this tool")):
-    """Passthrough to openspec workset open."""
+def workset_open(
+    name: str,
+    tool: str = typer.Option(None, help="open the session view with this tool"),
+    project: Path = typer.Option(None, help="project checkout; defaults to the current directory"),
+    member: str = typer.Option(None, help="manual logical member override"),
+    branch: str = typer.Option(None, help="manual governance branch override"),
+    base: str = typer.Option(None, help="manual governance base ref override"),
+    checkout: Path = typer.Option(None, help="reuse this existing governance checkout"),
+):
+    """Provision and open an isolated governance session view when applicable."""
     try:
+        side = sidecar.load(name)
+        has_store = bool(side and any(
+            meta.get("path") and adapter.is_store(Path(meta["path"]))
+            for meta in side.get("members", {}).values()
+        ))
+        if has_store:
+            result = isolation.open_session(
+                project or Path.cwd(), member_override=member, branch_override=branch,
+                base_override=base, checkout_override=checkout, tool=tool,
+            )
+            typer.echo(f"opened {result['session_view']} ({result['effective_root']})")
+            return
         adapter.workset_open(name, tool)
-    except adapter.OpenspecError as e:
+    except (adapter.OpenspecError, isolation.IsolationError) as e:
         fail(str(e))
 
 
@@ -103,6 +123,19 @@ def workset_remove(name: str, yes: bool = typer.Option(False, "--yes")):
     except adapter.OpenspecError as e:
         fail(str(e))
     typer.echo(f"removed '{name}'")
+
+
+@app.command("cleanup")
+def workset_cleanup(session_view: str):
+    """Remove a zpp-owned session view and generated governance worktree."""
+    try:
+        result = isolation.cleanup_session(session_view)
+    except (isolation.IsolationError, adapter.OpenspecError) as e:
+        fail(str(e))
+    typer.echo(
+        f"removed '{session_view}'" if result["removed"]
+        else f"no recorded session view '{session_view}'"
+    )
 
 
 @app.command()
@@ -125,6 +158,11 @@ def status(name: str = typer.Argument(None), as_json: bool = typer.Option(False,
                 f"  {m['mode']}" + (f"->{m['store']}" if m["store"] else ""),
             ])
             typer.echo(f"  {m['name']}  {m['path']}{flags}")
+        for session in d.get("sessions", []):
+            typer.echo(
+                f"  session {session['name']}  {session['state']}  "
+                f"{session['effective_root']}"
+            )
 
     emit(data, as_json, human)
 

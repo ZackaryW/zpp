@@ -27,7 +27,9 @@ def step_claude_override(context, plugin, name):
     make_claude_plugin(context, plugin, traits={name: "OVERRIDE RULE"}, base=override)
     repo = context.tmp / "repo"
     repo.mkdir(exist_ok=True)
-    (repo / "zpp.toml").write_text(f'[traits.plugins]\nclaude = "{override}"\n')
+    (repo / "zpp.toml").write_text(
+        f'[traits.plugins]\nclaude = {json.dumps(str(override))}\n'
+    )
     context.repo = repo
 
 
