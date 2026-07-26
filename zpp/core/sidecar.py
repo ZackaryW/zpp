@@ -40,11 +40,18 @@ def save(name: str, data: dict) -> None:
 
 def new(workspace_file: Path, members: list[dict]) -> dict:
     return {
-        "version": 2,
+        "version": 3,
         "workspace": str(workspace_file.resolve()),
         "members": {m["name"]: {"path": m["path"]} for m in members},
         "profiles": {},
+        "reference_stores": [],
     }
+
+
+def reference_store_ids(side: dict | None) -> list[str]:
+    """Store ids assigned to a workset as read-only reference corpora. Absent
+    in sidecars written before version 3, which is not an error."""
+    return list((side or {}).get("reference_stores", []))
 
 
 def list_names() -> list[str]:

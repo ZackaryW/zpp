@@ -163,8 +163,33 @@ def status(name: str = typer.Argument(None), as_json: bool = typer.Option(False,
                 f"  session {session['name']}  {session['state']}  "
                 f"{session['effective_root']}"
             )
+        for store in d.get("reference_stores", []):
+            typer.echo(
+                f"  reference store {store['id']}  {store['root'] or 'UNREGISTERED'}"
+                "  (non-governing)"
+            )
 
     emit(data, as_json, human)
+
+
+@app.command("assign-store")
+def assign_store(name: str, store_id: str):
+    """Assign a registered store as a read-only reference corpus."""
+    try:
+        assigned = worksets.assign_reference_store(name, store_id)
+    except (worksets.WorksetError, adapter.OpenspecError) as e:
+        fail(str(e))
+    typer.echo(f"reference stores for '{name}': {', '.join(assigned)}")
+
+
+@app.command("unassign-store")
+def unassign_store(name: str, store_id: str):
+    """Drop a reference-store assignment."""
+    try:
+        assigned = worksets.unassign_reference_store(name, store_id)
+    except (worksets.WorksetError, adapter.OpenspecError) as e:
+        fail(str(e))
+    typer.echo(f"reference stores for '{name}': {', '.join(assigned) or '(none)'}")
 
 
 @app.command("doctor")

@@ -30,6 +30,11 @@ def resolve(path: Path = typer.Argument(Path(".")), as_json: bool = typer.Option
             )
             if isolation.get("remediation"):
                 typer.echo(f"remediation: {isolation['remediation']}")
+        for store in r.get("reference_stores", []):
+            typer.echo(
+                f"reference store (non-governing): {store['id']}  "
+                f"{store['root'] or 'UNREGISTERED'}"
+            )
         for w in r["warnings"]:
             typer.secho(f"warning: {w}", fg="yellow")
 

@@ -70,15 +70,31 @@ def resolve(path: Path) -> dict:
     return _with_isolation(path, result, prof, stores)
 
 
+def _reference_entries(side: dict, result: dict, stores: dict[str, str]) -> list[dict]:
+    """Reference stores assigned to the containing workset, as {id, root}.
+
+    Least privilege: the registry is read only when something is assigned, so
+    an unassigned workset costs no registry access. An unregistered id keeps a
+    null root - doctor reports it; resolution does not fail on it.
+    """
+    assigned = sidecar.reference_store_ids(side)
+    if not assigned:
+        return []
+    known = stores or _stores_or_warn(result)
+    return [{"id": store_id, "root": known.get(store_id)} for store_id in assigned]
+
+
 def _with_isolation(path: Path, result: dict, prof: dict | None, stores: dict[str, str]) -> dict:
     """Attach a read-only branch-isolation result for a store-backed workset."""
     try:
         membership = sidecar.resolve_member(path)
     except sidecar.MemberResolutionError as exc:
-        return {**result, "isolation": {"state": "ambiguous-member", "error": str(exc)}}
+        return {**result, "reference_stores": [],
+                "isolation": {"state": "ambiguous-member", "error": str(exc)}}
     if not membership:
-        return result
+        return {**result, "reference_stores": []}
     side = sidecar.load(membership["workset"]) or {}
+    result = {**result, "reference_stores": _reference_entries(side, result, stores)}
     store_members = [
         {"name": name, "path": meta["path"]}
         for name, meta in side.get("members", {}).items()
