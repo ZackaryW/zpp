@@ -29,6 +29,48 @@ def _require_at_most_one_store(members: list[dict]) -> None:
         raise WorksetError(f"multiple dedicated stores in one workset: {names}")
 
 
+def _load_or_fail(name: str) -> dict:
+    side = sidecar.load(name)
+    if side is None:
+        raise WorksetError(f"no sidecar for '{name}'")
+    return side
+
+
+def assign_reference_store(name: str, store_id: str) -> list[str]:
+    """Assign a registered store as a read-only reference corpus. Reference
+    stores carry no governance: no traits, config, lease, or worktree."""
+    side = _load_or_fail(name)
+    if store_id not in adapter.store_list():
+        raise WorksetError(f"store '{store_id}' is not registered with openspec")
+    assigned = sidecar.reference_store_ids(side)
+    if store_id not in assigned:
+        assigned.append(store_id)
+        side["reference_stores"] = assigned
+        sidecar.save(name, side)
+    return assigned
+
+
+def unassign_reference_store(name: str, store_id: str) -> list[str]:
+    side = _load_or_fail(name)
+    assigned = sidecar.reference_store_ids(side)
+    if store_id not in assigned:
+        raise WorksetError(f"store '{store_id}' is not assigned to workset '{name}'")
+    assigned.remove(store_id)
+    side["reference_stores"] = assigned
+    sidecar.save(name, side)
+    return assigned
+
+
+def reference_stores(name: str) -> list[dict]:
+    """Assigned reference stores as {id, root}; root is None when the id is no
+    longer registered - doctor reports that, resolution does not fail on it."""
+    assigned = sidecar.reference_store_ids(sidecar.load(name))
+    if not assigned:
+        return []
+    stores = adapter.store_list()
+    return [{"id": store_id, "root": stores.get(store_id)} for store_id in assigned]
+
+
 def do_import(
     workspace_file: Path, name: str | None = None, partial: bool = False
 ) -> tuple[str, list[dict]]:
@@ -147,7 +189,8 @@ def status(name: str) -> dict:
             "view_exists": view_exists,
         })
     return {"name": name, "workspace": side.get("workspace"),
-            "home": home, "members": members, "sessions": sessions}
+            "home": home, "members": members, "sessions": sessions,
+            "reference_stores": reference_stores(name)}
 
 
 def doctor() -> list[dict]:
@@ -205,6 +248,19 @@ def doctor() -> list[dict]:
                     "fix": "keep one .openspec-store member or split the workset",
                 }
             )
+        for store_id in sidecar.reference_store_ids(side):
+            if store_id not in stores:
+                findings.append({
+                    "workset": name,
+                    "problem": f"reference store '{store_id}' is not registered",
+                    "fix": f"zpp workset unassign-store {name} {store_id}  # or re-register it",
+                })
+            elif not Path(stores[store_id]).is_dir():
+                findings.append({
+                    "workset": name,
+                    "problem": f"reference store '{store_id}' root missing: {stores[store_id]}",
+                    "fix": "restore the store folder or unassign it",
+                })
         for session_name, session in side.get("sessions", {}).items():
             root_exists = Path(session.get("effective_root", "")).is_dir()
             view_exists = session_name in openspec_worksets
