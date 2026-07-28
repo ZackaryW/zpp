@@ -1,0 +1,4 @@
+interface:
+  display_name: "Learn zpp"
+  short_description: "Ground zpp decisions in live evidence"
+  default_prompt: "Use $learn-zpp to diagnose this zpp behavior from the concrete target and authoritative evidence."

@@ -1,0 +1,63 @@
+name: Publish learn-zpp skill
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "skills/learn-zpp/**"
+      - "scripts/check_skill_distribution.py"
+      - ".github/workflows/publish-learn-zpp.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-learn-zpp
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_SKILLS_COMMIT: "49f948faa9258a0c61caceaf225e179651397431"
+    steps:
+      - name: Check out zpp history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate the authored skill
+        shell: bash
+        run: |
+          set -euo pipefail
+          validator_root="$RUNNER_TEMP/openai-skills"
+          git init "$validator_root"
+          git -C "$validator_root" remote add origin https://github.com/openai/skills.git
+          git -C "$validator_root" fetch --depth=1 --filter=blob:none origin "$OPENAI_SKILLS_COMMIT"
+          git -C "$validator_root" checkout --detach FETCH_HEAD
+          python -m pip install --disable-pip-version-check "PyYAML==6.0.2"
+          python "$validator_root/skills/.system/skill-creator/scripts/quick_validate.py" skills/learn-zpp
+
+      - name: Split and verify the distribution tree
+        id: split
+        shell: bash
+        run: |
+          set -euo pipefail
+          split_commit="$(git subtree split --prefix=skills/learn-zpp)"
+          distribution_root="$RUNNER_TEMP/learn-zpp-distribution"
+          git worktree add --detach "$distribution_root" "$split_commit"
+          trap 'git worktree remove --force "$distribution_root"' EXIT
+          python scripts/check_skill_distribution.py skills/learn-zpp "$distribution_root"
+          echo "commit=$split_commit" >> "$GITHUB_OUTPUT"
+
+      - name: Advance the distribution branch
+        shell: bash
+        env:
+          SPLIT_COMMIT: ${{ steps.split.outputs.commit }}
+        run: |
+          set -euo pipefail
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+          git push --force-with-lease=refs/heads/dist/learn-zpp origin "$SPLIT_COMMIT:refs/heads/dist/learn-zpp"
