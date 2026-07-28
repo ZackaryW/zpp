@@ -49,6 +49,21 @@ def test_effective_attributes_introducing_tier(zpp_home, tmp_path):
     assert tiers == {"ponytail": "store", "structure": "repo"}
 
 
+def test_effective_attributes_scoped_trait_to_its_canonical_source(
+    zpp_home, tmp_path
+):
+    repo = tmp_path / "selfgov"
+    scope = repo / "sdk" / "python"
+    (repo / "openspec").mkdir(parents=True)
+    scope.mkdir(parents=True)
+    (scope / "zpp.toml").write_text('[traits]\napply = ["structure"]\n')
+
+    result = traits.effective(scope)
+
+    item = next(item for item in result["applied"] if item["name"] == "structure")
+    assert item["tier"] == str((scope / "zpp.toml").resolve())
+
+
 def test_four_source_precedence_and_plugin_tier(zpp_home, tmp_path, monkeypatch):
     # plugin outranks saucepan but not builtin; later plugin wins within tier
     (zpp_home / "saucepan" / "rem").mkdir(parents=True)

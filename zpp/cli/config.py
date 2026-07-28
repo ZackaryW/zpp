@@ -1,4 +1,4 @@
-"""zpp config - layered pva config."""
+"""zpp config - target-aware layered configuration."""
 
 import json
 from pathlib import Path
@@ -6,9 +6,9 @@ from pathlib import Path
 import typer
 
 from ..core import governance
-from .common import flatten
+from .common import fail, flatten
 
-app = typer.Typer(no_args_is_help=True, help="Layered pva config")
+app = typer.Typer(no_args_is_help=True, help="Target-aware layered config")
 
 
 @app.command("resolve")
@@ -17,8 +17,11 @@ def config_resolve(
     as_json: bool = typer.Option(False, "--json"),
     sources: bool = typer.Option(False, help="show which layer supplied each value"),
 ):
-    """Effective config: repo zpp.toml -> workset overlay -> store defaults."""
-    result = governance.resolve_config(path)
+    """Effective config: store -> workset -> repo -> target scopes."""
+    try:
+        result = governance.resolve_config(path)
+    except governance.ScopedConfigError as exc:
+        fail(str(exc))
     if as_json:
         typer.echo(json.dumps(result if sources else result["effective"], indent=2))
         return

@@ -20,6 +20,24 @@ def before_scenario(context, scenario):
     os.environ["USERPROFILE"] = str(context.tmp)
     os.environ.pop("ZPP_TRAITS", None)
     os.environ.pop("ZPP_SAUCEPAN_URL", None)
+    # Ancestor discovery must stay inside the scenario sandbox even when the
+    # developer has an unrelated openspec/ above the platform temp directory.
+    from zpp.core import adapter
+
+    context._find_openspec_root = adapter.find_openspec_root
+    sandbox = context.tmp.resolve()
+
+    def find_openspec_root(path):
+        target = path.resolve()
+        start = target.parent if target.is_file() else target
+        for candidate in (start, *start.parents):
+            if (candidate / "openspec").is_dir():
+                return candidate
+            if candidate == sandbox:
+                break
+        return None
+
+    adapter.find_openspec_root = find_openspec_root
 
 
 def make_claude_plugin(context, plugin: str, traits: dict | None = None,
@@ -51,6 +69,9 @@ def make_claude_plugin(context, plugin: str, traits: dict | None = None,
 
 
 def after_scenario(context, scenario):
+    from zpp.core import adapter
+
+    adapter.find_openspec_root = context._find_openspec_root
     os.environ.clear()
     os.environ.update(context._env_snapshot)
     shutil.rmtree(context.tmp, ignore_errors=True)

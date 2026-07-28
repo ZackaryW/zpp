@@ -93,6 +93,250 @@ def test_self_governed_repo_is_its_own_store_layer(tmp_path, fake_openspec):
     assert result["effective"]["zmem"]["mode"] == "apply"
 
 
+def _scoped_repo(tmp_path):
+    repo = tmp_path / "scoped-repo"
+    (repo / "openspec").mkdir(parents=True)
+    (repo / "zpp.toml").write_text(
+        '[tdd]\nstack = "rust"\n'
+        '[traits]\napply = ["root"]\n'
+        '[doctor]\nexclude = ["node"]\n'
+        '[doctor.settings]\nstrict = false\n'
+    )
+    return repo
+
+
+def test_root_only_resolution_keeps_the_existing_source_shape(tmp_path, fake_openspec):
+    repo = _scoped_repo(tmp_path)
+
+    result = governance.resolve_config(repo)
+
+    assert set(result) == {"mode", "effective", "origins", "layers"}
+    assert result["layers"] == {
+        "store": {},
+        "workset": {},
+        "repo": {
+            "tdd": {"stack": "rust"},
+            "traits": {"apply": ["root"]},
+            "doctor": {
+                "exclude": ["node"],
+                "settings": {"strict": False},
+            },
+        },
+    }
+    assert result["origins"] == {
+        "tdd.stack": "repo",
+        "traits.apply": "repo",
+        "doctor.exclude": "repo",
+        "doctor.settings.strict": "repo",
+    }
+
+
+def test_scopes_merge_root_to_target_with_ordered_canonical_sources(
+    tmp_path, fake_openspec
+):
+    repo = _scoped_repo(tmp_path)
+    sdk = repo / "sdk"
+    python = sdk / "python"
+    target = python / "src"
+    target.mkdir(parents=True)
+    (sdk / "zpp.toml").write_text(
+        '[traits]\napply = ["sdk", "root"]\n'
+        '[doctor]\nexclude = ["python"]\n'
+        '[doctor.settings]\ncolor = "always"\n'
+    )
+    (python / "zpp.toml").write_text(
+        '[tdd]\nstack = "python"\n'
+        '[traits]\napply = ["python"]\n'
+        '[doctor.settings]\nstrict = true\n'
+    )
+    sdk_source = str((sdk / "zpp.toml").resolve())
+    python_source = str((python / "zpp.toml").resolve())
+
+    result = governance.resolve_config(target)
+
+    assert result["effective"] == {
+        "tdd": {"stack": "python"},
+        "traits": {"apply": ["root", "sdk", "python"]},
+        "doctor": {
+            "exclude": ["node", "python"],
+            "settings": {"strict": True, "color": "always"},
+        },
+    }
+    assert result["scoped_layers"] == [
+        {
+            "source": sdk_source,
+            "config": {
+                "traits": {"apply": ["sdk", "root"]},
+                "doctor": {
+                    "exclude": ["python"],
+                    "settings": {"color": "always"},
+                },
+            },
+        },
+        {
+            "source": python_source,
+            "config": {
+                "tdd": {"stack": "python"},
+                "traits": {"apply": ["python"]},
+                "doctor": {"settings": {"strict": True}},
+            },
+        },
+    ]
+    assert result["origins"]["tdd.stack"] == python_source
+    assert result["origins"]["doctor.settings.strict"] == python_source
+    assert result["origins"]["doctor.settings.color"] == sdk_source
+    assert result["origins"]["traits.apply"].endswith(python_source)
+
+
+def test_file_target_uses_its_parent_scope(tmp_path, fake_openspec):
+    repo = _scoped_repo(tmp_path)
+    package = repo / "sdk" / "python"
+    package.mkdir(parents=True)
+    source_file = package / "client.py"
+    source_file.write_text("pass\n")
+    (package / "zpp.toml").write_text('[tdd]\nstack = "python"\n')
+
+    result = governance.resolve_config(source_file)
+
+    assert result["effective"]["tdd"]["stack"] == "python"
+    assert result["scoped_layers"][0]["source"] == str(
+        (package / "zpp.toml").resolve()
+    )
+
+
+@pytest.mark.parametrize(
+    ("content", "sections"),
+    [
+        ('[governance]\nstore = "other"\n', ("[governance]",)),
+        ('[profiles.default]\nname = "nested"\n', ("[profiles]",)),
+        (
+            '[governance]\nstore = "other"\n[profiles.default]\nname = "nested"\n',
+            ("[governance]", "[profiles]"),
+        ),
+    ],
+)
+def test_nested_authority_sections_name_file_and_every_prohibited_section(
+    tmp_path, fake_openspec, content, sections
+):
+    repo = _scoped_repo(tmp_path)
+    scope = repo / "sdk" / "python"
+    scope.mkdir(parents=True)
+    config = scope / "zpp.toml"
+    config.write_text(content)
+
+    with pytest.raises(governance.ScopedConfigError) as raised:
+        governance.resolve_config(scope)
+
+    assert str(config.resolve()) in str(raised.value)
+    for section in sections:
+        assert section in str(raised.value)
+
+
+def test_nested_binding_does_not_replace_the_established_git_root_binding(
+    tmp_path, fake_openspec, monkeypatch
+):
+    repo = tmp_path / "external-repo"
+    _init_git_repo(repo)
+    fake_openspec["stores"] = {
+        "root-store": str(tmp_path / "root-store"),
+        "nested-store": str(tmp_path / "nested-store"),
+    }
+    (repo / "zpp.toml").write_text('[governance]\nstore = "root-store"\n')
+    scope = repo / "sdk" / "python"
+    scope.mkdir(parents=True)
+    (scope / "zpp.toml").write_text('[governance]\nstore = "nested-store"\n')
+    monkeypatch.setattr(governance.adapter, "find_openspec_root", lambda path: None)
+
+    resolved = governance.resolve(scope)
+
+    assert resolved["mode"] == "externally-governed"
+    assert resolved["store"] == "root-store"
+    assert resolved["root"] == str(repo.resolve())
+
+
+def test_ungoverned_git_descendant_inherits_ordinary_root_config(
+    tmp_path, fake_openspec
+):
+    repo = tmp_path / "ungoverned-repo"
+    _init_git_repo(repo)
+    (repo / "zpp.toml").write_text('[tdd]\nstack = "rust"\n')
+    target = repo / "crates" / "core"
+    target.mkdir(parents=True)
+
+    resolved = governance.resolve_config(target)
+
+    assert resolved["mode"]["mode"] == "ungoverned"
+    assert resolved["effective"]["tdd"]["stack"] == "rust"
+    assert resolved["origins"]["tdd.stack"] == "repo"
+    assert "scoped_layers" not in resolved
+
+
+def test_root_and_sibling_do_not_inherit_child_scope(tmp_path, fake_openspec):
+    repo = _scoped_repo(tmp_path)
+    python = repo / "sdk" / "python"
+    sibling = repo / "crates" / "core"
+    python.mkdir(parents=True)
+    sibling.mkdir(parents=True)
+    (python / "zpp.toml").write_text(
+        '[tdd]\nstack = "python"\n[bdd]\nstack = "python"\n'
+    )
+
+    root_result = governance.resolve_config(repo)
+    python_result = governance.resolve_config(python)
+    sibling_result = governance.resolve_config(sibling)
+
+    assert root_result["effective"]["tdd"]["stack"] == "rust"
+    assert "bdd" not in root_result["effective"]
+    assert python_result["effective"]["tdd"]["stack"] == "python"
+    assert python_result["effective"]["bdd"]["stack"] == "python"
+    assert sibling_result["effective"]["tdd"]["stack"] == "rust"
+    assert "bdd" not in sibling_result["effective"]
+    for key in ("mode", "rule", "store", "root", "isolation"):
+        assert python_result["mode"].get(key) == root_result["mode"].get(key)
+        assert sibling_result["mode"].get(key) == root_result["mode"].get(key)
+
+
+def test_canonical_parent_traversal_cannot_borrow_scopes_across_root(
+    tmp_path, fake_openspec
+):
+    repo = _scoped_repo(tmp_path)
+    python = repo / "sdk" / "python"
+    python.mkdir(parents=True)
+    (python / "zpp.toml").write_text('[tdd]\nstack = "python"\n')
+    outside = tmp_path / "outside"
+    (outside / "openspec").mkdir(parents=True)
+    (outside / "zpp.toml").write_text('[tdd]\nstack = "typescript"\n')
+
+    escaped = governance.resolve_config(python / ".." / ".." / ".." / "outside")
+
+    assert escaped["mode"]["root"] == str(outside.resolve())
+    assert escaped["effective"]["tdd"]["stack"] == "typescript"
+    assert "scoped_layers" not in escaped
+
+
+def test_canonical_symlink_target_cannot_borrow_scopes_across_root(
+    tmp_path, fake_openspec
+):
+    repo = _scoped_repo(tmp_path)
+    python = repo / "sdk" / "python"
+    python.mkdir(parents=True)
+    (python / "zpp.toml").write_text('[tdd]\nstack = "python"\n')
+    outside = tmp_path / "outside-link-target"
+    (outside / "openspec").mkdir(parents=True)
+    (outside / "zpp.toml").write_text('[tdd]\nstack = "typescript"\n')
+    link = repo / "linked-outside"
+    try:
+        link.symlink_to(outside, target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"directory symlinks unavailable: {exc}")
+
+    escaped = governance.resolve_config(link)
+
+    assert escaped["mode"]["root"] == str(outside.resolve())
+    assert escaped["effective"]["tdd"]["stack"] == "typescript"
+    assert "scoped_layers" not in escaped
+
+
 def test_profile_is_config_middle_tier(tmp_path, fake_openspec, workspace_file):
     # a self-governed member still gets its workset profile as the middle tier
     worksets.do_import(workspace_file)

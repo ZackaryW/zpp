@@ -6,12 +6,11 @@ A trait is one markdown file, name = filename stem. No composer: content is
 served in realtime, never compiled into artifacts."""
 
 import json
-import os
 from importlib import resources
 from pathlib import Path
 
-from . import governance, plugins
 from ..utils.paths import zpp_home
+from . import governance, plugins
 
 PRECEDENCE = ["user", "builtin", "plugin", "saucepan"]
 
@@ -83,8 +82,9 @@ def content(name: str, tool: str | None = None,
 
 def effective(path: Path, tool: str | None = None) -> dict:
     """The applied trait set for a context: [traits] apply lists from the
-    config tiers (store -> workset/env -> repo), unioned in tier order, each
-    name resolved to winning content. Unknown names are reported, not fatal."""
+    config tiers (store -> workset/env -> repo -> target scopes), unioned in
+    tier order, each name resolved to winning content. Unknown names are
+    reported, not fatal."""
     resolved = governance.resolve_config(path)
     override = _plugin_override(resolved, tool)
     apply_list = resolved["effective"].get("traits", {}).get("apply", [])
@@ -97,7 +97,7 @@ def effective(path: Path, tool: str | None = None) -> dict:
             continue
         row = next(r for r in rows if r["name"] == name and not r["shadowed"])
         applied.append({"name": name, "source": row["source"],
-                        "tier": _introducing_tier(name, resolved["layers"]),
+                        "tier": _introducing_tier(name, resolved),
                         "content": text})
     return {"applied": applied, "unknown": unknown, "mode": resolved["mode"]}
 
@@ -110,9 +110,12 @@ def _plugin_override(resolved: dict, tool: str | None) -> Path | None:
     return Path(override) if override else None
 
 
-def _introducing_tier(name: str, layers: dict) -> str:
+def _introducing_tier(name: str, resolved: dict) -> str:
     """The first tier (in application order) whose [traits] apply names it."""
-    for tier, cfg in layers.items():
+    for tier, cfg in resolved["layers"].items():
         if name in cfg.get("traits", {}).get("apply", []):
             return tier
+    for layer in resolved.get("scoped_layers", []):
+        if name in layer["config"].get("traits", {}).get("apply", []):
+            return layer["source"]
     return "?"

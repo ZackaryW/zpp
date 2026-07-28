@@ -14,19 +14,48 @@ import os
 import tomllib
 from pathlib import Path
 
-from . import adapter, sidecar
 from ..utils.paths import governance_worktrees_dir
+from . import adapter, sidecar
+
+
+class ScopedConfigError(ValueError):
+    """A descendant zpp.toml attempts to declare root-only authority."""
+
+
+def _git_boundary(path: Path) -> Path | None:
+    """Nearest checkout root, recognizing both normal and worktree .git entries."""
+    target = path.resolve()
+    start = target.parent if target.is_file() else target
+    for candidate in (start, *start.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return None
 
 
 def _repo_binding(path: Path) -> tuple[Path, str] | None:
-    """Nearest ancestor zpp.toml declaring [governance] store = "id"."""
-    for p in (path.resolve(), *path.resolve().parents):
+    """Committed binding for the checkout containing ``path``.
+
+    Within a Git checkout the outermost declaration is the established repo
+    root; any nearer declaration is a scoped-file error handled by config
+    resolution. Outside Git, retain the historical nearest-binding behavior.
+    """
+    target = path.resolve()
+    start = target.parent if target.is_file() else target
+    boundary = _git_boundary(start)
+    found = []
+    for p in (start, *start.parents):
+        if boundary is not None and not p.is_relative_to(boundary):
+            break
         cfg = p / "zpp.toml"
         if cfg.is_file():
             store = tomllib.loads(cfg.read_text()).get("governance", {}).get("store")
             if store:
-                return p, store
-    return None
+                found.append((p, store))
+                if boundary is None:
+                    return found[0]
+        if boundary is not None and p == boundary:
+            break
+    return found[-1] if found else None
 
 
 def _stores_or_warn(result: dict) -> dict[str, str]:
@@ -146,7 +175,7 @@ def _with_isolation(path: Path, result: dict, prof: dict | None, stores: dict[st
     return {**governed, "isolation": context}
 
 
-# --- layered config: repo zpp.toml -> member profile -> store zpp.default.toml ---
+# --- layered config: store -> member profile -> repo -> descendant scopes ---
 
 
 def _merge(base: dict, over: dict, source: str, origins: dict, prefix: str = "") -> dict:
@@ -197,6 +226,46 @@ def _record_origins(data: dict, source: str, origins: dict, prefix: str = "") ->
             origins[f"{prefix}{key}"] = source
 
 
+def _scoped_layers(root: Path, target: Path) -> list[dict]:
+    """Load validated descendant config files from ``root`` toward ``target``."""
+    root = root.resolve()
+    target = target.resolve()
+    target_dir = target.parent if target.is_file() else target
+    if not target_dir.is_relative_to(root):
+        return []
+
+    layers = []
+    cursor = root
+    for part in target_dir.relative_to(root).parts:
+        cursor /= part
+        config_path = cursor / "zpp.toml"
+        if not config_path.is_file():
+            continue
+        source = str(config_path.resolve())
+        config = _load_toml(config_path)
+        prohibited = [
+            f"[{section}]" for section in ("governance", "profiles")
+            if section in config
+        ]
+        if prohibited:
+            joined = ", ".join(prohibited)
+            raise ScopedConfigError(
+                f"scoped config {source} declares root-only section(s): {joined}"
+            )
+        layers.append({"source": source, "config": config})
+    return layers
+
+
+def _repository_config_root(path: Path, mode: dict, prof: dict | None) -> Path:
+    """Root whose zpp.toml supplies the repo tier for this concrete target."""
+    if mode.get("root"):
+        return Path(mode["root"])
+    if prof:
+        return Path(prof["member_path"])
+    target = path.resolve()
+    return _git_boundary(target) or (target.parent if target.is_file() else target)
+
+
 def resolve_config(path: Path) -> dict:
     """Effective config with per-value source attribution."""
     mode = resolve(path)
@@ -204,23 +273,20 @@ def resolve_config(path: Path) -> dict:
     # Middle tier applies by workset MEMBERSHIP, independent of governance mode:
     # a self-governed or committed-bound member still gets its workset profile.
     prof = sidecar.resolved_profile(path)
+    repo_root = _repository_config_root(path, mode, prof)
     isolation = mode.get("isolation", {})
     if isolation.get("state") == "ready":
         store_default = _store_published(Path(isolation["effective_root"]))
-        repo_root = Path(mode.get("root") or (prof and prof["member_path"]) or path)
     elif isolation.get("state") == "provisioning-required":
         # A recognized isolated session must never consume the registered base
         # checkout while waiting for provisioning.
         store_default = {}
-        repo_root = Path(mode.get("root") or (prof and prof["member_path"]) or path)
     elif mode["mode"] == "self-governed":
         store_default = _store_published(Path(mode["root"]))
-        repo_root = Path(mode["root"])
     else:
         stores = _stores_or_warn(mode)
         store_root = stores.get(mode.get("store") or "")
         store_default = _store_published(Path(store_root)) if store_root else {}
-        repo_root = Path(mode.get("root") or (prof and prof["member_path"]) or path)
     repo_cfg = _repo_tier(repo_root)
     profile_cfg = dict(prof["config"]) if prof else {}
     tier_source = "workset"
@@ -234,9 +300,17 @@ def resolve_config(path: Path) -> dict:
     _record_origins(store_default, "store", origins)
     effective = _merge(store_default, profile_cfg, tier_source, origins)
     effective = _merge(effective, repo_cfg, "repo", origins)
-    return {
+    scoped_layers = _scoped_layers(repo_root, path)
+    for layer in scoped_layers:
+        effective = _merge(
+            effective, layer["config"], layer["source"], origins
+        )
+    result = {
         "mode": mode,
         "effective": effective,
         "origins": origins,
         "layers": {"store": store_default, tier_source: profile_cfg, "repo": repo_cfg},
     }
+    if scoped_layers:
+        result["scoped_layers"] = scoped_layers
+    return result
