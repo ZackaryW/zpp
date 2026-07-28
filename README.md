@@ -49,8 +49,11 @@ zpp bootstrap              # installs the rest of the toolchain (idempotent)
    mutation; `restore` rewrites zpp-owned files, touching the user-owned
    workspace file only with `--workspace-file`. Not a backup, not a stash,
    not a distribution mechanism.
-5. **Config layering**: repo `zpp.toml` → member's workset profile → the
-   store's published `default` profile. Scalars override, lists union.
+5. **Config layering**: the store's published `default` profile → the
+   member's workset profile → the repository-root `zpp.toml` → descendant
+   `zpp.toml` files on the path to the concrete target. Nearer scalars
+   replace inherited scalars, lists union without duplicates, and tables
+   merge recursively.
    **Default is a profile at every tier** — there is no `zpp.default.toml`:
    a store publishes by putting `[profiles.default]` (and others, with
    one-level `extends`) in its own `zpp.toml`; the top level of that file
@@ -179,6 +182,42 @@ exclude = []                       # e.g. ["codegraph"]
 A store publishes shared defaults by putting `[profiles.default]` (and other
 profiles) in *its own* `zpp.toml`; a governed repo's top-level keys override
 them. See **Protocol rules** above.
+
+For a monorepo, a descendant `zpp.toml` may override ordinary sections for
+its subtree. Resolution follows filesystem ancestry, not language inference:
+
+```text
+zpp.toml                   # [tdd] stack = "rust"
+sdk/python/zpp.toml        # [tdd] stack = "python"
+sdk/python/src/client.py
+```
+
+`zpp config resolve sdk/python/src/client.py` applies the Python value, while
+resolution at the root or in a sibling subtree remains Rust. File targets use
+their parent directory. Each additional scope uses the same merge rules; no
+reset or removal operator exists.
+
+Authority remains singular. Descendant files may not contain `[governance]`
+or `[profiles]`; zpp rejects them and names the offending canonical file and
+sections. Put those sections only in the resolved repository root.
+
+For machine-readable provenance, use
+`zpp config resolve <PATH> --sources --json`. When scopes apply, the result
+adds one ordered `scoped_layers` collection:
+
+```json
+{
+  "scoped_layers": [
+    {
+      "source": "C:\\repo\\sdk\\python\\zpp.toml",
+      "config": {"tdd": {"stack": "python"}}
+    }
+  ]
+}
+```
+
+The same canonical `source` string identifies scoped scalar origins. With no
+descendant config, the existing root-only source result is unchanged.
 
 ## Development
 
