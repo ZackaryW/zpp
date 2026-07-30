@@ -45,6 +45,7 @@ Feature: Bootstrap ZPP and configure agent applications
 
   Scenario: Repeated explicit agent options configure exactly those agents
     Given a clean user home
+    And the current project has no repository-local agent integration
     And Pi, Codex, and Claude Code have no ZPP integration
     When the user runs zpp init with agents Pi and Codex
     Then initialization succeeds without offering agent selection
@@ -53,6 +54,7 @@ Feature: Bootstrap ZPP and configure agent applications
     And neither agent receives a ZPP instruction paragraph or skill
     And their agent-owned hook trust and enablement state is unchanged
     And Claude Code is unchanged
+    And the current project still has no repository-local agent integration
 
   Scenario: Interactive initialization offers agent selection for an existing root
     Given valid initialized user state
