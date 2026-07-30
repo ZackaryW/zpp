@@ -10,6 +10,9 @@ from zpp.utils.agent_bootstrap import (
     inspect_pi_extension,
     install_pi_extension,
     load_packaged_pi_extension,
+    preflight_claude_code,
+    preflight_codex,
+    preflight_pi,
 )
 from zpp.utils.models import ManagedStateError, PackagedPiExtension
 
@@ -74,3 +77,32 @@ def test_pi_extension_install_is_idempotent_and_rejects_unmanaged_state(
     with pytest.raises(ManagedStateError):
         install_pi_extension(destination, artifact)
     assert destination.read_text(encoding="utf-8") == "unmanaged\n"
+
+
+def test_agent_preflights_detect_a_later_conflict_without_any_agent_write(
+    tmp_path: Path,
+) -> None:
+    artifact = PackagedPiExtension("extension\n")
+    codex_path = tmp_path / ".codex" / "hooks.json"
+    codex_path.parent.mkdir()
+    conflicting = {
+        "hooks": {
+            "SessionStart": [
+                {
+                    "matcher": "startup",
+                    "hooks": [{"type": "command", "command": "zpp resolve"}],
+                }
+            ]
+        }
+    }
+    codex_source = json.dumps(conflicting, ensure_ascii=False)
+    codex_path.write_text(codex_source, encoding="utf-8")
+
+    preflight_pi(tmp_path, artifact)
+    preflight_claude_code(tmp_path)
+    with pytest.raises(ManagedStateError):
+        preflight_codex(tmp_path)
+
+    assert codex_path.read_text(encoding="utf-8") == codex_source
+    assert not (tmp_path / ".pi").exists()
+    assert not (tmp_path / ".claude").exists()

@@ -62,26 +62,62 @@ def load_packaged_pi_extension() -> PackagedPiExtension:
     return PackagedPiExtension(source)
 
 
+def preflight_pi(home: Path, artifact: PackagedPiExtension) -> None:
+    destination = home / ".pi" / "agent" / "extensions" / "zpp" / "index.ts"
+    state = inspect_pi_extension(destination, artifact)
+    if state == "conflict":
+        raise ManagedStateError(f"unmanaged Pi extension exists at {destination}")
+    if state == "missing":
+        _missing_parent_entries(destination.parent)
+
+
+def preflight_codex(home: Path) -> None:
+    destination = home / ".codex" / "hooks.json"
+    _prepare_codex(destination)
+
+
+def preflight_claude_code(home: Path) -> None:
+    destination = home / ".claude" / "settings.json"
+    _prepare_claude_code(destination)
+
+
 def bootstrap_pi(
     home: Path,
     artifact: PackagedPiExtension,
 ) -> None:
     destination = home / ".pi" / "agent" / "extensions" / "zpp" / "index.ts"
+    preflight_pi(home, artifact)
     install_pi_extension(destination, artifact)
 
 
 def bootstrap_codex(home: Path) -> None:
     destination = home / ".codex" / "hooks.json"
-    current = _read_json_object(destination)
-    reconciled = reconcile_codex_hooks(current, codex_session_start_hook())
+    current, reconciled = _prepare_codex(destination)
     _write_json_if_changed(destination, current, reconciled)
 
 
 def bootstrap_claude_code(home: Path) -> None:
     destination = home / ".claude" / "settings.json"
+    current, reconciled = _prepare_claude_code(destination)
+    _write_json_if_changed(destination, current, reconciled)
+
+
+def _prepare_codex(destination: Path) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    current = _read_json_object(destination)
+    reconciled = reconcile_codex_hooks(current, codex_session_start_hook())
+    if current != reconciled:
+        _missing_parent_entries(destination.parent)
+    return current, reconciled
+
+
+def _prepare_claude_code(
+    destination: Path,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     current = _read_json_object(destination)
     reconciled = reconcile_claude_settings(current, claude_session_start_hook())
-    _write_json_if_changed(destination, current, reconciled)
+    if current != reconciled:
+        _missing_parent_entries(destination.parent)
+    return current, reconciled
 
 
 def _read_json_object(destination: Path) -> dict[str, Any] | None:
