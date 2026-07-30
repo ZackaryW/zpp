@@ -6,6 +6,11 @@ from typing import Any
 
 
 def atomic_write_json(destination: Path, value: Any) -> None:
+    source = json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    atomic_write_text(destination, source)
+
+
+def atomic_write_text(destination: Path, source: str) -> None:
     temporary_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
@@ -18,8 +23,7 @@ def atomic_write_json(destination: Path, value: Any) -> None:
             delete=False,
         ) as temporary:
             temporary_path = Path(temporary.name)
-            json.dump(value, temporary, ensure_ascii=False, indent=2, sort_keys=True)
-            temporary.write("\n")
+            temporary.write(source)
 
         os.replace(temporary_path, destination)
     except BaseException:

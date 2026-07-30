@@ -3,7 +3,23 @@ from pathlib import Path
 
 import pytest
 
-from zpp.utils.json_io import atomic_write_json
+from zpp.utils.json_io import atomic_write_json, atomic_write_text
+
+
+def test_atomic_write_text_preserves_utf8_and_existing_destination_on_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    destination = tmp_path / "trait.md"
+    destination.write_text("original\n", encoding="utf-8")
+
+    monkeypatch.setattr("zpp.utils.json_io.os.replace", lambda *_: (_ for _ in ()).throw(PermissionError("denied")))
+
+    with pytest.raises(PermissionError, match="denied"):
+        atomic_write_text(destination, "方向\n")
+
+    assert destination.read_text(encoding="utf-8") == "original\n"
+    assert list(tmp_path.glob(".trait.md.*.tmp")) == []
 
 
 def test_atomic_write_json_is_valid_and_deterministic(tmp_path: Path) -> None:

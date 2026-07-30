@@ -1,27 +1,24 @@
 [project]
 name = "zpp"
 version = "0.9.0"
-description = "zack's project protocol - workset governance over openspec"
-requires-python = ">=3.11"
+description = "Zack's Project Protocol"
+authors = [
+    { name = "ZackaryW", email = "gitzackw@gmail.com" }
+]
+requires-python = ">=3.14"
 dependencies = [
+    "pydantic>=2.13,<3",
+    "PyYAML>=6.0.3",
+    "questionary>=2.1,<3",
     "typer>=0.12",
-    "tomli-w>=1.0",
 ]
 
 [project.scripts]
 zpp = "zpp.cli:app"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["zpp"]
-
-# zpp-mcp is a workspace member, not a core dependency: the MCP server and its
-# SDK dep live there, so `uv tool install zpp` stays typer + tomli-w only.
-[tool.uv.workspace]
-members = ["zpp-mcp"]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
 
 [dependency-groups]
 dev = [

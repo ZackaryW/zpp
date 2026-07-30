@@ -4,9 +4,21 @@
 # .cc-history: the VSCode chat-archiving extension's store, not project content
 .cc-history/
 
+# OpenSpec changes are working state and must never be committed.
+openspec/changes/
+
+# ZPP's workflow skills are local anchors until the trait system owns them.
+.codex/skills/
+
 __pycache__/
 *.egg-info/
 .venv/
 .pytest_cache/
 dist/
+
+# ZPP compiled project traits are disposable runtime state.
+**/.zpp/cached/
+
+# Local home used only for self-hosted release verification.
+.verification-home/
 /.pytest-tmp
