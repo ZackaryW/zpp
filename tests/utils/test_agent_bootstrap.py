@@ -1,0 +1,76 @@
+import json
+from pathlib import Path
+
+import pytest
+
+from zpp.utils.agent_bootstrap import (
+    bootstrap_claude_code,
+    bootstrap_codex,
+    bootstrap_pi,
+    inspect_pi_extension,
+    install_pi_extension,
+    load_packaged_pi_extension,
+)
+from zpp.utils.models import ManagedStateError, PackagedPiExtension
+
+
+def test_agent_bootstraps_write_only_global_user_home_integrations(tmp_path: Path) -> None:
+    artifact = PackagedPiExtension("export default function zpp() {}\n")
+
+    results = (
+        bootstrap_pi(tmp_path, artifact),
+        bootstrap_codex(tmp_path),
+        bootstrap_claude_code(tmp_path),
+    )
+
+    pi_path = tmp_path / ".pi" / "agent" / "extensions" / "zpp" / "index.ts"
+    codex_path = tmp_path / ".codex" / "hooks.json"
+    claude_path = tmp_path / ".claude" / "settings.json"
+    assert pi_path.read_text(encoding="utf-8") == artifact.source
+    assert results == (None, None, None)
+    assert json.loads(codex_path.read_text(encoding="utf-8"))["hooks"]["SessionStart"]
+    assert json.loads(claude_path.read_text(encoding="utf-8"))["hooks"]["SessionStart"]
+    assert inspect_pi_extension(pi_path, artifact) == "identical"
+    assert not (tmp_path / ".codex" / "skills").exists()
+    assert not (tmp_path / ".claude" / "skills").exists()
+
+    pi_path.write_text("unmanaged\n", encoding="utf-8")
+    with pytest.raises(ManagedStateError):
+        bootstrap_pi(tmp_path, artifact)
+
+
+def test_packaged_pi_extension_resolves_fresh_traits_on_each_agent_start(
+    tmp_path: Path,
+) -> None:
+    artifact = load_packaged_pi_extension()
+
+    bootstrap_pi(tmp_path, artifact)
+    destination = tmp_path / ".pi" / "agent" / "extensions" / "zpp" / "index.ts"
+
+    assert destination.read_text(encoding="utf-8") == artifact.source
+    assert 'pi.on("before_agent_start"' in artifact.source
+    assert 'execFile("zpp", ["resolve"]' in artifact.source
+    assert "resolveTraits(event.systemPromptOptions.cwd)" in artifact.source
+    assert "{ cwd, encoding:" in artifact.source
+    assert "event.systemPrompt" in artifact.source
+    assert "if (!traits)" in artifact.source
+    assert ".trim()" not in artifact.source
+
+
+def test_pi_extension_install_is_idempotent_and_rejects_unmanaged_state(
+    tmp_path: Path,
+) -> None:
+    artifact = PackagedPiExtension("π extension\n")
+    destination = tmp_path / "nested" / "zpp" / "index.ts"
+
+    install_pi_extension(destination, artifact)
+    first_mtime = destination.stat().st_mtime_ns
+    install_pi_extension(destination, artifact)
+
+    assert destination.read_text(encoding="utf-8") == artifact.source
+    assert destination.stat().st_mtime_ns == first_mtime
+
+    destination.write_text("unmanaged\n", encoding="utf-8")
+    with pytest.raises(ManagedStateError):
+        install_pi_extension(destination, artifact)
+    assert destination.read_text(encoding="utf-8") == "unmanaged\n"

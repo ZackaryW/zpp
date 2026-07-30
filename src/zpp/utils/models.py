@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, TypedDict
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,3 +49,101 @@ class SavedIndex:
 @dataclass(frozen=True, slots=True)
 class CacheWatch:
     cache_mtime_ns: int
+
+
+class TraitRecord(TypedDict):
+    description: str
+    order: int | None
+    config: dict[str, Any]
+    skill_lookup: list[str]
+    body: str
+
+
+class TraitIndex(TypedDict):
+    schema_version: Literal[1]
+    traits: dict[str, TraitRecord]
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalDirectory:
+    display: Path
+    resolved: Path
+    key: str
+
+
+@dataclass(frozen=True, slots=True)
+class SavedBinding:
+    name: str
+    target: CanonicalDirectory
+
+
+@dataclass(frozen=True, slots=True)
+class AuthoredLayerPaths:
+    root: Path
+    config: Path
+    triggers: Path
+    traits: Path
+
+
+@dataclass(frozen=True, slots=True)
+class TraitCachePaths:
+    root: Path
+    index: Path
+    watch: Path
+
+
+@dataclass(frozen=True, slots=True)
+class LayerRef:
+    kind: Literal["global", "profile", "saved", "local"]
+    root: Path
+    name: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class LayerInspection:
+    state: Literal["absent", "complete", "partial", "invalid"]
+    missing: tuple[Path, ...] = ()
+    issues: tuple[ValidationIssue, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CreationEntry:
+    path: Path
+    kind: Literal["directory", "text"]
+    source: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CreationPlan:
+    entries: tuple[CreationEntry, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class LayerControls:
+    triggers: tuple[TriggerRule, ...] = ()
+    trait_overwrites: bool = False
+
+
+AgentName = Literal["pi", "codex", "claude"]
+
+
+@dataclass(frozen=True, slots=True)
+class ConfirmedAgentSelection:
+    agents: tuple[AgentName, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CancelledAgentSelection:
+    pass
+
+
+AgentSelection = ConfirmedAgentSelection | CancelledAgentSelection
+
+
+class ManagedStateError(ValueError):
+    pass
+
+
+@dataclass(frozen=True, slots=True)
+class PackagedPiExtension:
+    source: str
