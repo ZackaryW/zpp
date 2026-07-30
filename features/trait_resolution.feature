@@ -13,6 +13,14 @@ Feature: Resolve effective traits as Markdown
     And stdout is empty
     And stderr is empty
 
+  Scenario: A conditionless rule activates whenever its layer participates
+    Given a clean user home with an initialized global ZPP layer
+    And the global layer authors a valid neutral trait
+    And the global trait trigger configuration contains only that trait name
+    When the user runs zpp resolve for an existing target
+    Then resolution succeeds
+    And stdout contains exactly the complete effective neutral trait document
+
   Scenario: Fixed triggers activate each matching trait once and exclude forbidden traversal
     Given an existing target contains a matching workspace file for the second alternative of a workspace_contain rule
     And a fixture executable named neutral-tool is available on PATH
