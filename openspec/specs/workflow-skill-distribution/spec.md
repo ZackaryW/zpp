@@ -45,13 +45,13 @@ Local installation SHALL reuse a compatible managed global projection by default
 - **THEN** it either applies the complete safe plan or leaves every selected destination unchanged
 
 ### Requirement: Managed update and removal
-Update SHALL operate only on the explicitly selected managed skill scope, make compatible projections no-ops, replace outdated managed projections with the packaged bundle, and leave every unselected global or local scope unchanged.
+Update SHALL operate only on the explicitly selected managed scope, make compatible projections no-ops, replace outdated managed projections with the packaged bundle, and leave every unselected global or local scope unchanged.
 
-Removal SHALL require confirmation unless `--yes` or `-y` is supplied and SHALL remove only metadata-owned ZPP paths from the selected managed skill projection. Update and removal SHALL reject missing, malformed, conflicting, or user-owned selected state without partial mutation. Workflow installation, update, and removal SHALL NOT mutate any user-owned profile or authored trait content.
+Removal SHALL require confirmation unless `--yes` or `-y` is supplied and SHALL remove only metadata-owned ZPP paths from the selected managed projection. Update and removal SHALL reject missing, malformed, conflicting, or user-owned selected state without partial mutation.
 
 #### Scenario: Maintain one selected managed scope
 - **WHEN** a user updates or confirms removal for selected managed projections
-- **THEN** only their owned skill state changes while unrelated, unselected, profile, and authored-trait state remains unchanged
+- **THEN** only their owned state changes and unrelated or unselected state remains unchanged
 
 ### Requirement: Workflow lifecycle isolation from authored profiles
 Workflow installation, update, and removal SHALL operate only on selected managed agent projections. These operations SHALL NOT create, modify, rename, or remove any user profile or authored trait content, including the persistent `default` profile.
