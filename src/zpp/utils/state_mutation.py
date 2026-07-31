@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 from pathlib import Path
 
-from zpp.utils.json_io import atomic_write_text
+from zpp.utils.json_io import atomic_write_bytes, atomic_write_text
 from zpp.utils.models import CreationPlan
 
 
@@ -21,9 +21,13 @@ def apply_creation_plan(plan: CreationPlan) -> None:
             if entry.kind == "directory":
                 entry.path.mkdir()
             elif entry.kind == "text":
-                if entry.source is None:
+                if not isinstance(entry.source, str):
                     raise ValueError(f"text entry {entry.path} has no source")
                 atomic_write_text(entry.path, entry.source)
+            elif entry.kind == "binary":
+                if not isinstance(entry.source, bytes):
+                    raise ValueError(f"binary entry {entry.path} has no source")
+                atomic_write_bytes(entry.path, entry.source)
             else:
                 raise ValueError(f"unsupported creation entry kind: {entry.kind}")
             created.append(entry.path)

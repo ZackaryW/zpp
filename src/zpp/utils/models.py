@@ -109,8 +109,8 @@ class LayerInspection:
 @dataclass(frozen=True, slots=True)
 class CreationEntry:
     path: Path
-    kind: Literal["directory", "text"]
-    source: str | None = None
+    kind: Literal["directory", "text", "binary"]
+    source: str | bytes | None = None
 
 
 @dataclass(frozen=True, slots=True)
