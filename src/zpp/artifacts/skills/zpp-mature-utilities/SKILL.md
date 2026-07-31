@@ -1,6 +1,6 @@
 ---
 name: zpp-mature-utilities
-description: Develop a complete agreed disposable utility plan through strict fail-first TDD before feature wiring. Use only after the companion utility OpenSpec gate accounts for every utility needed by the full product change; discard that gate after green verification and its zmem checkpoint.
+description: Develop a complete agreed disposable utility plan through strict fail-first TDD before feature wiring. Discard that gate after verification and create a zmem checkpoint only when material utility work exists.
 ---
 
 # Mature utilities through TDD
@@ -26,8 +26,8 @@ For each utility or adapter:
 
 Test a dependency adapter at ZPP's usage boundary. Do not retest the mature dependency's implementation.
 
-Complete TDD for every utility and adapter in the utility change before any product wiring. If a needed utility was omitted, stop and prepare a truthful fallback checkpoint of the current coherent utility work through `zpp-commit-zmem`, then reopen `zpp-plan-utilities`; do not wire around the gap. If implementation invalidates the product proposal or public feature set, create the same fallback checkpoint before returning to the owning earlier gate. Rebuild every displaced downstream gate in order; never resume from RED/GREEN or a checkpoint produced against superseded inputs.
+Complete TDD for every utility and adapter in the utility change before any product wiring. If a needed utility was omitted, stop and preserve current utility work through `zpp-commit-zmem` only when coherent material tracked work exists, then reopen `zpp-plan-utilities`; do not wire around the gap. If implementation invalidates the product proposal or public feature set, apply the same material-work condition before returning to the owning earlier gate. Rebuild every displaced downstream gate in order; never resume from RED/GREEN or a checkpoint produced against superseded inputs.
 
-The root agent runs every focused utility suite and the relevant broader unit suite, avoiding duplicate executions when no material state changed. Then hand the complete mature utility foundation to `zpp-commit-zmem` for the current pass. If this stage was reopened, create a replacement mature-utility checkpoint under the same criteria before feature wiring resumes; preserve the earlier checkpoint as history.
+The root agent runs every focused utility suite and the relevant broader unit suite, avoiding duplicate executions when no material state changed. If the pass produced material tracked utility work, hand the complete mature utility foundation to `zpp-commit-zmem`. If the accepted plan requires no utility changes, create no checkpoint; the negative conclusion is not durable zmem. If this stage was reopened, create a replacement mature-utility checkpoint only when the revised pass produced material tracked utility work; preserve any earlier checkpoint as history.
 
-After that checkpoint succeeds, delete the disposable companion utility change before feature wiring. Never sync or archive its plan into canonical OpenSpec specs. The green utility implementation, focused tests, and zmem checkpoint are the durable evidence; future visits rediscover the current internal graph from source with available code-intelligence tools such as CodeGraph. Stop before feature wiring.
+After any required checkpoint succeeds—or immediately when no material utility work required one—delete the disposable companion utility change before feature wiring. Never sync or archive its plan into canonical OpenSpec specs. The green utility implementation, focused tests, and any justified zmem checkpoint are the durable evidence; future visits rediscover the current internal graph from source with available code-intelligence tools such as CodeGraph. Stop before feature wiring.

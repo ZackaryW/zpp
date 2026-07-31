@@ -17,7 +17,7 @@ Require all of these inputs before forming specifications:
 - all implemented public behavior in the product change;
 - the change-wide green integration zmem checkpoint.
 
-If any prerequisite is absent or was superseded by a reopened earlier stage, create a truthful fallback zmem checkpoint of coherent tracked specification work before returning to the workflow stage that owns it. Repeat that stage's established checkpoint behavior and rebuild later checkpoints in order. Never form canonical specifications from planned, red, unverified, or historically superseded behavior.
+If any prerequisite is absent or was superseded by a reopened earlier stage, preserve coherent material tracked specification work with a truthful fallback zmem checkpoint before returning to the workflow stage that owns it. When no material tracked specification work exists, return without a commit. Repeat that stage's established checkpoint behavior and rebuild later checkpoints in order. Never form canonical specifications from planned, red, unverified, or historically superseded behavior.
 
 ## Reconcile ownership
 

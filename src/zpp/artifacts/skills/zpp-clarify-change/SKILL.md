@@ -40,6 +40,6 @@ Before convergence, inventory every required feature, fix, constraint, acceptanc
 
 When no outcome-changing branch remains across the complete change, present a short restatement. Converge only after the owner confirms it. Stop with the proposal updated.
 
-If this stage was reopened from later work, require that the later stage first created its truthful fallback zmem checkpoint. Invalidate its gate state. Do not resume utility TDD, wiring, or specification formation from prior checkpoints. Send the revised complete proposal through feature shaping again; the revised complete feature contract must receive a replacement feature checkpoint before the workflow can cross that boundary.
+If this stage was reopened from later work, require that the later stage first preserved any coherent material tracked work through a truthful fallback zmem checkpoint. When no such work exists, require no commit. Invalidate its gate state. Do not resume utility TDD, wiring, or specification formation from prior checkpoints. Send the revised complete proposal through feature shaping again; the revised complete feature contract must receive a replacement feature checkpoint before the workflow can cross that boundary.
 
 Do not create specs, design, tasks, feature files, or implementation. Specifications are formalized only after behavior is mature and green.
