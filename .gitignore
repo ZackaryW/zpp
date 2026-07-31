@@ -7,7 +7,7 @@
 # OpenSpec changes are working state and must never be committed.
 openspec/changes/
 
-# ZPP's workflow skills are local anchors until the trait system owns them.
+# Local workflow skills are ignored development projections of packaged artifacts.
 .codex/skills/
 
 __pycache__/
