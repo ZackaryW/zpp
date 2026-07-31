@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Literal, TypedDict
 
 
@@ -83,6 +83,17 @@ class AuthoredLayerPaths:
     config: Path
     triggers: Path
     traits: Path
+
+
+@dataclass(frozen=True, slots=True)
+class AuthoredLayerFile:
+    relative_path: PurePosixPath
+    content: bytes
+
+
+@dataclass(frozen=True, slots=True)
+class AuthoredLayerSnapshot:
+    files: tuple[AuthoredLayerFile, ...]
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,4 +1,5 @@
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
+from datetime import datetime
 import os
 from pathlib import Path
 import re
@@ -11,6 +12,19 @@ _LAYER_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 def user_zpp_root(home: Path) -> Path:
     return home / ".zpp"
+
+
+def next_global_archive_name(
+    when: datetime,
+    existing_names: Collection[str],
+) -> str:
+    base = f"{when:%Y%m%d-%H%M%S}-global"
+    if base not in existing_names:
+        return base
+    suffix = 1
+    while f"{base}-{suffix}" in existing_names:
+        suffix += 1
+    return f"{base}-{suffix}"
 
 
 def canonicalize_existing_directory(path: Path) -> CanonicalDirectory:
