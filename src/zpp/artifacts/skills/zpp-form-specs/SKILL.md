@@ -32,7 +32,9 @@ Canonical specs own mature product behavior only. Do not promote workflow mechan
 7. Validate that the complete formed specification set describes mature behavior and that no mature public obligation was lost during reconciliation.
 8. Hand the separate change-wide specification-formation checkpoint to `zpp-commit-zmem` for the current pass. If specification reconciliation is repeated after reopening, create a replacement checkpoint under the same criteria and preserve the earlier one as history.
 9. After that checkpoint, hand the validated change to the owning OpenSpec finalization workflow; invoke it immediately when automatic progression or explicit end-to-end delegation applies.
+10. After finalization returns, re-list active changes and audit the session-local related change set. Require the product change to be archived, every utility companion to be absent, and every consumed internal anchor whose consumer condition is satisfied to be discarded. A genuinely unfinished related change may remain active only under an identified owning stage. Leave unrelated active changes untouched.
+11. If any consumed related change remains active without an owning stage, the workflow is incomplete. Report that change and return to its owner; never report overall completion.
 
 The utility plan from a completed TDD pass must already be discarded. Never reconstruct it for specification formation and never sync, archive, summarize, or translate it into canonical specs.
 
-Do not wire features, add utility behavior, archive the change, or infer a change-closure policy in this skill.
+Do not wire features, add utility behavior, or perform the product archive inside this skill. The owning OpenSpec finalizer performs that mutation before this skill evaluates the closure postcondition.

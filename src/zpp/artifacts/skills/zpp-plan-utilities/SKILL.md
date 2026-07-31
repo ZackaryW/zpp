@@ -21,7 +21,7 @@ Keep ownership strict: this skill plans utilities from accepted product needs bu
 
 1. Read the fully converged product-change proposal and its complete approved Gherkin feature/fix set. Require the current feature-contract checkpoint, including a replacement checkpoint when that stage was reopened. Refuse a partial or revised-but-uncheckpointed product boundary or feature set.
 2. Inspect existing utilities, dependencies, adapters, tests, and project conventions before proposing new code. On later visits, use available code-intelligence tools such as CodeGraph to reconstruct current structure and consumers from source; never treat a prior utility plan as durable architecture documentation.
-3. Open or update one disposable companion utility OpenSpec change that gates every utility to add, modify, replace, or remove before product wiring.
+3. Open or update one disposable companion utility OpenSpec change that gates every utility to add, modify, replace, or remove before product wiring. Add it to the workflow's related change set with disposal after its complete verified TDD pass as its owning terminal condition.
 4. For each needed responsibility across the complete product change, investigate whether a maintained dependency already provides it. Use current primary evidence when package maturity can change.
 5. Report maturity evidence and trade-offs without inventing an acceptance threshold. If evidence does not establish the choice, ask.
 6. Propose a custom utility only when justified by reuse, a nontrivial invariant, or a valuable test seam.

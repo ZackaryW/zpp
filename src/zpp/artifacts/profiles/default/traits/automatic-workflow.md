@@ -14,8 +14,9 @@ skill_lookup:
   - zpp-commit-zmem
   - zpp-form-specs
 ---
-When mode is automatic, or the user delegates a change end to end, continue
-across satisfied workflow stages without requesting approval at checkpoints,
-successful verification, or ordinary handoffs. Pause only for unresolved
+When automatic or delegated end to end, continue across satisfied stages without
+approval at checkpoints, verification, or handoffs. Pause only for unresolved
 clarification, a new product boundary, or a missing or changed utility shape.
+Before completion, audit every selected, created, or consumed OpenSpec change:
+close it or identify its active owning stage; leave unrelated changes untouched.
 Skill lookup remains passive and grants no authority or failed-gate bypass.

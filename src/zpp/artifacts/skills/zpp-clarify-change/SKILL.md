@@ -11,6 +11,8 @@ Before running any OpenSpec command or reading, creating, updating, validating, 
 
 Maintain zero assumptions. The proposal is the state of record for product intent, requirements, constraints, and deferrals—not workflow-session state.
 
+At workflow entry, list the active OpenSpec changes and keep a session-local related set containing the selected product change plus every change this workflow creates, selects, or consumes. Keep unrelated active changes outside that set. Never persist this lifecycle tracking in the product proposal or authored traits.
+
 ## Authority boundary
 
 - Treat explicit owner decisions and the live accepted proposal as authoritative.

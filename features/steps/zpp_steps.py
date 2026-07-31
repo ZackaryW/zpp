@@ -2939,8 +2939,9 @@ def step_satisfied_stage(context):
 )
 def step_delegated_continuation(context):
     assert context.result.exit_code == 0, context.result.output
-    assert "delegates a change end to end" in context.result.stdout
-    assert "without requesting approval" in context.result.stdout
+    output = " ".join(context.result.stdout.split())
+    assert "delegated end to end" in output
+    assert "without approval" in output
 
 
 @then("the manual configuration remains unchanged")
@@ -2953,7 +2954,8 @@ def step_manual_config_unchanged(context):
 
 @then("the trait still cannot execute a skill or grant mutation authority")
 def step_manual_trait_advisory(context):
-    assert "Skill lookup remains passive and grants no authority" in context.result.stdout
+    output = " ".join(context.result.stdout.split())
+    assert "Skill lookup remains passive and grants no authority" in output
 
 
 @given("the initialized default profile contains the platform-neutral base traits")
@@ -3011,3 +3013,102 @@ def step_python_traits_outside_skills(context):
         )
         leaked = [name for name in optional if name in skill_text]
         assert not leaked, (root, leaked)
+
+
+def install_change_lifecycle_policy(context) -> None:
+    initialize(context)
+    git_init(context.project)
+    result = invoke(context, ["workflow", "install", "--agent", "codex"])
+    assert result.exit_code == 0, result.output
+    root = workflow_skill_root(context, "codex", scope="local")
+    context.lifecycle_skills = {
+        name: (root / name / "SKILL.md").read_text(encoding="utf-8")
+        for name in context.workflow_skill_names
+    }
+    context.lifecycle_trait = (
+        context.home
+        / ".zpp"
+        / "profiles"
+        / "default"
+        / "traits"
+        / "automatic-workflow.md"
+    ).read_text(encoding="utf-8")
+
+
+@given(
+    "a workflow relates a product change, a utility companion, "
+    "and a temporary internal anchor"
+)
+def step_related_change_types(context):
+    install_change_lifecycle_policy(context)
+
+
+@given("an unrelated OpenSpec change remains active")
+def step_unrelated_change_active(context):
+    context.unrelated_change_active = True
+
+
+@when("the mature workflow reaches finalization")
+def step_workflow_reaches_finalization(context):
+    assert context.lifecycle_skills
+
+
+@then("the product change is handed to the owning OpenSpec finalizer")
+def step_product_change_finalized(context):
+    source = context.lifecycle_skills["zpp-form-specs"]
+    assert "owning OpenSpec finalization workflow" in source
+    assert "Require the product change to be archived" in source
+
+
+@then("the verified utility companion and consumed internal anchor are discarded")
+def step_companions_discarded(context):
+    mature = context.lifecycle_skills["zpp-mature-utilities"]
+    form = context.lifecycle_skills["zpp-form-specs"]
+    assert "re-list active changes and require that companion to be absent" in mature
+    assert "consumed internal anchor" in form
+    assert "to be discarded" in form
+
+
+@then("the unrelated active change is left untouched")
+def step_unrelated_change_untouched(context):
+    assert context.unrelated_change_active
+    assert "Leave unrelated active changes untouched" in (
+        context.lifecycle_skills["zpp-form-specs"]
+    )
+    assert "leave unrelated changes untouched" in context.lifecycle_trait
+
+
+@then("completion requires a final audit of the related change set")
+def step_final_related_change_audit(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    form = context.lifecycle_skills["zpp-form-specs"]
+    trait = " ".join(context.lifecycle_trait.split())
+    assert "session-local related set" in clarify
+    assert "audit the session-local related change set" in form
+    assert "Before completion, audit every selected, created, or consumed" in trait
+
+
+@given("a consumed related OpenSpec change remains active without an owning stage")
+def step_unowned_related_change(context):
+    install_change_lifecycle_policy(context)
+    context.unowned_related_change = True
+
+
+@when("the workflow evaluates its completion gate")
+def step_evaluate_completion_gate(context):
+    assert context.unowned_related_change
+
+
+@then("the workflow cannot report completion")
+def step_completion_blocked(context):
+    source = context.lifecycle_skills["zpp-form-specs"]
+    assert "the workflow is incomplete" in source
+    assert "never report overall completion" in source
+
+
+@then("the unrelated OpenSpec change list is not required to be empty")
+def step_unrelated_list_may_remain_active(context):
+    assert "leave unrelated changes untouched" in context.lifecycle_trait
+    assert "Leave unrelated active changes untouched" in (
+        context.lifecycle_skills["zpp-form-specs"]
+    )
