@@ -342,9 +342,15 @@ def step_no_agent_command(context):
     assert "agent install" not in context.results[1].stdout.lower()
 
 
-@then("the help exposes the independent skill lifecycle command group")
-def step_skill_command_group(context):
-    assert "skill" in context.results[1].stdout.lower()
+@then("the help exposes the independent workflow lifecycle command group")
+def step_workflow_command_group(context):
+    assert "workflow" in context.results[1].stdout.lower()
+
+
+@then("the help does not expose a generic skill command group")
+def step_no_generic_skill_command_group(context):
+    output = context.results[1].stdout.lower()
+    assert re.search(r"(?m)^\|\s*skill(?:\s|\|)", output) is None
 
 
 @then("initialization succeeds")
@@ -1879,20 +1885,20 @@ def step_no_authored_project_layer(context):
     assert not (context.project / ".zpp").exists()
 
 
-@when("the user runs zpp skill install with agents Codex, Pi, and Claude Code")
+@when("the user runs zpp workflow install with agents Codex, Pi, and Claude Code")
 def step_install_all_agents(context):
     invoke(
         context,
-        ["skill", "install", "--agent", "codex", "--agent", "pi", "--agent", "claude"],
+        ["workflow", "install", "--agent", "codex", "--agent", "pi", "--agent", "claude"],
     )
 
 
-@when("the user runs zpp skill install --global with agents Codex, Pi, and Claude Code")
+@when("the user runs zpp workflow install --global with agents Codex, Pi, and Claude Code")
 def step_install_all_agents_global(context):
     invoke(
         context,
         [
-            "skill",
+            "workflow",
             "install",
             "--global",
             "--agent",
@@ -1979,11 +1985,11 @@ def step_current_outside_target_worktree(context):
     assert not context.project.is_relative_to(context.skill_target.parent)
 
 
-@when('the user runs zpp skill install "C:\\work\\repo\\nested" with agent Claude Code')
+@when('the user runs zpp workflow install "C:\\work\\repo\\nested" with agent Claude Code')
 def step_install_exact_target(context):
     invoke(
         context,
-        ["skill", "install", str(context.skill_target), "--agent", "claude"],
+        ["workflow", "install", str(context.skill_target), "--agent", "claude"],
     )
 
 
@@ -2009,30 +2015,30 @@ def step_record_agent_skill_scopes(context):
 def run_invalid_skill_target(context, target: str) -> None:
     invoke(
         context,
-        ["skill", "install", str(fixture_path(context, target)), "--agent", "codex"],
+        ["workflow", "install", str(fixture_path(context, target)), "--agent", "codex"],
     )
 
 
-@when('the user runs zpp skill install "C:\\missing" with agent Codex')
+@when('the user runs zpp workflow install "C:\\missing" with agent Codex')
 def step_install_missing_skill_target(context):
     run_invalid_skill_target(context, '"C:\\missing"')
 
 
-@when('the user runs zpp skill install "C:\\work\\file.txt" with agent Codex')
+@when('the user runs zpp workflow install "C:\\work\\file.txt" with agent Codex')
 def step_install_file_skill_target(context):
     run_invalid_skill_target(context, '"C:\\work\\file.txt"')
 
 
-@when('the user runs zpp skill install "C:\\outside" with agent Codex')
+@when('the user runs zpp workflow install "C:\\outside" with agent Codex')
 def step_install_outside_skill_target(context):
     run_invalid_skill_target(context, '"C:\\outside"')
 
 
-@when('the user runs zpp skill install "C:\\work\\repo" --global with agent Codex')
+@when('the user runs zpp workflow install "C:\\work\\repo" --global with agent Codex')
 def step_global_with_target(context):
     invoke(
         context,
-        ["skill", "install", str(context.sandbox / "work" / "repo"), "--global", "--agent", "codex"],
+        ["workflow", "install", str(context.sandbox / "work" / "repo"), "--global", "--agent", "codex"],
     )
 
 
@@ -2051,10 +2057,10 @@ def step_agent_skill_scopes_unchanged(context):
     assert workflow_skill_snapshot(context) == context.skill_state_before
 
 
-@when("the user runs zpp skill install and selects Pi and Claude Code")
+@when("the user runs zpp workflow install and selects Pi and Claude Code")
 def step_select_skill_agents(context):
     context.selector_answer = ("pi", "claude")
-    invoke(context, ["skill", "install"])
+    invoke(context, ["workflow", "install"])
 
 
 @then("the managed bundle is installed in the selected native local scopes")
@@ -2073,10 +2079,10 @@ def step_codex_shared_only(context):
     assert not (context.project / ".codex" / "skills").exists()
 
 
-@when("the user submits zpp skill install with no checked agent")
+@when("the user submits zpp workflow install with no checked agent")
 def step_skill_select_none(context):
     context.selector_answer = ()
-    invoke(context, ["skill", "install"])
+    invoke(context, ["workflow", "install"])
 
 
 @then("installation succeeds without changing any agent skill scope")
@@ -2085,10 +2091,10 @@ def step_empty_skill_selection(context):
     assert workflow_skill_snapshot(context) == context.skill_state_before
 
 
-@when("the user cancels zpp skill install from the agent selector")
+@when("the user cancels zpp workflow install from the agent selector")
 def step_cancel_skill_selection(context):
     context.selector_answer = None
-    invoke(context, ["skill", "install"])
+    invoke(context, ["workflow", "install"])
 
 
 @then("installation is cancelled without changing any agent skill scope")
@@ -2098,15 +2104,15 @@ def step_cancelled_skill_selection(context):
     assert workflow_skill_snapshot(context) == context.skill_state_before
 
 
-@when("the user runs zpp skill install without an agent option")
+@when("the user runs zpp workflow install without an agent option")
 def step_skill_no_agent(context):
-    invoke(context, ["skill", "install"])
+    invoke(context, ["workflow", "install"])
 
 
 @given("Codex has a compatible managed global ZPP workflow bundle")
 def step_compatible_global_codex(context):
     git_init(context.project)
-    result = invoke(context, ["skill", "install", "--global", "--agent", "codex"])
+    result = invoke(context, ["workflow", "install", "--global", "--agent", "codex"])
     assert result.exit_code == 0, result.output
     context.results.clear()
 
@@ -2134,9 +2140,9 @@ def step_claude_no_local_bundle(context):
     assert_agent_no_local_bundle(context, "claude")
 
 
-@when("the user runs zpp skill install with agent Codex")
+@when("the user runs zpp workflow install with agent Codex")
 def step_install_codex_skill(context):
-    invoke(context, ["skill", "install", "--agent", "codex"])
+    invoke(context, ["workflow", "install", "--agent", "codex"])
 
 
 @then("installation succeeds and reports that the compatible global bundle is reused")
@@ -2151,9 +2157,9 @@ def step_no_local_bundle(context):
     assert not workflow_skill_root(context, "codex", scope="local").exists()
 
 
-@when("the user repeats zpp skill install with agent Codex and --force")
+@when("the user repeats zpp workflow install with agent Codex and --force")
 def step_force_local_codex(context):
-    invoke(context, ["skill", "install", "--agent", "codex", "--force"])
+    invoke(context, ["workflow", "install", "--agent", "codex", "--force"])
 
 
 @then("a compatible managed local bundle is installed")
@@ -2172,7 +2178,7 @@ def step_both_scopes_reported(context):
 @given("Claude Code has an outdated managed global ZPP workflow bundle")
 def step_outdated_global_claude(context):
     git_init(context.project)
-    result = invoke(context, ["skill", "install", "--global", "--agent", "claude"])
+    result = invoke(context, ["workflow", "install", "--global", "--agent", "claude"])
     assert result.exit_code == 0, result.output
     context.claude_global_root = workflow_skill_root(context, "claude", scope="global")
     make_workflow_projection_outdated(context.claude_global_root)
@@ -2180,9 +2186,9 @@ def step_outdated_global_claude(context):
     context.results.clear()
 
 
-@when("the user runs zpp skill install with agent Claude Code")
+@when("the user runs zpp workflow install with agent Claude Code")
 def step_install_claude_skill(context):
-    invoke(context, ["skill", "install", "--agent", "claude"])
+    invoke(context, ["workflow", "install", "--agent", "claude"])
 
 
 @then("the current managed bundle is installed locally")
@@ -2201,7 +2207,7 @@ def step_version_difference_reported(context):
 @given("Pi has a compatible managed local ZPP workflow bundle")
 def step_compatible_local_pi(context):
     git_init(context.project)
-    result = invoke(context, ["skill", "install", "--agent", "pi"])
+    result = invoke(context, ["workflow", "install", "--agent", "pi"])
     assert result.exit_code == 0, result.output
     context.pi_skill_root = workflow_skill_root(context, "pi", scope="local")
     context.results.clear()
@@ -2216,10 +2222,10 @@ def step_surround_skill_projection(context):
     context.managed_projection_before = snapshot(context.pi_skill_root)
 
 
-@when("the user runs zpp skill install with agent Pi twice")
+@when("the user runs zpp workflow install with agent Pi twice")
 def step_install_pi_skill_twice(context):
-    invoke(context, ["skill", "install", "--agent", "pi"])
-    invoke(context, ["skill", "install", "--agent", "pi"])
+    invoke(context, ["workflow", "install", "--agent", "pi"])
+    invoke(context, ["workflow", "install", "--agent", "pi"])
 
 
 @then("both installations succeed")
@@ -2257,14 +2263,14 @@ def step_unmanaged_local_codex_conflict(context):
     create_unmanaged_local_skill_conflict(context, "codex")
 
 
-@when("the user runs zpp skill install with agents Pi and Claude Code")
+@when("the user runs zpp workflow install with agents Pi and Claude Code")
 def step_install_pi_claude_skills(context):
-    invoke(context, ["skill", "install", "--agent", "pi", "--agent", "claude"])
+    invoke(context, ["workflow", "install", "--agent", "pi", "--agent", "claude"])
 
 
-@when("the user runs zpp skill install with agent Codex and --force")
+@when("the user runs zpp workflow install with agent Codex and --force")
 def step_force_conflicting_codex(context):
-    invoke(context, ["skill", "install", "--agent", "codex", "--force"])
+    invoke(context, ["workflow", "install", "--agent", "codex", "--force"])
 
 
 @then("installation fails as a managed-state rejection")
@@ -2283,8 +2289,8 @@ def step_skill_conflict_unchanged(context):
 def step_outdated_codex_both_scopes(context):
     git_init(context.project)
     for arguments in (
-        ["skill", "install", "--global", "--agent", "codex"],
-        ["skill", "install", "--agent", "codex", "--force"],
+        ["workflow", "install", "--global", "--agent", "codex"],
+        ["workflow", "install", "--agent", "codex", "--force"],
     ):
         result = invoke(context, arguments)
         assert result.exit_code == 0, result.output
@@ -2296,9 +2302,9 @@ def step_outdated_codex_both_scopes(context):
     context.results.clear()
 
 
-@when("the user runs zpp skill update --global with agent Codex")
+@when("the user runs zpp workflow update --global with agent Codex")
 def step_update_global_codex(context):
-    invoke(context, ["skill", "update", "--global", "--agent", "codex"])
+    invoke(context, ["workflow", "update", "--global", "--agent", "codex"])
 
 
 @then("only the Codex global managed bundle is updated to the packaged version")
@@ -2335,15 +2341,15 @@ def step_unmanaged_global_claude_skill(context):
     context.skill_conflict_before = context.skill_conflict.read_bytes()
 
 
-@when("the user runs zpp skill update --global with agent Claude Code")
+@when("the user runs zpp workflow update --global with agent Claude Code")
 def step_update_unmanaged_claude(context):
-    invoke(context, ["skill", "update", "--global", "--agent", "claude"])
+    invoke(context, ["workflow", "update", "--global", "--agent", "claude"])
 
 
 @given("Pi has a managed local ZPP workflow bundle surrounded by unrelated skills")
 def step_managed_pi_with_unrelated(context):
     git_init(context.project)
-    result = invoke(context, ["skill", "install", "--agent", "pi"])
+    result = invoke(context, ["workflow", "install", "--agent", "pi"])
     assert result.exit_code == 0, result.output
     context.pi_skill_root = workflow_skill_root(context, "pi", scope="local")
     unrelated = context.pi_skill_root / "third-party" / "SKILL.md"
@@ -2355,22 +2361,22 @@ def step_managed_pi_with_unrelated(context):
 
 @given("Claude Code has a managed local ZPP workflow bundle")
 def step_managed_local_claude(context):
-    result = invoke(context, ["skill", "install", "--agent", "claude"])
+    result = invoke(context, ["workflow", "install", "--agent", "claude"])
     assert result.exit_code == 0, result.output
     context.claude_local_root = workflow_skill_root(context, "claude", scope="local")
     context.claude_local_before = snapshot(context.claude_local_root)
     context.results.clear()
 
 
-@when("the user runs zpp skill remove with agent Pi and declines confirmation")
+@when("the user runs zpp workflow remove with agent Pi and declines confirmation")
 def step_decline_skill_remove(context):
     context.skill_state_before = workflow_skill_snapshot(context)
-    invoke(context, ["skill", "remove", "--agent", "pi"], input_text="n\n")
+    invoke(context, ["workflow", "remove", "--agent", "pi"], input_text="n\n")
 
 
-@when("the user runs zpp skill remove with agent Pi and --yes")
+@when("the user runs zpp workflow remove with agent Pi and --yes")
 def step_confirm_skill_remove(context):
-    invoke(context, ["skill", "remove", "--agent", "pi", "--yes"])
+    invoke(context, ["workflow", "remove", "--agent", "pi", "--yes"])
 
 
 @then("only the managed shared Codex and Pi projection is removed")
