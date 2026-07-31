@@ -7,13 +7,17 @@ Defines safe distribution and lifecycle management of ZPP's permanent workflow-s
 ## Requirements
 
 ### Requirement: Permanent workflow bundle ownership
-ZPP SHALL package the seven permanent `zpp-*` workflow skills as one versioned owned bundle. Installed copies SHALL be projections of the packaged bundle, preserve every required skill resource, and SHALL NOT embed agent, application-platform, framework, or test-runner policy in skill bodies.
+ZPP SHALL package the seven permanent `zpp-*` workflow skills as one versioned owned bundle. Installed copies SHALL be projections of the packaged bundle, preserve every required skill resource, and SHALL NOT embed agent, application-platform, framework, test-runner, or optional-trait policy in skill bodies.
 
-ZPP SHALL establish managed ownership and compatibility through bundle metadata plus exact owned content rather than directory names. A conditionless automatic-workflow trait MAY coordinate unattended advancement and reference the permanent skills through passive `skill_lookup`; the trait SHALL NOT execute the lookup, bypass skill-defined gates, settle missing product decisions, or grant mutation authority.
+Permanent skills SHALL retain stage-specific operations, hard gates, verification authority, OpenSpec operation ownership, and zmem materiality in their owning skill. Cross-cutting advisory governance SHALL remain in independently configurable standard traits rather than being repeated across skill bodies.
+
+Each completed skill stage SHALL hand its result to the next owning workflow. When automatic progression or explicit end-to-end delegation applies, a satisfied checkpoint or ordinary stage transition SHALL continue without an approval-only pause.
+
+ZPP SHALL establish managed ownership and compatibility through bundle metadata plus exact owned content rather than directory names. Passive trait `skill_lookup` metadata SHALL NOT execute a skill or grant authority.
 
 #### Scenario: Use the permanent workflow bundle
-- **WHEN** a user installs or resolves the accepted workflow guidance
-- **THEN** the complete platform-neutral bundle is available while automatic progression remains advisory and skill-gated
+- **WHEN** a user installs the workflow skills and resolves the standard advisory traits
+- **THEN** stage-specific enforcement remains skill-owned while shared guidance and automatic handoffs remain advisory
 
 ### Requirement: Explicit skill lifecycle and scope
 ZPP SHALL expose independent `workflow install`, `workflow update`, and `workflow remove` commands for Pi, Codex, and Claude Code. The lifecycle SHALL support user-global scope or an exact existing repository-local directory inside a Git worktree and SHALL NOT create or modify an authored `.zpp` layer. ZPP SHALL NOT expose the former generic `skill` command group.
@@ -41,12 +45,19 @@ Local installation SHALL reuse a compatible managed global projection by default
 - **THEN** it either applies the complete safe plan or leaves every selected destination unchanged
 
 ### Requirement: Managed update and removal
-Update SHALL operate only on the explicitly selected managed scope, make compatible projections no-ops, replace outdated managed projections with the packaged bundle, and leave every unselected global or local scope unchanged.
+Update SHALL operate only on the explicitly selected managed skill scope, make compatible projections no-ops, replace outdated managed projections with the packaged bundle, and leave every unselected global or local scope unchanged.
 
-Removal SHALL require confirmation unless `--yes` or `-y` is supplied and SHALL remove only metadata-owned ZPP paths from the selected managed projection. Update and removal SHALL reject missing, malformed, conflicting, or user-owned selected state without partial mutation.
+Removal SHALL require confirmation unless `--yes` or `-y` is supplied and SHALL remove only metadata-owned ZPP paths from the selected managed skill projection. Update and removal SHALL reject missing, malformed, conflicting, or user-owned selected state without partial mutation. Workflow installation, update, and removal SHALL NOT mutate any user-owned profile or authored trait content.
 
 #### Scenario: Maintain one selected managed scope
 - **WHEN** a user updates or confirms removal for selected managed projections
-- **THEN** only their owned state changes and unrelated or unselected state remains unchanged
+- **THEN** only their owned skill state changes while unrelated, unselected, profile, and authored-trait state remains unchanged
+
+### Requirement: Workflow lifecycle isolation from authored profiles
+Workflow installation, update, and removal SHALL operate only on selected managed agent projections. These operations SHALL NOT create, modify, rename, or remove any user profile or authored trait content, including the persistent `default` profile.
+
+#### Scenario: Maintain skills without changing profiles
+- **WHEN** a user installs, updates, declines removal, or confirms removal of selected workflow projections
+- **THEN** only eligible managed agent projection state changes and every authored profile remains unchanged
 
 Executable public examples for every requirement are maintained in `features/workflow_skill_distribution.feature`.
