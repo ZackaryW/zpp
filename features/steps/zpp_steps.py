@@ -3532,7 +3532,15 @@ def lock_fixture(context, workset: str, *, yes: bool = False) -> None:
 
 
 def ensure_active_base(context) -> None:
-    if current_codespace_index(context).claims:
+    index = current_codespace_index(context)
+    if index.claims:
+        if not hasattr(context, "active_instance"):
+            context.active_instance = next(
+                claim.instance_id
+                for claim in index.claims.values()
+                if {member.name for member in claim.members}
+                >= {"Project A", "Project B"}
+            )
         return
     lock_fixture(context, "base")
     context.active_instance = context.last_instance
@@ -3541,11 +3549,16 @@ def ensure_active_base(context) -> None:
 
 def ensure_mitigated_codespace(context) -> None:
     ensure_active_base(context)
-    if len(current_codespace_index(context).claims) < 2:
+    index = current_codespace_index(context)
+    if len(index.claims) < 2:
         lock_fixture(context, "proposed", yes=True)
-    context.mitigated_instance = list(
-        current_codespace_index(context).claims
-    )[-1]
+        context.mitigated_instance = context.last_instance
+        return
+    context.mitigated_instance = next(
+        claim.instance_id
+        for claim in index.claims.values()
+        if any(member.generated_worktree for member in claim.members)
+    )
 
 
 @given(
@@ -3610,6 +3623,7 @@ def step_codespace_given(context, text):
             (OpenSpecMember("addition", context.repos["addition"]),),
         )
         lock_fixture(context, "addition-view", yes=True)
+        context.addition_instance = context.last_instance
     if "mitigation would use a sibling path" in text:
         ensure_active_base(context)
         context.fixed_instance = "collisionid"
@@ -3652,7 +3666,7 @@ def step_codespace_given(context, text):
 def step_codespace_when(context, text):
     setup_codespace_scenario(context)
     if "replacement creation fails" in text:
-        claim = next(iter(current_codespace_index(context).claims.values()))
+        claim = current_codespace_index(context).claims[context.active_instance]
         context.result = invoke(
             context,
             [
@@ -3686,7 +3700,7 @@ def step_codespace_when(context, text):
         )
         return
     if "list and zpp codespace status" in text:
-        claim = next(iter(current_codespace_index(context).claims.values()))
+        claim = current_codespace_index(context).claims[context.active_instance]
         context.list_result = invoke(context, ["codespace", "list"])
         context.status_result = invoke(context, ["codespace", "status", claim.instance_id])
         return
@@ -3695,7 +3709,7 @@ def step_codespace_when(context, text):
         claim = (
             index.claims[context.abandoned_instance]
             if "forced recovery" in text and hasattr(context, "abandoned_instance")
-            else next(iter(index.claims.values()))
+            else index.claims[context.active_instance]
         )
         arguments = ["codespace", "unlock", claim.instance_id]
         if "forced" in text:
@@ -3710,18 +3724,12 @@ def step_codespace_when(context, text):
         return
     if "activate" in text:
         index = current_codespace_index(context)
-        claim = index.claims.get(
-            getattr(context, "mitigated_instance", ""),
-            next(iter(index.claims.values())),
-        )
+        claim = index.claims[context.mitigated_instance]
         context.result = invoke(context, ["codespace", "activate", claim.instance_id])
         return
     if "exec" in text:
         index = current_codespace_index(context)
-        claim = index.claims.get(
-            getattr(context, "mitigated_instance", ""),
-            next(iter(index.claims.values())),
-        )
+        claim = index.claims[context.mitigated_instance]
         context.result = invoke(
             context,
             ["codespace", "exec", "--codespace", claim.instance_id, "--", "openspec", "context", "--json"],
@@ -3732,13 +3740,13 @@ def step_codespace_when(context, text):
         claim = (
             index.claims[getattr(context, "prepared_instance")]
             if hasattr(context, "prepared_instance")
-            else next(iter(index.claims.values()))
+            else index.claims[context.active_instance]
         )
         context.result = invoke(context, ["codespace", "open", claim.instance_id, "--tool", "code"])
         return
     if "add" in text:
         ensure_active_base(context)
-        claim = next(iter(current_codespace_index(context).claims.values()))
+        claim = current_codespace_index(context).claims[context.active_instance]
         args = ["codespace", "add", str(context.repos["addition"]), "--codespace", claim.instance_id]
         context.result = invoke(context, args, input_text="n\n")
         return
@@ -3795,7 +3803,7 @@ def step_codespace_then(context, text):
         assert "dirty:" in context.result.stderr
         return
     if "snapshot key" in text:
-        claim = next(reversed(index.claims.values()))
+        claim = index.claims[context.last_instance]
         if hasattr(context, "duplicate_expected"):
             collapsed = snapshot_key(
                 tuple(
@@ -3824,12 +3832,12 @@ def step_codespace_then(context, text):
         assert context.result.exit_code == 0, (
             f"{context.result.output}\n{context.result.exception!r}"
         )
-        claim = list(index.claims.values())[-1]
+        claim = index.claims[context.last_instance]
         project = next(item for item in claim.members if item.name == "Project C")
         assert project.effective_path == context.repos["project-c"]
         return
     if "sibling worktrees" in text:
-        claim = list(index.claims.values())[-1]
+        claim = index.claims[context.last_instance]
         generated = [item for item in claim.members if item.generated_worktree]
         assert len(generated) == 2
         assert all(item.effective_path.name.endswith(claim.instance_id) for item in generated)
