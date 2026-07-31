@@ -149,7 +149,11 @@ def _resolved_members(members: Sequence[OpenSpecMember]) -> tuple[ResolvedMember
 
 def _conflict_names(plan: CodespaceLockPlan) -> tuple[str, ...]:
     keys = set(plan.conflicting_checkout_keys)
-    return tuple(member.name for member in plan.claim.members if member.checkout_key in keys)
+    return tuple(
+        member.name
+        for member in plan.claim.members
+        if member.source_checkout_key in keys
+    )
 
 
 def lock_codespace(
@@ -176,7 +180,7 @@ def lock_codespace(
         sources = {member.checkout_key: member.checkout for member in writable}
         for target in plan.claim.members:
             if target.generated_worktree:
-                source = sources[target.checkout_key]
+                source = sources[target.source_checkout_key]
                 create_git_worktree(
                     source,
                     destination=target.effective_path,
@@ -287,7 +291,7 @@ def add_codespace_paths(
             if member.generated_worktree and member.checkout_key not in {
                 item.checkout_key for item in claim.members
             }:
-                source = source_by_key[member.checkout_key]
+                source = source_by_key[member.source_checkout_key]
                 create_git_worktree(
                     source,
                     destination=member.effective_path,

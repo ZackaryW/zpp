@@ -126,7 +126,15 @@ def status_command(
     json_: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     def action() -> None:
-        claim = find_claim(Path.home(), identifier, Path.cwd())
+        if identifier is not None:
+            index = read_codespaces(Path.home())
+            claim = index.claims.get(identifier)
+            if claim is None and identifier in index.released:
+                claim = index.released[identifier].claim
+            if claim is None:
+                raise ValueError(f"codespace does not exist: {identifier}")
+        else:
+            claim = find_claim(Path.home(), None, Path.cwd())
         if json_:
             typer.echo(json.dumps(claim.model_dump(mode="json"), ensure_ascii=False))
             return

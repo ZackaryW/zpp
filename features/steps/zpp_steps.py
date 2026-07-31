@@ -113,6 +113,11 @@ def invoke(context, arguments: list[str], *, input_text: str | None = None):
                 "zpp.core.codespaces.activate_codespace_shell",
                 side_effect=run_shell,
             ))
+            if hasattr(context, "fixed_instance"):
+                stack.enter_context(patch(
+                    "zpp.core.codespaces.new_codespace_instance_id",
+                    return_value=context.fixed_instance,
+                ))
         result = context.runner.invoke(
             app,
             arguments,
@@ -1944,6 +1949,7 @@ def assert_workflow_projection(context, root: Path) -> None:
 
 
 @given("the packaged ZPP workflow bundle contains all seven permanent skills")
+@given("the packaged ZPP workflow bundle contains all eight permanent skills")
 def step_packaged_workflow_bundle(context):
     context.workflow_skill_names = (
         "zpp-clarify-change",
@@ -1951,6 +1957,7 @@ def step_packaged_workflow_bundle(context):
         "zpp-form-specs",
         "zpp-mature-utilities",
         "zpp-plan-utilities",
+        "zpp-reconcile-codespace-worktrees",
         "zpp-shape-feature",
         "zpp-wire-feature",
     )
@@ -2552,6 +2559,7 @@ def step_install_bundle_for_every_agent(context):
 
 
 @then("every native projection contains the same seven permanent workflow skills")
+@then("every native projection contains the same eight permanent workflow skills")
 def step_every_projection_same_bundle(context):
     for root in context.installed_workflow_roots:
         assert_workflow_projection(context, root)
@@ -2563,6 +2571,50 @@ def step_packaged_resources_retained(context):
         scripts = root / "zpp-commit-zmem" / "scripts"
         assert (scripts / "check-commit-msg.ps1").is_file()
         assert (scripts / "check-commit-msg.sh").is_file()
+
+
+@given("a mitigated codespace records its generated project and store branches")
+def step_recorded_reconciliation_branches(context):
+    skill = (
+        REPO_ROOT
+        / "src"
+        / "zpp"
+        / "artifacts"
+        / "skills"
+        / "zpp-reconcile-codespace-worktrees"
+        / "SKILL.md"
+    )
+    context.reconciliation_skill = skill.read_text(encoding="utf-8")
+    assert "effective path" in context.reconciliation_skill
+    assert "branch" in context.reconciliation_skill
+
+
+@then("every native projection contains the permanent codespace worktree-reconciliation skill")
+def step_projection_contains_reconciliation_skill(context):
+    for root in context.installed_workflow_roots:
+        assert (
+            root / "zpp-reconcile-codespace-worktrees" / "SKILL.md"
+        ).is_file()
+
+
+@then("the skill consumes the recorded codespace branch metadata")
+def step_reconciliation_consumes_metadata(context):
+    source = context.reconciliation_skill
+    assert "zpp codespace status ID --json" in source
+    assert "source path" in source
+    assert "source/effective checkout identities" in source
+
+
+@then("reconciliation requires explicit invocation")
+def step_reconciliation_is_explicit(context):
+    assert "Require an explicit reconciliation request" in context.reconciliation_skill
+
+
+@then("the skill never makes codespace locking merge work automatically")
+def step_reconciliation_never_auto_merges(context):
+    source = context.reconciliation_skill
+    assert "never authorize a" in source
+    assert "merge" in source
 
 
 @then("no skill body contains platform, framework, test-runner, or agent-specific policy")
@@ -3540,7 +3592,10 @@ def step_codespace_given(context, text):
     if "unlocked codespace has one clean" in text:
         claim = current_codespace_index(context).claims[context.mitigated_instance]
         generated = [item for item in claim.members if item.generated_worktree]
-        assert len(generated) >= 2
+        assert len(generated) >= 2, [
+            (item.name, item.generated_worktree)
+            for item in claim.members
+        ]
         (generated[1].effective_path / "dirty.txt").write_text(
             "dirty\n",
             encoding="utf-8",
@@ -3555,6 +3610,16 @@ def step_codespace_given(context, text):
             (OpenSpecMember("addition", context.repos["addition"]),),
         )
         lock_fixture(context, "addition-view", yes=True)
+    if "mitigation would use a sibling path" in text:
+        ensure_active_base(context)
+        context.fixed_instance = "collisionid"
+        context.collision_path = (
+            context.repos["project-b"].parent / "project-b-collisionid"
+        )
+        context.collision_path.mkdir()
+    if "complete original codespace state" in text:
+        context.original_index = current_codespace_index(context)
+        context.original_worksets = dict(context.openspec_worksets)
     if "advanced to a new commit" in text:
         path = context.repos["project-b"]
         (path / "tracked.txt").write_text("advanced\n", encoding="utf-8")
@@ -3586,6 +3651,20 @@ def step_codespace_given(context, text):
 )
 def step_codespace_when(context, text):
     setup_codespace_scenario(context)
+    if "replacement creation fails" in text:
+        claim = next(iter(current_codespace_index(context).claims.values()))
+        context.result = invoke(
+            context,
+            [
+                "codespace",
+                "add",
+                str(context.repos["addition"]),
+                "--codespace",
+                claim.instance_id,
+            ],
+            input_text="n\n",
+        )
+        return
     if "declines the offer to open it" in text:
         context.result = context.results[-1] if context.results else None
         context.opened_before_decline = tuple(context.opened_worksets)
@@ -3693,6 +3772,11 @@ def step_codespace_when(context, text):
 )
 def step_codespace_then(context, text):
     index = current_codespace_index(context)
+    if "original claim and OpenSpec workset" in text or "no replacement codespace" in text:
+        assert context.result.exit_code != 0
+        assert index == context.original_index
+        assert context.openspec_worksets == context.original_worksets
+        return
     if "no mitigation occurs" in text or "no worktree, branch, claim" in text:
         assert context.result.exit_code != 0
         assert len(index.claims) == 1
@@ -3713,7 +3797,13 @@ def step_codespace_then(context, text):
     if "snapshot key" in text:
         claim = next(reversed(index.claims.values()))
         if hasattr(context, "duplicate_expected"):
-            assert claim.snapshot_key == context.duplicate_expected
+            collapsed = snapshot_key(
+                tuple(
+                    inspect_git_checkout(member.effective_path)
+                    for member in claim.members
+                )
+            )
+            assert claim.snapshot_key != collapsed
         else:
             assert claim.snapshot_key
         return
@@ -3731,7 +3821,9 @@ def step_codespace_then(context, text):
         assert "Project C" not in context.result.stderr
         return
     if "Project C continues" in text:
-        assert context.result.exit_code == 0, context.result.output
+        assert context.result.exit_code == 0, (
+            f"{context.result.output}\n{context.result.exception!r}"
+        )
         claim = list(index.claims.values())[-1]
         project = next(item for item in claim.members if item.name == "Project C")
         assert project.effective_path == context.repos["project-c"]
@@ -3756,7 +3848,11 @@ def step_codespace_then(context, text):
         assert context.list_result.exit_code == context.status_result.exit_code == 0
         assert "Project A" in context.status_result.stdout
         return
-    if "claim and ZPP-owned" in text or "abandoned claim" in text:
+    if "abandoned claim" in text:
+        assert context.abandoned_instance not in index.claims
+        assert context.abandoned_instance in index.released
+        return
+    if "claim and ZPP-owned" in text:
         assert not index.claims
         assert index.released
         return
@@ -3781,6 +3877,17 @@ def step_codespace_then(context, text):
             if member.generated_worktree
             and member.checkout_key not in released.removed_worktree_keys
         )
+        return
+    if "every generated worktree and dirty file" in text:
+        released = index.released[context.abandoned_instance]
+        assert all(
+            member.effective_path.exists()
+            for member in released.claim.members
+            if member.generated_worktree
+        )
+        return
+    if "no claim expires automatically" in text:
+        assert context.abandoned_instance in index.released
         return
     if "workset" in text or "claim" in text or "resolved view" in text:
         assert context.result.exit_code == 0, context.result.output

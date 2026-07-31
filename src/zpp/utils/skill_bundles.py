@@ -19,6 +19,7 @@ WORKFLOW_SKILL_NAMES = (
     "zpp-form-specs",
     "zpp-mature-utilities",
     "zpp-plan-utilities",
+    "zpp-reconcile-codespace-worktrees",
     "zpp-shape-feature",
     "zpp-wire-feature",
 )
