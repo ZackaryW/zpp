@@ -20,7 +20,8 @@ Feature: Bootstrap ZPP and configure agent applications
     Then initialization succeeds
     And the neutral global trait layer exists
     And the persistent user-owned default profile exists
-    And the default profile activates exactly automatic-workflow, zero-assumptions, and ponytail
+    And the default profile is provisioned without participating in resolution
+    And the default profile selects exactly automatic-workflow, zero-assumptions, and ponytail when explicitly used
     And the default profile contains inactive python-bdd, python-tdd, and python-build traits
     And the saved and cache roots exist
     And no cache artifact exists
