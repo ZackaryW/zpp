@@ -165,6 +165,10 @@ def test_add_release_and_cleanup_plans_preserve_ownership_boundaries(
     ]
     assert add.replacement.workset_name != current.workset_name
     assert add.replacement.snapshot_key != current.snapshot_key
+    added_member = add.replacement.members[-1]
+    assert added_member.generated_worktree
+    assert added_member.source_checkout_key == "key-addition"
+    assert added_member.checkout_key != added_member.source_checkout_key
     assert current.members == _active(existing, "current").members
     assert release.workset_name == current.workset_name
     assert release.preserved_worktrees == ()

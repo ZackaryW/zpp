@@ -164,16 +164,21 @@ def plan_codespace_add(
     replacement_members = list(current.members)
     for offset, member in enumerate(writable, start=len(replacement_members)):
         is_conflict = member.checkout_key in conflict_set
+        effective_path = (
+            sibling_worktree_path(member.checkout, current.instance_id)
+            if is_conflict
+            else member.checkout.root
+        )
         replacement_members.append(
             CodespaceMember(
                 name=member.name,
                 original_path=member.checkout.root,
-                effective_path=(
-                    sibling_worktree_path(member.checkout, current.instance_id)
+                effective_path=effective_path,
+                checkout_key=(
+                    checkout_path_claim_key(effective_path)
                     if is_conflict
-                    else member.checkout.root
+                    else member.checkout_key
                 ),
-                checkout_key=member.checkout_key,
                 source_checkout_key=member.checkout_key,
                 commit=member.checkout.head,
                 kind=member.kind,
