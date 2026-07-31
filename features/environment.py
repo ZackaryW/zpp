@@ -25,6 +25,7 @@ def before_scenario(context, scenario) -> None:
     context.env = {
         "HOME": str(context.home),
         "USERPROFILE": str(context.home),
+        "XDG_DATA_HOME": str(context.sandbox / "openspec-data"),
         "ZPP_PROFILE": None,
         "PATH": os.environ.get("PATH", ""),
         "NO_COLOR": "1",

@@ -6,6 +6,7 @@ import re
 import shlex
 import shutil
 import subprocess
+from contextlib import ExitStack
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
@@ -15,6 +16,7 @@ from behave import given, then, use_step_matcher, when
 
 from zpp.cli import app
 from zpp.utils.models import CancelledAgentSelection, ConfirmedAgentSelection
+from zpp.utils.openspec_adapter import OpenSpecWorkset
 
 
 REPO_ROOT = Path(__file__).parents[2]
@@ -27,18 +29,90 @@ def invoke(context, arguments: list[str], *, input_text: str | None = None):
             return CancelledAgentSelection()
         return ConfirmedAgentSelection(tuple(context.selector_answer))
 
-    with (
-        patch(
+    with ExitStack() as stack:
+        stack.enter_context(patch(
             "zpp.cli.initialization.interactive_terminal_available",
             return_value=context.interactive,
-        ),
-        patch("zpp.cli.initialization.select_agents", side_effect=select),
-        patch(
+        ))
+        stack.enter_context(patch("zpp.cli.initialization.select_agents", side_effect=select))
+        stack.enter_context(patch(
             "zpp.cli.workflow.interactive_terminal_available",
             return_value=context.interactive,
-        ),
-        patch("zpp.cli.workflow.select_agents", side_effect=select),
-    ):
+        ))
+        stack.enter_context(patch("zpp.cli.workflow.select_agents", side_effect=select))
+        stack.enter_context(patch(
+            "zpp.cli.codespace.interactive_terminal_available",
+            return_value=context.interactive,
+        ))
+        if hasattr(context, "openspec_worksets"):
+            def list_worksets():
+                return tuple(context.openspec_worksets.values())
+
+            def create_workset(name, members, **kwargs):
+                if name in context.openspec_worksets:
+                    raise ValueError(f"workset already exists: {name}")
+                workset = OpenSpecWorkset(name, tuple(members))
+                context.openspec_worksets[name] = workset
+                context.zpp_created_worksets.append(name)
+                return workset
+
+            def remove_workset(name, **kwargs):
+                context.openspec_worksets.pop(name)
+                context.removed_worksets.append(name)
+
+            def open_workset(name, **kwargs):
+                context.opened_worksets.append((name, kwargs.get("tool")))
+                return 0
+
+            def materialize(claim, *, environment):
+                context.private_registries[claim.instance_id] = {
+                    member.store_id: member.effective_path
+                    for member in claim.members
+                    if member.kind == "store" and member.store_id is not None
+                }
+
+            def run_command(argv, *, environment, cwd):
+                context.executed_environments.append(dict(environment))
+                return 0
+
+            def run_shell(*, environment, cwd):
+                context.activated_environments.append(dict(environment))
+                return 0
+
+            stack.enter_context(patch(
+                "zpp.core.codespaces.list_openspec_worksets",
+                side_effect=list_worksets,
+            ))
+            stack.enter_context(patch(
+                "zpp.core.codespaces.create_openspec_workset",
+                side_effect=create_workset,
+            ))
+            stack.enter_context(patch(
+                "zpp.core.codespaces.remove_openspec_workset",
+                side_effect=remove_workset,
+            ))
+            stack.enter_context(patch(
+                "zpp.core.codespaces.open_openspec_workset",
+                side_effect=open_workset,
+            ))
+            stack.enter_context(patch(
+                "zpp.core.codespaces.resolve_openspec_relations",
+                side_effect=lambda project: tuple(
+                    context.openspec_relations.get(Path(project).resolve(), ())
+                ),
+            ))
+            stack.enter_context(patch(
+                "zpp.core.codespaces.materialize_private_registry",
+                side_effect=materialize,
+            ))
+            stack.enter_context(patch(
+                "zpp.core.codespaces.execute_codespace_command",
+                side_effect=run_command,
+            ))
+            stack.enter_context(patch(
+                "zpp.core.codespaces.activate_codespace_shell",
+                side_effect=run_shell,
+            ))
         result = context.runner.invoke(
             app,
             arguments,
@@ -3272,3 +3346,444 @@ def step_no_spec_marker_zmem(context):
     form = context.lifecycle_skills["zpp-form-specs"]
     assert "never repeat an already recorded decision" in form
     assert "merely to mark specification adoption" in form
+
+
+# Codespace integration fixtures exercise the public Typer commands while
+# replacing only the external OpenSpec/editor/process boundary in ``invoke``.
+from zpp.utils.codespace_identity import snapshot_key
+from zpp.utils.codespace_models import CodespaceIndex
+from zpp.utils.codespace_state import load_codespace_index
+from zpp.utils.git_layers import inspect_git_checkout
+from zpp.utils.openspec_adapter import (
+    OpenSpecMember,
+    OpenSpecStoreRelation,
+    OpenSpecWorkset,
+)
+
+use_step_matcher("re")
+
+
+def create_committed_repository(root: Path, name: str) -> Path:
+    path = root / name
+    path.mkdir(parents=True)
+    git_init(path)
+    (path / "tracked.txt").write_text(f"{name}\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=path, check=True, capture_output=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=ZPP Test",
+            "-c",
+            "user.email=zpp@example.invalid",
+            "commit",
+            "-q",
+            "-m",
+            "initial",
+        ],
+        cwd=path,
+        check=True,
+        capture_output=True,
+    )
+    return path.resolve()
+
+
+def setup_codespace_scenario(context) -> None:
+    if getattr(context, "codespace_ready", False):
+        return
+    context.codespace_ready = True
+    context.openspec_worksets = {}
+    context.openspec_relations = {}
+    context.zpp_created_worksets = []
+    context.removed_worksets = []
+    context.opened_worksets = []
+    context.private_registries = {}
+    context.executed_environments = []
+    context.activated_environments = []
+    context.codespace_root = context.home / ".zpp" / "codespaces"
+    roots = context.sandbox / "repositories"
+    roots.mkdir()
+    context.repos = {
+        name: create_committed_repository(roots, name)
+        for name in ("project-a", "project-b", "project-c", "store-1", "reference", "addition")
+    }
+    governing = OpenSpecStoreRelation(
+        "store-1",
+        context.repos["store-1"],
+        "governing",
+    )
+    reference = OpenSpecStoreRelation(
+        "reference",
+        context.repos["reference"],
+        "reference",
+    )
+    for name in ("project-a", "project-b", "project-c", "addition"):
+        context.openspec_relations[context.repos[name]] = (governing, reference)
+    context.openspec_worksets["base"] = OpenSpecWorkset(
+        "base",
+        (
+            OpenSpecMember("Project A", context.repos["project-a"]),
+            OpenSpecMember("Project B", context.repos["project-b"]),
+        ),
+    )
+    context.openspec_worksets["proposed"] = OpenSpecWorkset(
+        "proposed",
+        (
+            OpenSpecMember("Project C", context.repos["project-c"]),
+            OpenSpecMember("Project B", context.repos["project-b"]),
+        ),
+    )
+    context.worktrees_before = tuple(roots.parent.glob("*-*"))
+    name = context.scenario.name
+    if "without a first commit" in name:
+        unborn = roots / "unborn"
+        unborn.mkdir()
+        git_init(unborn)
+        context.openspec_worksets["broken"] = OpenSpecWorkset(
+            "broken", (OpenSpecMember("unborn", unborn),)
+        )
+        context.target_workset = "broken"
+    elif "ordered commit identity" in name:
+        context.openspec_worksets["duplicate"] = OpenSpecWorkset(
+            "duplicate",
+            (
+                OpenSpecMember("first", context.repos["project-a"]),
+                OpenSpecMember("duplicate", context.repos["project-a"]),
+                OpenSpecMember("dirty", context.repos["project-c"]),
+            ),
+        )
+        (context.repos["project-c"] / "dirty.txt").write_text("dirty\n", encoding="utf-8")
+        context.target_workset = "duplicate"
+        context.duplicate_expected = snapshot_key(
+            (
+                inspect_git_checkout(context.repos["project-a"]),
+                inspect_git_checkout(context.repos["store-1"]),
+                inspect_git_checkout(context.repos["project-a"]),
+                inspect_git_checkout(context.repos["project-c"]),
+            )
+        )
+    else:
+        context.target_workset = "base"
+
+
+def current_codespace_index(context) -> CodespaceIndex:
+    return load_codespace_index(context.codespace_root)
+
+
+def lock_fixture(context, workset: str, *, yes: bool = False) -> None:
+    arguments = ["codespace", "lock", "--workset", workset]
+    if yes:
+        arguments.append("--yes")
+    result = invoke(context, arguments, input_text="n\n")
+    assert result.exit_code == 0, result.output
+    context.last_instance = result.stdout.strip().splitlines()[-1]
+
+
+def ensure_active_base(context) -> None:
+    if current_codespace_index(context).claims:
+        return
+    lock_fixture(context, "base")
+    context.active_instance = context.last_instance
+    context.results.clear()
+
+
+def ensure_mitigated_codespace(context) -> None:
+    ensure_active_base(context)
+    if len(current_codespace_index(context).claims) < 2:
+        lock_fixture(context, "proposed", yes=True)
+    context.mitigated_instance = list(
+        current_codespace_index(context).claims
+    )[-1]
+
+
+@given(
+    r"(?P<text>(?=.*(?:codespace|workset|Project [ABC]|Store 1|worktree|checkout|"
+    r"OpenSpec registry|commit snapshot|uncommitted|unresolved member|"
+    r"additional committed paths|registered store|repository without a first commit|"
+    r"associated store|mitigation would|adding paths)).+)"
+)
+def step_codespace_given(context, text):
+    setup_codespace_scenario(context)
+    name = context.scenario.name
+    if "repository without a first commit" in text:
+        unborn = context.sandbox / "repositories" / "unborn"
+        unborn.mkdir(exist_ok=True)
+        git_init(unborn)
+        context.openspec_worksets["broken"] = OpenSpecWorkset(
+            "broken", (OpenSpecMember("unborn", unborn),)
+        )
+        context.target_workset = "broken"
+    if "neither governing nor reference-only" in text:
+        context.openspec_relations[context.repos["project-a"]] = (object(),)
+        context.unclassified = True
+    if any(
+        marker in text
+        for marker in (
+            "one codespace claims",
+            "active codespace owns",
+            "active codespace has",
+            "abandoned",
+            "mitigated codespace",
+            "conflict mitigation has prepared",
+        )
+    ):
+        ensure_active_base(context)
+    if "conflict mitigation has prepared" in text:
+        lock_fixture(context, "proposed", yes=True)
+        context.prepared_instance = context.last_instance
+    if (
+        "mitigated codespace" in text
+        or "abandoned without being unlocked" in text
+        or "unlocked codespace has one clean" in text
+    ):
+        ensure_mitigated_codespace(context)
+    if "unlocked codespace has one clean" in text:
+        claim = current_codespace_index(context).claims[context.mitigated_instance]
+        generated = [item for item in claim.members if item.generated_worktree]
+        assert len(generated) >= 2
+        (generated[1].effective_path / "dirty.txt").write_text(
+            "dirty\n",
+            encoding="utf-8",
+        )
+        invoke(context, ["codespace", "unlock", claim.instance_id])
+        context.released_instance = claim.instance_id
+    if "abandoned without being unlocked" in text:
+        context.abandoned_instance = context.mitigated_instance
+    if "adding paths would require mitigation" in text:
+        context.openspec_worksets["addition-view"] = OpenSpecWorkset(
+            "addition-view",
+            (OpenSpecMember("addition", context.repos["addition"]),),
+        )
+        lock_fixture(context, "addition-view", yes=True)
+    if "advanced to a new commit" in text:
+        path = context.repos["project-b"]
+        (path / "tracked.txt").write_text("advanced\n", encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-c", "user.name=ZPP Test", "-c", "user.email=zpp@example.invalid",
+             "commit", "-q", "-m", "advanced"],
+            cwd=path,
+            check=True,
+            capture_output=True,
+        )
+    if "current directory is inside" in text:
+        ensure_active_base(context)
+        os.chdir(context.repos["project-a"])
+        context.before_claims = len(current_codespace_index(context).claims)
+    if "exactly one OpenSpec workset" in text:
+        os.chdir(context.repos["project-a"])
+        context.openspec_worksets = {"base": context.openspec_worksets["base"]}
+    if "unrelated user-owned" in text:
+        context.openspec_worksets["user-owned"] = OpenSpecWorkset(
+            "user-owned", (OpenSpecMember("other", context.repos["reference"]),)
+        )
+    assert context.codespace_ready
+
+
+@when(
+    r"(?P<text>(?=.*(?:zpp codespace|lock|mitigation|open it|forced recovery|"
+    r"workset|codespace|replacement creation)).+)"
+)
+def step_codespace_when(context, text):
+    setup_codespace_scenario(context)
+    if "declines the offer to open it" in text:
+        context.result = context.results[-1] if context.results else None
+        context.opened_before_decline = tuple(context.opened_worksets)
+        return
+    if "multiple OpenSpec worksets instead apply" in text:
+        index = current_codespace_index(context)
+        for claim in tuple(index.claims.values()):
+            invoke(context, ["codespace", "unlock", claim.instance_id])
+        base = context.openspec_worksets["base"]
+        context.openspec_worksets["alternate"] = OpenSpecWorkset(
+            "alternate",
+            (OpenSpecMember("Project A", context.repos["project-a"]),),
+        )
+        context.interactive = "interactive terminal" in text and "without" not in text
+        context.result = invoke(
+            context,
+            ["codespace", "lock"],
+            input_text="\n" if context.interactive else None,
+        )
+        return
+    if "list and zpp codespace status" in text:
+        claim = next(iter(current_codespace_index(context).claims.values()))
+        context.list_result = invoke(context, ["codespace", "list"])
+        context.status_result = invoke(context, ["codespace", "status", claim.instance_id])
+        return
+    if "unlock for the active" in text or "forced recovery" in text:
+        index = current_codespace_index(context)
+        claim = (
+            index.claims[context.abandoned_instance]
+            if "forced recovery" in text and hasattr(context, "abandoned_instance")
+            else next(iter(index.claims.values()))
+        )
+        arguments = ["codespace", "unlock", claim.instance_id]
+        if "forced" in text:
+            arguments.extend(("--force", "--yes"))
+        context.result = invoke(context, arguments)
+        context.released_instance = claim.instance_id
+        return
+    if "cleanup" in text or "cleans" in text:
+        identifier = getattr(context, "released_instance", None)
+        if identifier:
+            context.result = invoke(context, ["codespace", "cleanup", identifier])
+        return
+    if "activate" in text:
+        index = current_codespace_index(context)
+        claim = index.claims.get(
+            getattr(context, "mitigated_instance", ""),
+            next(iter(index.claims.values())),
+        )
+        context.result = invoke(context, ["codespace", "activate", claim.instance_id])
+        return
+    if "exec" in text:
+        index = current_codespace_index(context)
+        claim = index.claims.get(
+            getattr(context, "mitigated_instance", ""),
+            next(iter(index.claims.values())),
+        )
+        context.result = invoke(
+            context,
+            ["codespace", "exec", "--codespace", claim.instance_id, "--", "openspec", "context", "--json"],
+        )
+        return
+    if "open" in text and "offer" not in text:
+        index = current_codespace_index(context)
+        claim = (
+            index.claims[getattr(context, "prepared_instance")]
+            if hasattr(context, "prepared_instance")
+            else next(iter(index.claims.values()))
+        )
+        context.result = invoke(context, ["codespace", "open", claim.instance_id, "--tool", "code"])
+        return
+    if "add" in text:
+        ensure_active_base(context)
+        claim = next(iter(current_codespace_index(context).claims.values()))
+        args = ["codespace", "add", str(context.repos["addition"]), "--codespace", claim.instance_id]
+        context.result = invoke(context, args, input_text="n\n")
+        return
+    if "without" in text and ("paths" in text or "workset" in text):
+        context.result = invoke(context, ["codespace", "lock"])
+        return
+    if "explicit" in text:
+        context.result = invoke(context, ["codespace", "lock", str(context.repos["project-c"])])
+        return
+    workset = context.target_workset
+    if "proposed view" in text or "mitigation" in text:
+        ensure_active_base(context)
+        workset = "proposed"
+    yes = "confirms" in text
+    context.state_before_action = snapshot(context.sandbox)
+    context.result = invoke(
+        context,
+        ["codespace", "lock", "--workset", workset] + (["--yes"] if yes else []),
+        input_text="n\n",
+    )
+    if context.result.exit_code == 0:
+        context.last_instance = context.result.stdout.strip().splitlines()[-1]
+
+
+@then(
+    r"(?P<text>(?=.*(?:codespace|workset|Project [ABC]|Store 1|worktree|"
+    r"checkout|OpenSpec registry|snapshot key|dirty member|editor|agent|"
+    r"mitigation|claim|branch|canonical|recorded state|explicit view|"
+    r"uncommitted content|unresolved member|shared global|replacement|"
+    r"logical store ids)).+)"
+)
+def step_codespace_then(context, text):
+    index = current_codespace_index(context)
+    if "no mitigation occurs" in text or "no worktree, branch, claim" in text:
+        assert context.result.exit_code != 0
+        assert len(index.claims) == 1
+        return
+    if "rejected" in text or "unchanged" in text and context.result.exit_code != 0:
+        assert context.result.exit_code != 0
+        return
+    if "identifies the existing" in text:
+        assert context.result.exit_code == 0
+        assert len(index.claims) == context.before_claims
+        return
+    if "no second claim" in text:
+        assert len(index.claims) == context.before_claims
+        return
+    if "dirty member" in text:
+        assert "dirty:" in context.result.stderr
+        return
+    if "snapshot key" in text:
+        claim = next(reversed(index.claims.values()))
+        if hasattr(context, "duplicate_expected"):
+            assert claim.snapshot_key == context.duplicate_expected
+        else:
+            assert claim.snapshot_key
+        return
+    if "reference-only" in text:
+        assert all(member.store_id != "reference" for claim in index.claims.values() for member in claim.members)
+        return
+    if "no Git worktree" in text:
+        assert not any(member.generated_worktree for claim in index.claims.values() for member in claim.members)
+        return
+    if "conflict report" in text or "remains conflicting" in text:
+        assert "Project B" in context.result.stderr
+        assert "store-1" in context.result.stderr
+        return
+    if "Project C is not reported" in text:
+        assert "Project C" not in context.result.stderr
+        return
+    if "Project C continues" in text:
+        assert context.result.exit_code == 0, context.result.output
+        claim = list(index.claims.values())[-1]
+        project = next(item for item in claim.members if item.name == "Project C")
+        assert project.effective_path == context.repos["project-c"]
+        return
+    if "sibling worktrees" in text:
+        claim = list(index.claims.values())[-1]
+        generated = [item for item in claim.members if item.generated_worktree]
+        assert len(generated) == 2
+        assert all(item.effective_path.name.endswith(claim.instance_id) for item in generated)
+        return
+    if "branches from" in text or "branch metadata" in text:
+        claims = list(index.claims.values()) + [item.claim for item in index.released.values()]
+        assert all(item.branch for claim in claims for item in claim.members if item.generated_worktree)
+        return
+    if "private OpenSpec registry" in text or "original logical store ids" in text:
+        assert context.private_registries or context.activated_environments or context.executed_environments
+        return
+    if "opens its registered" in text:
+        assert context.opened_worksets
+        return
+    if "inspectable" in text:
+        assert context.list_result.exit_code == context.status_result.exit_code == 0
+        assert "Project A" in context.status_result.stdout
+        return
+    if "claim and ZPP-owned" in text or "abandoned claim" in text:
+        assert not index.claims
+        assert index.released
+        return
+    if "every project and store worktree" in text:
+        assert all(
+            member.effective_path.exists()
+            for released in index.released.values()
+            for member in released.claim.members
+        )
+        return
+    if "unrelated user-owned" in text:
+        assert "user-owned" in context.openspec_worksets
+        return
+    if "worktree is removed" in text:
+        assert any(item.removed_worktree_keys for item in index.released.values())
+        return
+    if "dirty generated worktree" in text or "worktree is preserved" in text:
+        assert any(
+            member.effective_path.exists()
+            for released in index.released.values()
+            for member in released.claim.members
+            if member.generated_worktree
+            and member.checkout_key not in released.removed_worktree_keys
+        )
+        return
+    if "workset" in text or "claim" in text or "resolved view" in text:
+        assert context.result.exit_code == 0, context.result.output
+        assert index.claims or index.released
+        return
+    assert context.result.exit_code == 0, context.result.output

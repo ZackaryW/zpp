@@ -16,6 +16,7 @@ from zpp.core.codespaces import (
     exec_codespace,
     explicit_members,
     find_claim,
+    find_released,
     lock_codespace,
     open_codespace,
     read_codespaces,
@@ -205,11 +206,11 @@ def unlock_command(
 
 @codespace_app.command("cleanup")
 def cleanup_command(
-    identifier: Annotated[str | None, typer.Argument()] = None,
+    identifier: Annotated[str, typer.Argument()],
 ) -> None:
     def action() -> None:
-        claim = find_claim(Path.home(), identifier, Path.cwd())
-        for path in cleanup_codespace(claim):
+        released = find_released(Path.home(), identifier)
+        for path in cleanup_codespace(Path.home(), released):
             typer.echo(str(path))
 
     run_domain(action)
