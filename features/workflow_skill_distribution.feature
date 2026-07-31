@@ -145,8 +145,18 @@ Feature: Distribute the permanent ZPP workflow skills
     And that trait references the permanent workflow skills through skill lookup
     When the user resolves traits for the target
     Then the effective trait directs unattended continuation only across satisfied gates
+    And completed checkpoints, successful verification, and ordinary stage transitions are not human gates
+    And the effective trait pauses only for unresolved clarification, a new product boundary, or a missing or changed utility shape
     And the skill lookup remains passive frontmatter metadata
     And the trait does not grant mutation authority or bypass a failed gate
+
+  Scenario: Explicit end-to-end delegation overrides a manual stage pause
+    Given a participating layer activates automatic-workflow with mode "manual"
+    And the user explicitly delegates the complete change end to end
+    When a workflow stage completes with its gate satisfied
+    Then the effective guidance directs continuation through the next owning workflow without requesting stage approval
+    And the manual configuration remains unchanged
+    And the trait still cannot execute a skill or grant mutation authority
 
   Scenario: Shared guidance is trait-owned rather than repeated across skills
     Given the initialized default profile contains the platform-neutral base traits
