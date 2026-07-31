@@ -24,8 +24,16 @@ def invoke(context, arguments: list[str], *, input_text: str | None = None):
         return ConfirmedAgentSelection(tuple(context.selector_answer))
 
     with (
-        patch("zpp.cli.interactive_terminal_available", return_value=context.interactive),
-        patch("zpp.cli.select_agents", side_effect=select),
+        patch(
+            "zpp.cli.initialization.interactive_terminal_available",
+            return_value=context.interactive,
+        ),
+        patch("zpp.cli.initialization.select_agents", side_effect=select),
+        patch(
+            "zpp.cli.workflow.interactive_terminal_available",
+            return_value=context.interactive,
+        ),
+        patch("zpp.cli.workflow.select_agents", side_effect=select),
     ):
         result = context.runner.invoke(
             app,
