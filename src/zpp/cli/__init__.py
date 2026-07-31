@@ -11,6 +11,7 @@ from zpp import __version__
 from zpp.core.agents import as_agent_names, configure_agents
 from zpp.core.errors import ZppDomainError, validation_diagnostic
 from zpp.core.resolution import resolve_traits
+from zpp.core.skills import SkillLifecycleReport, manage_workflow_skills
 from zpp.core.state import (
     create_profile,
     create_saved,
@@ -43,9 +44,11 @@ app = typer.Typer(
 profile_app = typer.Typer(help="Manage user profiles and saved override layers.")
 saved_app = typer.Typer(help="Manage saved override layers.")
 local_app = typer.Typer(help="Manage repository and subfolder layers.")
+skill_app = typer.Typer(help="Manage the permanent ZPP workflow-skill bundle.")
 app.add_typer(profile_app, name="profile")
 profile_app.add_typer(saved_app, name="saved")
 app.add_typer(local_app, name="local")
+app.add_typer(skill_app, name="skill")
 
 
 def _version_callback(value: bool) -> None:
@@ -142,6 +145,52 @@ def local_init(
     _run_domain(lambda: initialize_local_layer(target or Path.cwd()))
 
 
+@skill_app.command("install")
+def skill_install(
+    target: Annotated[Path | None, typer.Argument()] = None,
+    global_: Annotated[bool, typer.Option("--global")] = False,
+    agent: Annotated[
+        list[AgentOption] | None,
+        typer.Option("--agent", help="Install for a supported agent application."),
+    ] = None,
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Install locally despite a compatible global bundle."),
+    ] = False,
+) -> None:
+    _run_skill_command("install", target, global_, agent, force=force)
+
+
+@skill_app.command("update")
+def skill_update(
+    target: Annotated[Path | None, typer.Argument()] = None,
+    global_: Annotated[bool, typer.Option("--global")] = False,
+    agent: Annotated[
+        list[AgentOption] | None,
+        typer.Option("--agent", help="Update for a supported agent application."),
+    ] = None,
+) -> None:
+    _run_skill_command("update", target, global_, agent)
+
+
+@skill_app.command("remove")
+def skill_remove(
+    target: Annotated[Path | None, typer.Argument()] = None,
+    global_: Annotated[bool, typer.Option("--global")] = False,
+    agent: Annotated[
+        list[AgentOption] | None,
+        typer.Option("--agent", help="Remove for a supported agent application."),
+    ] = None,
+    yes: Annotated[bool, typer.Option("--yes", "-y")] = False,
+) -> None:
+    selected = _skill_agents(agent)
+    if not selected:
+        return
+    if not yes and not typer.confirm("Remove the selected managed workflow-skill bundle?"):
+        return
+    _execute_skill_command("remove", target, global_, selected)
+
+
 @app.command("resolve")
 def resolve(
     target: Annotated[Path | None, typer.Argument()] = None,
@@ -152,6 +201,77 @@ def resolve(
             typer.echo(output, nl=False)
 
     _run_domain(action)
+
+
+def _run_skill_command(
+    operation: str,
+    target: Path | None,
+    global_: bool,
+    agent: list[AgentOption] | None,
+    *,
+    force: bool = False,
+) -> None:
+    selected = _skill_agents(agent)
+    if not selected:
+        return
+    _execute_skill_command(operation, target, global_, selected, force=force)
+
+
+def _execute_skill_command(
+    operation: str,
+    target: Path | None,
+    global_: bool,
+    selected: tuple[str, ...],
+    *,
+    force: bool = False,
+) -> None:
+    if global_ and target is not None:
+        raise typer.BadParameter("--global does not accept a local target")
+
+    def action() -> None:
+        report = manage_workflow_skills(
+            home=Path.home(),
+            current_directory=Path.cwd(),
+            target=target,
+            scope="global" if global_ else "local",
+            agents=as_agent_names(selected),
+            operation=operation,  # type: ignore[arg-type]
+            force=force,
+        )
+        _emit_skill_report(report)
+
+    _run_domain(action)
+
+
+def _skill_agents(agent: list[AgentOption] | None) -> tuple[str, ...]:
+    selected = tuple(item.value for item in agent or ())
+    if selected:
+        return selected
+    if not interactive_terminal_available():
+        raise typer.BadParameter("skill lifecycle commands require --agent when noninteractive")
+    selection = select_agents(("pi", "codex", "claude"))
+    if isinstance(selection, CancelledAgentSelection):
+        typer.echo("Agent selection cancelled.", err=True)
+        raise typer.Exit(1)
+    return selection.agents
+
+
+def _emit_skill_report(report: SkillLifecycleReport) -> None:
+    for action in report.actions:
+        if action == "skip-global":
+            typer.echo("Compatible global workflow skills reused; local installation skipped.")
+    for agents in report.coexisting_agents:
+        typer.echo(
+            "Managed workflow skills coexist in global and local scopes for "
+            f"{', '.join(agents)}; no scope precedence selected."
+        )
+    for difference in report.differences:
+        agents = ", ".join(difference.agents)
+        typer.echo(
+            "Managed workflow skill versions differ for "
+            f"{agents}: global {difference.global_version}, "
+            f"local {difference.local_version}; no scope precedence selected."
+        )
 
 
 Result = TypeVar("Result")

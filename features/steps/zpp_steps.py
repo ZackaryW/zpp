@@ -342,6 +342,11 @@ def step_no_agent_command(context):
     assert "agent install" not in context.results[1].stdout.lower()
 
 
+@then("the help exposes the independent skill lifecycle command group")
+def step_skill_command_group(context):
+    assert "skill" in context.results[1].stdout.lower()
+
+
 @then("initialization succeeds")
 def step_init_succeeds(context):
     assert context.result.exit_code == 0, context.result.output
@@ -676,7 +681,8 @@ def step_claude_content_unchanged(context):
 
 @then("Pi remains unchanged")
 def step_pi_unchanged(context):
-    assert snapshot(context.home / ".pi") == context.pi_before
+    root = getattr(context, "pi_unchanged_root", context.home / ".pi")
+    assert snapshot(root) == context.pi_before
 
 
 @then("the invocation fails as a usage error")
@@ -1798,3 +1804,690 @@ use_step_matcher("parse")
 @then("no fallback resolution is returned")
 def step_no_fallback(context):
     assert context.result.stdout == ""
+
+
+# Workflow skill distribution
+
+
+def workflow_skill_root(
+    context,
+    agent: str,
+    *,
+    scope: str,
+    target: Path | None = None,
+) -> Path:
+    base = context.home if scope == "global" else (target or context.project)
+    return base / (".claude/skills" if agent == "claude" else ".agents/skills")
+
+
+def workflow_skill_snapshot(context) -> tuple[dict, dict]:
+    return snapshot(context.home), snapshot(context.project)
+
+
+def make_workflow_projection_outdated(root: Path) -> None:
+    manifest = root / ".zpp-workflow-skills.json"
+    document = json.loads(manifest.read_text(encoding="utf-8"))
+    document["bundle_version"] = "0.8.0"
+    manifest.write_text(
+        json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def assert_workflow_projection(context, root: Path) -> None:
+    assert (root / ".zpp-workflow-skills.json").is_file()
+    assert {path.name for path in root.iterdir() if path.name.startswith("zpp-")} == set(
+        context.workflow_skill_names
+    )
+    assert all((root / name / "SKILL.md").is_file() for name in context.workflow_skill_names)
+
+
+@given("the packaged ZPP workflow bundle contains all seven permanent skills")
+def step_packaged_workflow_bundle(context):
+    context.workflow_skill_names = (
+        "zpp-clarify-change",
+        "zpp-commit-zmem",
+        "zpp-form-specs",
+        "zpp-mature-utilities",
+        "zpp-plan-utilities",
+        "zpp-shape-feature",
+        "zpp-wire-feature",
+    )
+
+
+@given("the current directory is the root of a Git worktree")
+def step_skill_git_root(context):
+    git_init(context.project)
+
+
+@given("Codex, Pi, and Claude Code have no local ZPP workflow skills")
+@given("every supported agent has no ZPP workflow skills")
+def step_no_local_workflow_skills(context):
+    git_init(context.project)
+    assert not workflow_skill_root(context, "codex", scope="local").exists()
+    assert not workflow_skill_root(context, "claude", scope="local").exists()
+
+
+@given("Codex, Pi, and Claude Code have no global ZPP workflow skills")
+def step_no_global_workflow_skills(context):
+    assert not workflow_skill_root(context, "codex", scope="global").exists()
+    assert not workflow_skill_root(context, "claude", scope="global").exists()
+
+
+@given("the current project has no authored ZPP layer")
+def step_no_authored_project_layer(context):
+    assert not (context.project / ".zpp").exists()
+
+
+@when("the user runs zpp skill install with agents Codex, Pi, and Claude Code")
+def step_install_all_agents(context):
+    invoke(
+        context,
+        ["skill", "install", "--agent", "codex", "--agent", "pi", "--agent", "claude"],
+    )
+
+
+@when("the user runs zpp skill install --global with agents Codex, Pi, and Claude Code")
+def step_install_all_agents_global(context):
+    invoke(
+        context,
+        [
+            "skill",
+            "install",
+            "--global",
+            "--agent",
+            "codex",
+            "--agent",
+            "pi",
+            "--agent",
+            "claude",
+        ],
+    )
+
+
+@then("installation succeeds without offering agent selection")
+def step_skill_install_succeeds(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert context.selector_offers == []
+
+
+@then("one managed bundle is installed in the repository-local shared Codex and Pi skill scope")
+def step_local_shared_bundle(context):
+    assert_workflow_projection(
+        context,
+        workflow_skill_root(context, "codex", scope="local"),
+    )
+
+
+@then("one managed bundle is installed in the repository-local Claude Code skill scope")
+def step_local_claude_bundle(context):
+    assert_workflow_projection(
+        context,
+        workflow_skill_root(context, "claude", scope="local"),
+    )
+
+
+@then("one managed bundle is installed in the user-global shared Codex and Pi skill scope")
+def step_global_shared_bundle(context):
+    assert_workflow_projection(
+        context,
+        workflow_skill_root(context, "codex", scope="global"),
+    )
+
+
+@then("one managed bundle is installed in the user-global Claude Code skill scope")
+def step_global_claude_bundle(context):
+    assert_workflow_projection(
+        context,
+        workflow_skill_root(context, "claude", scope="global"),
+    )
+
+
+@then("no duplicate Codex or Pi projection is created")
+def step_no_shared_duplicate(context):
+    root = workflow_skill_root(context, "codex", scope="local")
+    assert root == workflow_skill_root(context, "pi", scope="local")
+    assert not (context.project / ".codex" / "skills").exists()
+    assert not (context.project / ".pi" / "skills").exists()
+
+
+@then("the current project still has no authored ZPP layer")
+@then("no authored ZPP layer is created or modified")
+def step_no_authored_layer_after_skills(context):
+    assert not (context.project / ".zpp").exists()
+    if hasattr(context, "skill_target"):
+        assert not (context.skill_target / ".zpp").exists()
+
+
+@then("no repository-local skill scope is changed")
+def step_no_local_skill_scope(context):
+    assert not workflow_skill_root(context, "codex", scope="local").exists()
+    assert not workflow_skill_root(context, "claude", scope="local").exists()
+
+
+@given('"C:\\work\\repo\\nested" is an existing directory inside a Git worktree')
+def step_exact_nested_skill_target(context):
+    root = context.sandbox / "work" / "repo"
+    context.skill_target = root / "nested"
+    context.skill_target.mkdir(parents=True)
+    git_init(root)
+    context.paths["c:\\work\\repo\\nested"] = context.skill_target
+
+
+@given("the current directory is outside that worktree")
+def step_current_outside_target_worktree(context):
+    assert not context.project.is_relative_to(context.skill_target.parent)
+
+
+@when('the user runs zpp skill install "C:\\work\\repo\\nested" with agent Claude Code')
+def step_install_exact_target(context):
+    invoke(
+        context,
+        ["skill", "install", str(context.skill_target), "--agent", "claude"],
+    )
+
+
+@then("the managed bundle is installed only in that exact directory's local Claude Code skill scope")
+def step_only_exact_target(context):
+    assert_workflow_projection(
+        context,
+        workflow_skill_root(context, "claude", scope="local", target=context.skill_target),
+    )
+    assert not workflow_skill_root(
+        context,
+        "claude",
+        scope="local",
+        target=context.skill_target.parent,
+    ).exists()
+
+
+@given("every agent skill scope is recorded")
+def step_record_agent_skill_scopes(context):
+    context.skill_state_before = workflow_skill_snapshot(context)
+
+
+def run_invalid_skill_target(context, target: str) -> None:
+    invoke(
+        context,
+        ["skill", "install", str(fixture_path(context, target)), "--agent", "codex"],
+    )
+
+
+@when('the user runs zpp skill install "C:\\missing" with agent Codex')
+def step_install_missing_skill_target(context):
+    run_invalid_skill_target(context, '"C:\\missing"')
+
+
+@when('the user runs zpp skill install "C:\\work\\file.txt" with agent Codex')
+def step_install_file_skill_target(context):
+    run_invalid_skill_target(context, '"C:\\work\\file.txt"')
+
+
+@when('the user runs zpp skill install "C:\\outside" with agent Codex')
+def step_install_outside_skill_target(context):
+    run_invalid_skill_target(context, '"C:\\outside"')
+
+
+@when('the user runs zpp skill install "C:\\work\\repo" --global with agent Codex')
+def step_global_with_target(context):
+    invoke(
+        context,
+        ["skill", "install", str(context.sandbox / "work" / "repo"), "--global", "--agent", "codex"],
+    )
+
+
+@then("the invocation is rejected as a domain error")
+def step_skill_domain_error(context):
+    assert context.result.exit_code == 1, context.result.output
+
+
+@then("the invocation is rejected as a usage error")
+def step_skill_usage_error(context):
+    assert context.result.exit_code == 2, context.result.output
+
+
+@then("every agent skill scope is unchanged")
+def step_agent_skill_scopes_unchanged(context):
+    assert workflow_skill_snapshot(context) == context.skill_state_before
+
+
+@when("the user runs zpp skill install and selects Pi and Claude Code")
+def step_select_skill_agents(context):
+    context.selector_answer = ("pi", "claude")
+    invoke(context, ["skill", "install"])
+
+
+@then("the managed bundle is installed in the selected native local scopes")
+def step_selected_skill_scopes(context):
+    assert_workflow_projection(context, workflow_skill_root(context, "pi", scope="local"))
+    assert_workflow_projection(context, workflow_skill_root(context, "claude", scope="local"))
+
+
+@then("Codex receives no independent projection beyond the shared Pi scope")
+def step_codex_shared_only(context):
+    assert workflow_skill_root(context, "codex", scope="local") == workflow_skill_root(
+        context,
+        "pi",
+        scope="local",
+    )
+    assert not (context.project / ".codex" / "skills").exists()
+
+
+@when("the user submits zpp skill install with no checked agent")
+def step_skill_select_none(context):
+    context.selector_answer = ()
+    invoke(context, ["skill", "install"])
+
+
+@then("installation succeeds without changing any agent skill scope")
+def step_empty_skill_selection(context):
+    assert context.result.exit_code == 0
+    assert workflow_skill_snapshot(context) == context.skill_state_before
+
+
+@when("the user cancels zpp skill install from the agent selector")
+def step_cancel_skill_selection(context):
+    context.selector_answer = None
+    invoke(context, ["skill", "install"])
+
+
+@then("installation is cancelled without changing any agent skill scope")
+def step_cancelled_skill_selection(context):
+    assert context.result.exit_code == 1
+    assert "cancelled" in context.result.stderr.lower()
+    assert workflow_skill_snapshot(context) == context.skill_state_before
+
+
+@when("the user runs zpp skill install without an agent option")
+def step_skill_no_agent(context):
+    invoke(context, ["skill", "install"])
+
+
+@given("Codex has a compatible managed global ZPP workflow bundle")
+def step_compatible_global_codex(context):
+    git_init(context.project)
+    result = invoke(context, ["skill", "install", "--global", "--agent", "codex"])
+    assert result.exit_code == 0, result.output
+    context.results.clear()
+
+
+def assert_agent_no_local_bundle(context, agent: str) -> None:
+    git_init(context.project)
+    root = workflow_skill_root(context, agent, scope="local")
+    context.pi_unchanged_root = root
+    context.pi_before = snapshot(root)
+    assert not root.exists()
+
+
+@given("Codex has no local ZPP workflow bundle")
+def step_codex_no_local_bundle(context):
+    assert_agent_no_local_bundle(context, "codex")
+
+
+@given("Pi has no local ZPP workflow bundle")
+def step_pi_no_local_bundle(context):
+    assert_agent_no_local_bundle(context, "pi")
+
+
+@given("Claude Code has no local ZPP workflow bundle")
+def step_claude_no_local_bundle(context):
+    assert_agent_no_local_bundle(context, "claude")
+
+
+@when("the user runs zpp skill install with agent Codex")
+def step_install_codex_skill(context):
+    invoke(context, ["skill", "install", "--agent", "codex"])
+
+
+@then("installation succeeds and reports that the compatible global bundle is reused")
+def step_global_bundle_reused(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert "global" in context.result.stdout.lower()
+    assert "skipped" in context.result.stdout.lower()
+
+
+@then("no local bundle is installed")
+def step_no_local_bundle(context):
+    assert not workflow_skill_root(context, "codex", scope="local").exists()
+
+
+@when("the user repeats zpp skill install with agent Codex and --force")
+def step_force_local_codex(context):
+    invoke(context, ["skill", "install", "--agent", "codex", "--force"])
+
+
+@then("a compatible managed local bundle is installed")
+def step_compatible_local_installed(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert_workflow_projection(context, workflow_skill_root(context, "codex", scope="local"))
+
+
+@then("both managed scopes are reported without claiming scope precedence")
+def step_both_scopes_reported(context):
+    output = context.result.stdout.lower()
+    assert "global and local" in output
+    assert "no scope precedence" in output
+
+
+@given("Claude Code has an outdated managed global ZPP workflow bundle")
+def step_outdated_global_claude(context):
+    git_init(context.project)
+    result = invoke(context, ["skill", "install", "--global", "--agent", "claude"])
+    assert result.exit_code == 0, result.output
+    context.claude_global_root = workflow_skill_root(context, "claude", scope="global")
+    make_workflow_projection_outdated(context.claude_global_root)
+    context.claude_global_before = snapshot(context.claude_global_root)
+    context.results.clear()
+
+
+@when("the user runs zpp skill install with agent Claude Code")
+def step_install_claude_skill(context):
+    invoke(context, ["skill", "install", "--agent", "claude"])
+
+
+@then("the current managed bundle is installed locally")
+def step_current_local_claude(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert_workflow_projection(context, workflow_skill_root(context, "claude", scope="local"))
+
+
+@then("the differing managed scope versions are reported without selecting one")
+def step_version_difference_reported(context):
+    output = context.result.stdout.lower()
+    assert "versions differ" in output
+    assert "no scope precedence" in output
+
+
+@given("Pi has a compatible managed local ZPP workflow bundle")
+def step_compatible_local_pi(context):
+    git_init(context.project)
+    result = invoke(context, ["skill", "install", "--agent", "pi"])
+    assert result.exit_code == 0, result.output
+    context.pi_skill_root = workflow_skill_root(context, "pi", scope="local")
+    context.results.clear()
+
+
+@given("unrelated files surround the managed projection")
+def step_surround_skill_projection(context):
+    unrelated = context.pi_skill_root / "third-party" / "SKILL.md"
+    unrelated.parent.mkdir()
+    unrelated.write_text("third-party π\n", encoding="utf-8")
+    context.unrelated_skill_bytes = {unrelated: unrelated.read_bytes()}
+    context.managed_projection_before = snapshot(context.pi_skill_root)
+
+
+@when("the user runs zpp skill install with agent Pi twice")
+def step_install_pi_skill_twice(context):
+    invoke(context, ["skill", "install", "--agent", "pi"])
+    invoke(context, ["skill", "install", "--agent", "pi"])
+
+
+@then("both installations succeed")
+def step_both_skill_installs_succeed(context):
+    assert all(result.exit_code == 0 for result in context.results[-2:])
+
+
+@then("the managed projection is unchanged")
+def step_managed_projection_unchanged(context):
+    assert snapshot(context.pi_skill_root) == context.managed_projection_before
+
+
+@then("the unrelated files are byte-for-byte unchanged")
+@then("the unrelated skills are unchanged")
+def step_unrelated_skills_unchanged(context):
+    assert all(path.read_bytes() == source for path, source in context.unrelated_skill_bytes.items())
+
+
+def create_unmanaged_local_skill_conflict(context, agent: str) -> None:
+    git_init(context.project)
+    root = workflow_skill_root(context, agent, scope="local")
+    context.skill_conflict = root / context.workflow_skill_names[0] / "SKILL.md"
+    context.skill_conflict.parent.mkdir(parents=True)
+    context.skill_conflict.write_text("unmanaged π\n", encoding="utf-8")
+    context.skill_conflict_before = context.skill_conflict.read_bytes()
+
+
+@given("Claude Code has an unmanaged local conflict at a required skill destination")
+def step_unmanaged_local_claude_conflict(context):
+    create_unmanaged_local_skill_conflict(context, "claude")
+
+
+@given("Codex has an unmanaged local conflict at a required skill destination")
+def step_unmanaged_local_codex_conflict(context):
+    create_unmanaged_local_skill_conflict(context, "codex")
+
+
+@when("the user runs zpp skill install with agents Pi and Claude Code")
+def step_install_pi_claude_skills(context):
+    invoke(context, ["skill", "install", "--agent", "pi", "--agent", "claude"])
+
+
+@when("the user runs zpp skill install with agent Codex and --force")
+def step_force_conflicting_codex(context):
+    invoke(context, ["skill", "install", "--agent", "codex", "--force"])
+
+
+@then("installation fails as a managed-state rejection")
+@then("update fails as a managed-state rejection")
+def step_skill_managed_rejection(context):
+    assert context.result.exit_code == 1, context.result.output
+
+
+@then("the conflicting Claude Code content is unchanged")
+@then("the conflicting content is unchanged")
+def step_skill_conflict_unchanged(context):
+    assert context.skill_conflict.read_bytes() == context.skill_conflict_before
+
+
+@given("Codex has outdated managed global and forced local ZPP workflow bundles")
+def step_outdated_codex_both_scopes(context):
+    git_init(context.project)
+    for arguments in (
+        ["skill", "install", "--global", "--agent", "codex"],
+        ["skill", "install", "--agent", "codex", "--force"],
+    ):
+        result = invoke(context, arguments)
+        assert result.exit_code == 0, result.output
+    context.codex_global_root = workflow_skill_root(context, "codex", scope="global")
+    context.codex_local_root = workflow_skill_root(context, "codex", scope="local")
+    make_workflow_projection_outdated(context.codex_global_root)
+    make_workflow_projection_outdated(context.codex_local_root)
+    context.codex_local_before = snapshot(context.codex_local_root)
+    context.results.clear()
+
+
+@when("the user runs zpp skill update --global with agent Codex")
+def step_update_global_codex(context):
+    invoke(context, ["skill", "update", "--global", "--agent", "codex"])
+
+
+@then("only the Codex global managed bundle is updated to the packaged version")
+def step_only_codex_global_updated(context):
+    assert context.result.exit_code == 0, context.result.output
+    manifest = json.loads(
+        (context.codex_global_root / ".zpp-workflow-skills.json").read_text(encoding="utf-8")
+    )
+    assert manifest["bundle_version"] == "0.9.0"
+
+
+@then("the forced local Codex bundle is unchanged")
+def step_codex_local_unchanged(context):
+    assert snapshot(context.codex_local_root) == context.codex_local_before
+
+
+@then("every Claude Code scope is unchanged")
+def step_claude_scopes_unchanged(context):
+    assert snapshot(context.claude_global_root) == context.claude_global_before
+    assert not workflow_skill_root(context, "claude", scope="local").exists()
+
+
+@then("the differing Codex scope versions are reported")
+def step_codex_difference_reported(context):
+    assert "versions differ for codex" in context.result.stdout.lower()
+
+
+@given("Claude Code has an unmanaged global skill directory matching a permanent skill name")
+def step_unmanaged_global_claude_skill(context):
+    root = workflow_skill_root(context, "claude", scope="global")
+    context.skill_conflict = root / context.workflow_skill_names[0] / "SKILL.md"
+    context.skill_conflict.parent.mkdir(parents=True)
+    context.skill_conflict.write_text("unmanaged\n", encoding="utf-8")
+    context.skill_conflict_before = context.skill_conflict.read_bytes()
+
+
+@when("the user runs zpp skill update --global with agent Claude Code")
+def step_update_unmanaged_claude(context):
+    invoke(context, ["skill", "update", "--global", "--agent", "claude"])
+
+
+@given("Pi has a managed local ZPP workflow bundle surrounded by unrelated skills")
+def step_managed_pi_with_unrelated(context):
+    git_init(context.project)
+    result = invoke(context, ["skill", "install", "--agent", "pi"])
+    assert result.exit_code == 0, result.output
+    context.pi_skill_root = workflow_skill_root(context, "pi", scope="local")
+    unrelated = context.pi_skill_root / "third-party" / "SKILL.md"
+    unrelated.parent.mkdir()
+    unrelated.write_text("keep π\n", encoding="utf-8")
+    context.unrelated_skill_bytes = {unrelated: unrelated.read_bytes()}
+    context.results.clear()
+
+
+@given("Claude Code has a managed local ZPP workflow bundle")
+def step_managed_local_claude(context):
+    result = invoke(context, ["skill", "install", "--agent", "claude"])
+    assert result.exit_code == 0, result.output
+    context.claude_local_root = workflow_skill_root(context, "claude", scope="local")
+    context.claude_local_before = snapshot(context.claude_local_root)
+    context.results.clear()
+
+
+@when("the user runs zpp skill remove with agent Pi and declines confirmation")
+def step_decline_skill_remove(context):
+    context.skill_state_before = workflow_skill_snapshot(context)
+    invoke(context, ["skill", "remove", "--agent", "pi"], input_text="n\n")
+
+
+@when("the user runs zpp skill remove with agent Pi and --yes")
+def step_confirm_skill_remove(context):
+    invoke(context, ["skill", "remove", "--agent", "pi", "--yes"])
+
+
+@then("only the managed shared Codex and Pi projection is removed")
+def step_shared_projection_removed(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert not (context.pi_skill_root / ".zpp-workflow-skills.json").exists()
+    assert all(not (context.pi_skill_root / name).exists() for name in context.workflow_skill_names)
+
+
+@then("the Claude Code projection is unchanged")
+def step_claude_projection_unchanged(context):
+    assert snapshot(context.claude_local_root) == context.claude_local_before
+
+
+@given("a participating layer activates a conditionless automatic-workflow trait")
+def step_automatic_workflow_trait(context):
+    initialize(context)
+    context.target = context.project
+    root = context.home / ".zpp" / "global"
+    write_trait(
+        root,
+        "automatic-workflow",
+        body=(
+            "Continue automatically only after every current gate is satisfied.\n"
+            "Stop on a failed gate or missing mutation authority.\n"
+        ),
+        skill_lookup=list(context.workflow_skill_names),
+    )
+    (root / "trait.json").write_text(
+        '[{"trait":"automatic-workflow"}]\n',
+        encoding="utf-8",
+    )
+
+
+@given("that trait references the permanent workflow skills through skill lookup")
+def step_automatic_trait_lookup(context):
+    source = (
+        context.home / ".zpp" / "global" / "traits" / "automatic-workflow.md"
+    ).read_text(encoding="utf-8")
+    assert all(name in source for name in context.workflow_skill_names)
+
+
+@when("the user resolves traits for the target")
+def step_resolve_automatic_trait(context):
+    invoke(context, ["resolve", str(context.target)])
+
+
+@then("the effective trait directs unattended continuation only across satisfied gates")
+def step_automatic_trait_direction(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert "only after every current gate is satisfied" in context.result.stdout
+
+
+@then("the skill lookup remains passive frontmatter metadata")
+def step_automatic_lookup_passive(context):
+    metadata, body = parse_documents(context.result.stdout)[0]
+    assert metadata["skill_lookup"] == list(context.workflow_skill_names)
+    assert not any(name in body for name in context.workflow_skill_names)
+
+
+@then("the trait does not grant mutation authority or bypass a failed gate")
+def step_automatic_trait_limits(context):
+    assert "Stop on a failed gate or missing mutation authority." in context.result.stdout
+
+
+@when("the user installs the managed bundle for every supported agent")
+def step_install_bundle_for_every_agent(context):
+    git_init(context.project)
+    step_install_all_agents(context)
+    context.installed_workflow_roots = (
+        workflow_skill_root(context, "codex", scope="local"),
+        workflow_skill_root(context, "claude", scope="local"),
+    )
+
+
+@then("every native projection contains the same seven permanent workflow skills")
+def step_every_projection_same_bundle(context):
+    for root in context.installed_workflow_roots:
+        assert_workflow_projection(context, root)
+
+
+@then("each skill retains its required packaged resources and scripts")
+def step_packaged_resources_retained(context):
+    for root in context.installed_workflow_roots:
+        scripts = root / "zpp-commit-zmem" / "scripts"
+        assert (scripts / "check-commit-msg.ps1").is_file()
+        assert (scripts / "check-commit-msg.sh").is_file()
+
+
+@then("no skill body contains platform, framework, test-runner, or agent-specific policy")
+def step_skill_bodies_neutral(context):
+    forbidden = (
+        "pytest",
+        "behave",
+        "python-bdd",
+        "django",
+        "fastapi",
+        "react",
+        "claude code",
+        ".agents/skills",
+        ".claude/skills",
+        ".pi/",
+        ".codex/",
+        "powershell",
+        "posix",
+    )
+    for root in context.installed_workflow_roots:
+        for name in context.workflow_skill_names:
+            source = (root / name / "SKILL.md").read_text(encoding="utf-8").lower()
+            assert not any(term in source for term in forbidden), (name, source)
+
+
+@then("platform-specific installation behavior remains outside the skill bodies")
+def step_installation_policy_outside_bodies(context):
+    assert workflow_skill_root(context, "codex", scope="local") == (
+        context.project / ".agents" / "skills"
+    )
+    assert workflow_skill_root(context, "claude", scope="local") == (
+        context.project / ".claude" / "skills"
+    )
