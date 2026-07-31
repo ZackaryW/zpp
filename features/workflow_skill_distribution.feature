@@ -3,7 +3,7 @@ Feature: Distribute the permanent ZPP workflow skills
   global or repository-local agent scopes without changing authored ZPP layers.
 
   Background:
-    Given the packaged ZPP workflow bundle contains all seven permanent skills
+    Given the packaged ZPP workflow bundle contains all eight permanent skills
 
   Scenario: Install the bundle locally for explicitly selected agents
     Given the current directory is the root of a Git worktree
@@ -167,10 +167,18 @@ Feature: Distribute the permanent ZPP workflow skills
 
   Scenario: Installed skill bodies remain platform-neutral
     When the user installs the managed bundle for every supported agent
-    Then every native projection contains the same seven permanent workflow skills
+    Then every native projection contains the same eight permanent workflow skills
     And each skill retains its required packaged resources and scripts
     And no skill body contains platform, framework, test-runner, or agent-specific policy
     And python-bdd, python-tdd, and python-build remain independent optional traits outside the skill bodies
+
+  Scenario: Install explicit codespace worktree reconciliation
+    Given a mitigated codespace records its generated project and store branches
+    When the user installs the managed bundle for every supported agent
+    Then every native projection contains the permanent codespace worktree-reconciliation skill
+    And the skill consumes the recorded codespace branch metadata
+    And reconciliation requires explicit invocation
+    And the skill never makes codespace locking merge work automatically
 
   Scenario: Related OpenSpec changes receive an owned terminal disposition
     Given a workflow relates a product change, a utility companion, and a temporary internal anchor
