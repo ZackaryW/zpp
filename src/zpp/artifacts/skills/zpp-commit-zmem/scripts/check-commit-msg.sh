@@ -2,6 +2,11 @@
 set -eu
 
 CANONICAL_EVENTS="DECISION LESSON_LEARNT REFACTOR DEBT CONTEXT"
+REQUIRE_ZMEM=false
+if [ "${1:-}" = "--require-zmem" ]; then
+  REQUIRE_ZMEM=true
+  shift
+fi
 
 emit() {
   jq -n --argjson ok "$1" --argjson code "$2" --arg message "$3" \
@@ -49,7 +54,7 @@ for line in $(printf '%s\n' "$MSG" | tail -n +2); do
 done
 IFS=$OLDIFS
 
-if [ "$ANNOTATIONS" -eq 0 ] && [ "$CC_TYPE" != "chore" ]; then
-  emit false 23 "no zmem() annotation and type '$CC_TYPE' is not exempt" "$CC_TYPE" 0; exit 23
+if [ "$REQUIRE_ZMEM" = true ] && [ "$ANNOTATIONS" -eq 0 ]; then
+  emit false 23 "memory-bearing validation requires a zmem() annotation" "$CC_TYPE" 0; exit 23
 fi
 emit true 0 "ok" "$CC_TYPE" "$ANNOTATIONS"

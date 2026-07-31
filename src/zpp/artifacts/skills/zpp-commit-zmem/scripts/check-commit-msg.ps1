@@ -2,7 +2,12 @@
 $ErrorActionPreference = 'Stop'
 
 $CanonicalEvents = @('DECISION', 'LESSON_LEARNT', 'REFACTOR', 'DEBT', 'CONTEXT')
-$ExemptTypes = @('chore')
+$RequireZmem = $false
+$RemainingArgs = @($args)
+if ($RemainingArgs.Count -ge 1 -and $RemainingArgs[0] -eq '--require-zmem') {
+    $RequireZmem = $true
+    $RemainingArgs = @($RemainingArgs | Select-Object -Skip 1)
+}
 
 function Emit-Result {
     param([bool]$Ok, [int]$Code, [string]$Message, [string]$CcType, [int]$Annotations)
@@ -12,13 +17,13 @@ function Emit-Result {
     } | ConvertTo-Json -Compress
 }
 
-if ($args.Count -ge 1 -and $args[0] -eq '--file') {
-    if (-not (Test-Path -LiteralPath $args[1])) {
-        Emit-Result $false 1 "message file not found: $($args[1])" '' 0; exit 1
+if ($RemainingArgs.Count -ge 1 -and $RemainingArgs[0] -eq '--file') {
+    if (-not (Test-Path -LiteralPath $RemainingArgs[1])) {
+        Emit-Result $false 1 "message file not found: $($RemainingArgs[1])" '' 0; exit 1
     }
-    $Msg = Get-Content -LiteralPath $args[1] -Raw
+    $Msg = Get-Content -LiteralPath $RemainingArgs[1] -Raw
 } else {
-    $Ref = if ($args.Count -ge 1) { $args[0] } else { 'HEAD' }
+    $Ref = if ($RemainingArgs.Count -ge 1) { $RemainingArgs[0] } else { 'HEAD' }
     $Msg = git log -1 --format=%B $Ref 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $Msg) {
         Emit-Result $false 1 "cannot read commit: $Ref" '' 0; exit 1
@@ -53,8 +58,8 @@ for ($i = 1; $i -lt $Lines.Count; $i++) {
     Emit-Result $false 22 "body line $($i + 1) is prose (must be zmem() or bullet): $Stripped" $CcType $Annotations
     exit 22
 }
-if ($Annotations -eq 0 -and $ExemptTypes -notcontains $CcType) {
-    Emit-Result $false 23 "no zmem() annotation and type '$CcType' is not exempt" $CcType 0
+if ($RequireZmem -and $Annotations -eq 0) {
+    Emit-Result $false 23 "memory-bearing validation requires a zmem() annotation" $CcType 0
     exit 23
 }
 Emit-Result $true 0 'ok' $CcType $Annotations
