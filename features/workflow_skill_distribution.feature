@@ -186,3 +186,29 @@ Feature: Distribute the permanent ZPP workflow skills
     When the workflow evaluates its completion gate
     Then the workflow cannot report completion
     And the unrelated OpenSpec change list is not required to be empty
+
+  Scenario: Current authority and decision history remain distinct
+    Given canonical OpenSpec records the currently accepted product behavior
+    And zmem records chronological decisions including a later change of direction
+    And an active proposal contains the current change's mutable working state
+    When clarification establishes the product boundary
+    Then it compares the later zmem direction with canonical OpenSpec
+    And it treats canonical OpenSpec as the long-standing current authority
+    And it treats zmem as temporal decision history rather than current product truth
+    And it treats the active proposal as temporary working state
+    And no zmem dependency graph is required
+
+  Scenario: Memory validation is explicit rather than imposed on every commit
+    Given a valid conventional commit message contains no zmem annotation
+    When the bundled commit-message validator checks an ordinary commit
+    Then validation succeeds with zero zmem annotations
+    When the bundled commit-message validator checks a memory-bearing checkpoint
+    Then validation fails because a canonical zmem annotation is required
+
+  Scenario: Specification formation keeps history out of current authority
+    Given mature green behavior reflects the latest accepted decision
+    And zmem retains earlier directions, reversals, and their reasons
+    When the workflow forms canonical OpenSpec specifications
+    Then only the enduring current behavior enters canonical OpenSpec
+    And abandoned or superseded chronology remains in zmem
+    And no zmem checkpoint is created merely to mark specification formation
