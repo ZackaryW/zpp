@@ -4,7 +4,11 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal, Mapping, Sequence
 
-from zpp.utils.codespace_identity import sibling_worktree_path, snapshot_key
+from zpp.utils.codespace_identity import (
+    checkout_path_claim_key,
+    sibling_worktree_path,
+    snapshot_key,
+)
 from zpp.utils.codespace_models import CodespaceClaim, CodespaceIndex, CodespaceMember
 from zpp.utils.git_layers import GitCheckout
 
@@ -111,7 +115,14 @@ def plan_codespace_lock(
                     if is_conflict
                     else member.checkout.root
                 ),
-                checkout_key=member.checkout_key,
+                checkout_key=(
+                    checkout_path_claim_key(
+                        sibling_worktree_path(member.checkout, request.instance_id)
+                    )
+                    if is_conflict
+                    else member.checkout_key
+                ),
+                source_checkout_key=member.checkout_key,
                 commit=member.checkout.head,
                 kind=member.kind,
                 store_id=member.store_id,
@@ -140,7 +151,7 @@ def plan_codespace_add(
     active: CodespaceIndex,
 ) -> CodespaceAddPlan:
     claimed = _claimed_keys(active, excluding=current.instance_id)
-    existing_keys = {member.checkout_key for member in current.members}
+    existing_keys = {member.source_checkout_key for member in current.members}
     writable = tuple(
         member
         for member in _writable_members(additions)
@@ -163,6 +174,7 @@ def plan_codespace_add(
                     else member.checkout.root
                 ),
                 checkout_key=member.checkout_key,
+                source_checkout_key=member.checkout_key,
                 commit=member.checkout.head,
                 kind=member.kind,
                 store_id=member.store_id,

@@ -20,7 +20,11 @@ def snapshot_key(checkouts: Sequence[GitCheckout]) -> str:
 
 
 def checkout_claim_key(checkout: GitCheckout) -> str:
-    canonical_root = os.path.normcase(str(checkout.root.resolve()))
+    return checkout_path_claim_key(checkout.root)
+
+
+def checkout_path_claim_key(path: Path) -> str:
+    canonical_root = os.path.normcase(str(path.resolve()))
     return _digest(canonical_root)
 
 

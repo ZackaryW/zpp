@@ -96,10 +96,12 @@ def test_lock_plan_claims_writable_members_and_mitigates_only_conflicts(
     assert [member.name for member in plan.claim.members] == ["c", "b", "store-ref"]
     assert plan.claim.members[0].effective_path == project_c.checkout.root
     assert plan.claim.members[1].generated_worktree
+    assert plan.claim.members[1].source_checkout_key == "key-b"
+    assert plan.claim.members[1].checkout_key != "key-b"
     assert plan.claim.members[2].role == "governing"
     assert plan.claim.members[2].store_id == "store"
     assert "key-reference" not in {
-        member.checkout_key for member in plan.claim.members
+        member.source_checkout_key for member in plan.claim.members
     }
 
 

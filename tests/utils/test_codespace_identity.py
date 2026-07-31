@@ -3,6 +3,7 @@ from pathlib import Path
 
 from zpp.utils.codespace_identity import (
     checkout_claim_key,
+    checkout_path_claim_key,
     new_codespace_instance_id,
     sibling_worktree_path,
     snapshot_key,
@@ -25,6 +26,7 @@ def test_codespace_identity_separates_snapshot_checkout_and_instance(
     assert checkout_claim_key(first) == checkout_claim_key(
         replace(first, head="changed", dirty=True)
     )
+    assert checkout_path_claim_key(first.root / ".") == checkout_claim_key(first)
     assert new_codespace_instance_id(ordered, token="first") == (
         new_codespace_instance_id(ordered, token="first")
     )

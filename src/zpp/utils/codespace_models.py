@@ -13,12 +13,20 @@ class CodespaceMember(BaseModel):
     original_path: Path
     effective_path: Path
     checkout_key: str = Field(min_length=1)
+    source_checkout_key: str = Field(min_length=1)
     commit: str = Field(min_length=1)
     kind: Literal["project", "store"]
     store_id: str | None = None
     role: Literal["governing", "reference"] = "governing"
     generated_worktree: bool = False
     branch: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def default_source_to_effective(cls, value: object) -> object:
+        if isinstance(value, dict) and "source_checkout_key" not in value:
+            return {**value, "source_checkout_key": value.get("checkout_key")}
+        return value
 
 
 class CodespaceClaim(BaseModel):

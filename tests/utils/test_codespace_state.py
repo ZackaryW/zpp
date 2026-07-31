@@ -103,3 +103,38 @@ def test_codespace_index_rejects_duplicate_physical_checkout_claims(
 
     with pytest.raises(ValueError, match="physical checkout"):
         CodespaceIndex(claims={"first": first, "second": duplicate})
+
+
+def test_codespace_index_allows_shared_sources_with_distinct_effective_checkouts(
+    tmp_path: Path,
+) -> None:
+    first = _claim(tmp_path / "first", "first")
+    isolated = _claim(tmp_path / "second", "second")
+    isolated = isolated.model_copy(
+        update={
+            "members": (
+                isolated.members[0].model_copy(
+                    update={
+                        "checkout_key": "isolated-effective",
+                        "source_checkout_key": first.members[0].checkout_key,
+                    }
+                ),
+            )
+        }
+    )
+
+    index = CodespaceIndex(claims={"first": first, "second": isolated})
+
+    assert index.claims["second"].members[0].source_checkout_key == (
+        index.claims["first"].members[0].checkout_key
+    )
+
+
+def test_member_backward_loading_defaults_source_to_effective(tmp_path: Path) -> None:
+    member = _claim(tmp_path, "legacy").members[0]
+    payload = member.model_dump(mode="json")
+    payload.pop("source_checkout_key", None)
+
+    loaded = CodespaceMember.model_validate(payload)
+
+    assert loaded.source_checkout_key == loaded.checkout_key
