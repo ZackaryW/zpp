@@ -27,6 +27,7 @@ Treat the proposal and approved Gherkin scenarios as the complete product author
 5. After all bindings and product paths are assembled, the root agent runs the complete relevant integration suite through the profile-resolved BDD runner. Rerun only after a material correction.
 6. If implementation discovers a decision that reopens an earlier stage, create a fallback checkpoint before leaving wiring only when material tracked work is worth preserving; otherwise return directly, then reconcile the decision in its owning proposal stage.
 7. Hand the root-verified green integrated product change to `zpp-commit-zmem` for the current pass. If an earlier stage was reopened, repeat every displaced checkpoint in order and create a replacement green-integration checkpoint rather than reusing or amending the old one.
+8. After the green-integration checkpoint, hand the complete mature behavior to `zpp-form-specs`; invoke that skill immediately when automatic progression or explicit end-to-end delegation applies.
 
 Subagents may prepare explicitly delegated bounded edits, but they must not execute RED/GREEN commands, interpret verification output, declare the integration gate green, or create the checkpoint. The root agent exclusively owns integration verification and gate state.
 

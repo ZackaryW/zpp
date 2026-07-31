@@ -13,6 +13,8 @@ from zpp.core.errors import ZppDomainError, validation_diagnostic
 from zpp.core.resolution import resolve_traits
 from zpp.core.skills import SkillLifecycleReport, manage_workflow_skills
 from zpp.core.state import (
+    activate_global_profile,
+    copy_profile,
     create_profile,
     create_saved,
     initialize_local_layer,
@@ -43,10 +45,12 @@ app = typer.Typer(
 )
 profile_app = typer.Typer(help="Manage user profiles and saved override layers.")
 saved_app = typer.Typer(help="Manage saved override layers.")
+global_app = typer.Typer(help="Manage the active global trait layer.")
 local_app = typer.Typer(help="Manage repository and subfolder layers.")
 workflow_app = typer.Typer(help="Manage ZPP's standard workflow bundle.")
 app.add_typer(profile_app, name="profile")
 profile_app.add_typer(saved_app, name="saved")
+app.add_typer(global_app, name="global")
 app.add_typer(local_app, name="local")
 app.add_typer(workflow_app, name="workflow")
 
@@ -112,6 +116,16 @@ def profile_remove(
     if not yes and not typer.confirm(f"Remove profile {name}?"):
         return
     _run_domain(lambda: remove_profile(Path.home(), name))
+
+
+@profile_app.command("copy")
+def profile_copy(source: str, destination: str) -> None:
+    _run_domain(lambda: copy_profile(Path.home(), source, destination))
+
+
+@global_app.command("activate")
+def global_activate(name: str) -> None:
+    _run_domain(lambda: activate_global_profile(Path.home(), name))
 
 
 @saved_app.command("create")

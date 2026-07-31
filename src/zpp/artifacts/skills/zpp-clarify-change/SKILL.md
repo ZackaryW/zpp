@@ -38,7 +38,7 @@ Maintain zero assumptions. The proposal is the state of record for product inten
 
 Before convergence, inventory every required feature, fix, constraint, acceptance obligation, and explicitly deferred item for the whole change. Do not require implementation details that do not change the accepted product outcome.
 
-When no outcome-changing branch remains across the complete change, present a short restatement. Converge only after the owner confirms it. Stop with the proposal updated.
+When no outcome-changing branch remains across the complete change, present a short restatement. Converge only after the owner confirms it. After convergence, hand the complete proposal to `zpp-shape-feature`; invoke that skill immediately when automatic progression or explicit end-to-end delegation applies.
 
 If this stage was reopened from later work, require that the later stage first preserved any coherent material tracked work through a truthful fallback zmem checkpoint. When no such work exists, require no commit. Invalidate its gate state. Do not resume utility TDD, wiring, or specification formation from prior checkpoints. Send the revised complete proposal through feature shaping again; the revised complete feature contract must receive a replacement feature checkpoint before the workflow can cross that boundary.
 

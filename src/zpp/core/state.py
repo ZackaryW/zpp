@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 from zpp.core.errors import ZppDomainError, validation_diagnostic
+from zpp.utils.authored_layers import (
+    authored_layer_creation_plan,
+    collect_authored_layer,
+)
 from zpp.utils.control_documents import validate_saved_index
 from zpp.utils.git_layers import git_worktree_root
 from zpp.utils.json_io import atomic_write_json
 from zpp.utils.layer_inspection import inspect_authored_layer
+from zpp.utils.layer_transactions import archive_and_replace_authored_layer
 from zpp.utils.layouts import authored_layer_paths, trait_cache_paths
 from zpp.utils.models import (
     AuthoredLayerPaths,
@@ -18,9 +24,11 @@ from zpp.utils.models import (
     SavedIndex,
     ZppValidationError,
 )
+from zpp.utils.packaged_profiles import load_packaged_default_profile
 from zpp.utils.paths import (
     bind_saved_target,
     canonicalize_existing_directory,
+    next_global_archive_name,
     ordered_saved_bindings,
     unbind_saved_name,
     user_zpp_root,
@@ -67,6 +75,8 @@ def list_profiles(home: Path) -> tuple[str, ...]:
 def remove_profile(home: Path, name: str) -> None:
     validate_layer_name(name)
     root = require_initialized_user_state(home)
+    if name == "default":
+        raise ZppDomainError("the persistent default profile cannot be removed")
     layer = root / "profiles" / name
     cache = trait_cache_paths(
         LayerRef(kind="profile", root=layer, name=name),
@@ -76,6 +86,52 @@ def remove_profile(home: Path, name: str) -> None:
         raise ZppDomainError(f"profile does not exist: {name}")
     staged = stage_removals((layer, cache))
     staged.commit()
+
+
+def copy_profile(home: Path, source_name: str, destination_name: str) -> None:
+    validate_layer_name(source_name)
+    validate_layer_name(destination_name)
+    root = require_initialized_user_state(home)
+    source = root / "profiles" / source_name
+    destination = root / "profiles" / destination_name
+    if not source.exists() and not source.is_symlink():
+        raise ZppDomainError(f"source profile does not exist: {source_name}")
+    if destination.exists() or destination.is_symlink():
+        raise ZppDomainError(f"destination profile already exists: {destination_name}")
+    snapshot = collect_authored_layer(source)
+    apply_creation_plan(authored_layer_creation_plan(snapshot, destination))
+
+
+def activate_global_profile(
+    home: Path,
+    name: str,
+    *,
+    when: datetime | None = None,
+) -> str:
+    validate_layer_name(name)
+    root = require_initialized_user_state(home)
+    source = root / "profiles" / name
+    if not source.exists() and not source.is_symlink():
+        raise ZppDomainError(f"source profile does not exist: {name}")
+    replacement = collect_authored_layer(source)
+    profile_names = {
+        path.name
+        for path in (root / "profiles").iterdir()
+        if path.exists() or path.is_symlink()
+    }
+    archive_name = next_global_archive_name(when or datetime.now(), profile_names)
+    global_layer = authored_layer_paths(root / "global")
+    global_cache = trait_cache_paths(
+        LayerRef(kind="global", root=global_layer.root),
+        user_root=root,
+    ).root
+    archive_and_replace_authored_layer(
+        global_layer,
+        replacement,
+        root / "profiles" / archive_name,
+        (global_cache,),
+    )
+    return archive_name
 
 
 def create_saved(home: Path, name: str, target_path: Path) -> None:
@@ -175,6 +231,21 @@ def _user_state_creation_entries(root: Path) -> list[CreationEntry]:
         _read_saved_index(index)
 
     entries.extend(_layer_creation_entries(root / "global"))
+    default_profile = root / "profiles" / "default"
+    if not default_profile.exists() and not default_profile.is_symlink():
+        entries.extend(
+            authored_layer_creation_plan(
+                load_packaged_default_profile(),
+                default_profile,
+            ).entries
+        )
+    else:
+        try:
+            collect_authored_layer(default_profile)
+        except (OSError, UnicodeError, ValueError) as error:
+            raise ManagedStateError(
+                f"invalid persistent default profile at {default_profile}: {error}"
+            ) from error
     return entries
 
 

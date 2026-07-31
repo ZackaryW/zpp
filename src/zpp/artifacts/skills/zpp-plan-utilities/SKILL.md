@@ -31,6 +31,8 @@ Keep ownership strict: this skill plans utilities from accepted product needs bu
 
 After the owner responds to a batch, persist every accepted, rejected, and revised decision before presenting another batch. Converge only when the utility change accounts for the entire product change. Do not write tests, create feature bindings, run RED/GREEN verification, or write production code, and never start TDD from a partial utility plan.
 
+After the complete utility plan is accepted, hand it to `zpp-mature-utilities`; invoke that skill immediately when automatic progression or explicit end-to-end delegation applies.
+
 The companion change is temporary execution scaffolding. Never sync, archive, transform, or quote it into canonical specifications. Its only downstream consumers are the current TDD pass and any fallback reconciliation before that pass reaches maturity. After root-owned verification and any justified mature-utility zmem checkpoint, discard the complete companion change. When the accepted plan requires no material utility changes, discard it without creating a negation checkpoint.
 
 If TDD or wiring reopens this plan, preserve downstream work with a truthful fallback zmem checkpoint only when coherent material tracked work exists. Otherwise return without a commit. Then suspend that stage and reconcile the complete utility change again. When revised utilities later regain complete maturity, create a replacement mature-utility checkpoint only if that pass produced material tracked utility work. Any justified fallback and earlier utility checkpoint remain historical only.

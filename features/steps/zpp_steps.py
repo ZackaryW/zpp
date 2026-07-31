@@ -5,6 +5,7 @@ import os
 import re
 import shlex
 import subprocess
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -195,6 +196,7 @@ def step_clean_home(context):
 
 
 @given("a clean user home with an initialized global ZPP layer")
+@given("a clean user home with initialized ZPP state")
 def step_clean_initialized_home(context):
     step_clean_home(context)
     initialize(context)
@@ -375,6 +377,7 @@ def step_global_exists(context):
 
 
 @then("the empty profile, saved, and cache roots exist")
+@then("the saved and cache roots exist")
 def step_empty_roots(context):
     root = context.home / ".zpp"
     assert (root / "profiles").is_dir()
@@ -782,7 +785,7 @@ def step_exit_one(context):
 use_step_matcher("re")
 
 
-@then(r'the diagnostic identifies (?P<subject>the invalid profile name|the invalid saved name|the invalid managed source|".+")')
+@then(r'the diagnostic identifies (?P<subject>the invalid profile name|the invalid saved name|the invalid managed source|the missing source profile|the existing destination|the persistent default profile|".+")')
 def step_diagnostic_subject(context, subject):
     subject = subject.strip()
     if subject == "the invalid profile name" or subject == "the invalid saved name":
@@ -790,6 +793,12 @@ def step_diagnostic_subject(context, subject):
     elif subject == "the invalid managed source":
         assert_diagnostic_path(context.result.stderr, context.invalid_source)
         return
+    elif subject == "the missing source profile":
+        expected = "source profile does not exist"
+    elif subject == "the existing destination":
+        expected = "destination profile already exists"
+    elif subject == "the persistent default profile":
+        expected = "persistent default profile"
     elif subject.startswith('"'):
         assert_diagnostic_path(context.result.stderr, fixture_path(context, subject))
         return
@@ -2400,9 +2409,13 @@ def step_automatic_workflow_trait(context):
         root,
         "automatic-workflow",
         body=(
-            "Continue automatically only after every current gate is satisfied.\n"
-            "Stop on a failed gate or missing mutation authority.\n"
+            "Continue across satisfied workflow stages without requesting approval at "
+            "checkpoints, successful verification, or ordinary handoffs. Pause only "
+            "for unresolved clarification, a new product boundary, or a missing or "
+            "changed utility shape. Skill lookup remains passive and grants no "
+            "authority or failed-gate bypass.\n"
         ),
+        config={"useThis": True, "mode": "automatic"},
         skill_lookup=list(context.workflow_skill_names),
     )
     (root / "trait.json").write_text(
@@ -2427,7 +2440,7 @@ def step_resolve_automatic_trait(context):
 @then("the effective trait directs unattended continuation only across satisfied gates")
 def step_automatic_trait_direction(context):
     assert context.result.exit_code == 0, context.result.output
-    assert "only after every current gate is satisfied" in context.result.stdout
+    assert "Continue across satisfied workflow stages" in context.result.stdout
 
 
 @then("the skill lookup remains passive frontmatter metadata")
@@ -2439,7 +2452,7 @@ def step_automatic_lookup_passive(context):
 
 @then("the trait does not grant mutation authority or bypass a failed gate")
 def step_automatic_trait_limits(context):
-    assert "Stop on a failed gate or missing mutation authority." in context.result.stdout
+    assert "grants no authority or failed-gate bypass" in context.result.stdout
 
 
 @when("the user installs the managed bundle for every supported agent")
@@ -2497,3 +2510,496 @@ def step_installation_policy_outside_bodies(context):
     assert workflow_skill_root(context, "claude", scope="local") == (
         context.project / ".claude" / "skills"
     )
+
+
+# Standard default profile and profile activation
+
+
+def authored_bytes(root: Path) -> dict[str, bytes]:
+    managed = (root / "config.json", root / "trait.json")
+    traits = tuple(sorted((root / "traits").glob("*.md")))
+    return {
+        path.relative_to(root).as_posix(): path.read_bytes()
+        for path in (*managed, *traits)
+        if path.is_file()
+    }
+
+
+@then("the persistent user-owned default profile exists")
+def step_default_profile_exists(context):
+    root = context.home / ".zpp" / "profiles" / "default"
+    assert (root / "config.json").is_file()
+    assert (root / "trait.json").is_file()
+    assert (root / "traits").is_dir()
+
+
+@then(
+    "the default profile activates exactly automatic-workflow, "
+    "zero-assumptions, and ponytail"
+)
+def step_default_profile_triggers(context):
+    source = context.home / ".zpp" / "profiles" / "default" / "trait.json"
+    assert json.loads(source.read_text(encoding="utf-8")) == [
+        {"trait": "automatic-workflow"},
+        {"trait": "zero-assumptions"},
+        {"trait": "ponytail"},
+    ]
+
+
+@then(
+    "the default profile contains inactive python-bdd, python-tdd, "
+    "and python-build traits"
+)
+def step_default_optional_python_traits(context):
+    root = context.home / ".zpp" / "profiles" / "default"
+    triggers = {
+        item["trait"]
+        for item in json.loads((root / "trait.json").read_text(encoding="utf-8"))
+    }
+    optional = {"python-bdd", "python-tdd", "python-build"}
+    assert all((root / "traits" / f"{name}.md").is_file() for name in optional)
+    assert triggers.isdisjoint(optional)
+
+
+@given("the default profile has valid user-authored changes with distinctive formatting")
+def step_user_edited_default(context):
+    root = context.home / ".zpp" / "profiles" / "default"
+    (root / "config.json").write_text(
+        '{ "traitsConfig": {"automatic-workflow": {"mode": "manual"}}, '
+        '"trait_overwrites": false }\n',
+        encoding="utf-8",
+    )
+    context.default_before = snapshot(root)
+
+
+@then("the complete default profile is byte-for-byte unchanged")
+@then("no bundled default content is reapplied")
+def step_user_default_preserved(context):
+    root = context.home / ".zpp" / "profiles" / "default"
+    assert snapshot(root) == context.default_before
+
+
+@given('profile "source" has distinctive valid authored bytes and an independent cache')
+def step_copy_source_profile(context):
+    root = context.home / ".zpp" / "profiles" / "source"
+    write_layer(root, triggers=[{"trait": "source"}])
+    write_trait(root, "source", body="source distinctive body\n")
+    (root / "config.json").write_text(
+        '{ "traitsConfig": {}, "trait_overwrites": false }\n',
+        encoding="utf-8",
+    )
+    cache = context.home / ".zpp" / "cached" / "profiles" / "source"
+    cache.mkdir(parents=True)
+    (cache / "traits.json").write_text('{"source": true}\n', encoding="utf-8")
+    context.source_authored_before = authored_bytes(root)
+    context.source_cache_before = snapshot(cache)
+
+
+@given("the global layer has distinctive authored bytes")
+def step_distinct_global_bytes(context):
+    root = context.home / ".zpp" / "global"
+    write_trait(root, "global-distinctive", body="global distinctive body\n")
+    (root / "trait.json").write_text(
+        '[{"trait":"global-distinctive"}]\n',
+        encoding="utf-8",
+    )
+    context.global_before = snapshot(root)
+
+
+@then('profile "derived" contains a byte-for-byte copy of the authored source layer')
+def step_derived_profile_copy(context):
+    derived = context.home / ".zpp" / "profiles" / "derived"
+    assert authored_bytes(derived) == context.source_authored_before
+
+
+@then('profile "derived" has no derived cache')
+def step_derived_has_no_cache(context):
+    assert not (context.home / ".zpp" / "cached" / "profiles" / "derived").exists()
+
+
+@then('profile "source" and its independent cache are unchanged')
+def step_copy_source_unchanged(context):
+    source = context.home / ".zpp" / "profiles" / "source"
+    cache = context.home / ".zpp" / "cached" / "profiles" / "source"
+    assert authored_bytes(source) == context.source_authored_before
+    assert snapshot(cache) == context.source_cache_before
+
+
+@then("the global layer is unchanged")
+def step_global_unchanged(context):
+    assert snapshot(context.home / ".zpp" / "global") == context.global_before
+
+
+@given('profiles "source" and "existing" already exist')
+def step_source_and_existing_profiles(context):
+    for name in ("source", "existing"):
+        result = invoke(context, ["profile", "create", name])
+        assert result.exit_code == 0, result.output
+    context.results.clear()
+
+
+@given('profile "broken" has invalid managed state')
+def step_invalid_profile_for_copy(context):
+    root = context.home / ".zpp" / "profiles" / "broken"
+    write_layer(root)
+    (root / "config.json").write_text("invalid\n", encoding="utf-8")
+    context.invalid_source = root / "config.json"
+
+
+@given("the current timestamp for archive naming is 20260730-143522")
+def step_fixed_archive_time(context):
+    context.archive_time = datetime(2026, 7, 30, 14, 35, 22)
+
+
+@given("the global layer has distinctive valid authored bytes and derived state")
+def step_global_layer_for_activation(context):
+    root = context.home / ".zpp" / "global"
+    write_trait(root, "prior-global", body="prior global body\n")
+    (root / "trait.json").write_text(
+        '[{"trait":"prior-global"}]\n',
+        encoding="utf-8",
+    )
+    cache = context.home / ".zpp" / "cached" / "global"
+    cache.mkdir(parents=True)
+    (cache / "traits.json").write_text('{"prior": true}\n', encoding="utf-8")
+    (cache / "traits.watch.json").write_text('{"prior": true}\n', encoding="utf-8")
+    context.prior_global_authored = authored_bytes(root)
+
+
+@given(
+    "the default profile has different distinctive valid authored bytes "
+    "and derived state"
+)
+def step_default_layer_for_activation(context):
+    root = context.home / ".zpp" / "profiles" / "default"
+    (root / "config.json").write_text(
+        '{ "trait_overwrites": false, "traitsConfig": '
+        '{"automatic-workflow": {"marker": "default"}} }\n',
+        encoding="utf-8",
+    )
+    cache = context.home / ".zpp" / "cached" / "profiles" / "default"
+    cache.mkdir(parents=True)
+    (cache / "traits.json").write_text('{"default": true}\n', encoding="utf-8")
+    context.default_authored_before = authored_bytes(root)
+    context.default_cache_before = snapshot(cache)
+
+
+@when('the user runs zpp global activate {profile}')
+def step_activate_global_profile(context, profile):
+    fixed = getattr(context, "archive_time", None)
+    if fixed is None:
+        invoke(context, ["global", "activate", profile])
+        return
+    with patch("zpp.core.state.datetime") as clock:
+        clock.now.return_value = fixed
+        invoke(context, ["global", "activate", profile])
+
+
+@then('profile "20260730-143522-global" contains the prior global authored layer')
+def step_archived_global_layer(context):
+    archive = context.home / ".zpp" / "profiles" / "20260730-143522-global"
+    actual = authored_bytes(archive)
+    assert actual == context.prior_global_authored, (
+        actual,
+        context.prior_global_authored,
+        tuple(path.name for path in archive.parent.iterdir()),
+    )
+
+
+@then("the global layer contains a byte-for-byte copy of the default authored layer")
+def step_global_matches_default(context):
+    assert authored_bytes(context.home / ".zpp" / "global") == (
+        context.default_authored_before
+    )
+
+
+@then("the default profile is byte-for-byte unchanged")
+def step_default_profile_unchanged(context):
+    root = context.home / ".zpp" / "profiles" / "default"
+    assert authored_bytes(root) == context.default_authored_before
+
+
+@then("no derived cache or modification sidecar is copied into either authored layer")
+def step_no_derived_state_copied(context):
+    root = context.home / ".zpp"
+    archive = root / "profiles" / "20260730-143522-global"
+    assert not (root / "global" / "cached").exists()
+    assert not (archive / "cached").exists()
+    assert not tuple((root / "global").rglob("traits.watch.json"))
+    assert not tuple(archive.rglob("traits.watch.json"))
+
+
+@then("affected derived caches are invalidated")
+def step_activation_cache_invalidated(context):
+    root = context.home / ".zpp"
+    assert not (root / "cached" / "global").exists()
+    assert snapshot(root / "cached" / "profiles" / "default") == (
+        context.default_cache_before
+    )
+
+
+@when("the user resolves traits without ZPP_PROFILE")
+def step_resolve_without_profile(context):
+    context.env["ZPP_PROFILE"] = None
+    invoke(context, ["resolve", str(context.project)])
+
+
+@then("the platform-neutral base traits resolve from global")
+def step_base_traits_from_global(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert [meta["name"] for meta, _ in parse_documents(context.result.stdout)] == [
+        "automatic-workflow",
+        "zero-assumptions",
+        "ponytail",
+    ]
+
+
+@given('profiles "work" and "default" exist')
+def step_work_and_default_profiles(context):
+    result = invoke(context, ["profile", "create", "work"])
+    assert result.exit_code == 0, result.output
+    context.default_authored_before = authored_bytes(
+        context.home / ".zpp" / "profiles" / "default"
+    )
+    context.results.clear()
+
+
+@then("the default profile still exists unchanged")
+def step_default_still_unchanged(context):
+    root = context.home / ".zpp" / "profiles" / "default"
+    assert authored_bytes(root) == context.default_authored_before
+
+
+# Standard trait resolution
+
+
+@given('ZPP_PROFILE is "default"')
+def step_default_profile_env(context):
+    context.env["ZPP_PROFILE"] = "default"
+
+
+@then('automatic-workflow has effective mode "automatic"')
+def step_automatic_mode(context):
+    documents = parse_documents(context.result.stdout)
+    automatic = next(meta for meta, _ in documents if meta["name"] == "automatic-workflow")
+    assert automatic["config"]["mode"] == "automatic"
+
+
+@then("stdout contains no Python-specific trait")
+def step_no_python_traits(context):
+    names = {meta["name"] for meta, _ in parse_documents(context.result.stdout)}
+    assert names.isdisjoint({"python-bdd", "python-tdd", "python-build"})
+
+
+@given('the repository layer overrides automatic-workflow mode to "manual"')
+def step_local_manual_mode(context):
+    git_init(context.project)
+    context.target = context.project
+    write_layer(
+        context.project / ".zpp",
+        config={
+            "trait_overwrites": False,
+            "traitsConfig": {"automatic-workflow": {"mode": "manual"}},
+        },
+    )
+
+
+@when("the user runs zpp resolve for the repository target")
+def step_resolve_repository_target(context):
+    invoke(context, ["resolve", str(context.project)])
+
+
+@then('automatic-workflow remains active with effective mode "manual"')
+def step_manual_mode_active(context):
+    documents = parse_documents(context.result.stdout)
+    automatic = next(meta for meta, _ in documents if meta["name"] == "automatic-workflow")
+    assert automatic["config"]["mode"] == "manual"
+
+
+@then("the same platform-neutral base traits remain active")
+def step_same_base_traits(context):
+    assert [meta["name"] for meta, _ in parse_documents(context.result.stdout)] == [
+        "automatic-workflow",
+        "zero-assumptions",
+        "ponytail",
+    ]
+
+
+use_step_matcher("re")
+
+
+@given(r"the repository layer additionally activates (?P<trait>python-(?:bdd|tdd|build))")
+def step_activate_optional_python_trait(context, trait):
+    git_init(context.project)
+    context.target = context.project
+    write_layer(context.project / ".zpp", triggers=[{"trait": trait}])
+
+
+@then(
+    r"stdout contains (?P<trait>python-(?:bdd|tdd|build)) "
+    r"with only (?P<responsibility>Behave|pytest|the uv environment) guidance"
+)
+def step_optional_python_guidance(context, trait, responsibility):
+    documents = parse_documents(context.result.stdout)
+    body = next(body for meta, body in documents if meta["name"] == trait)
+    expected = {
+        "Behave": "Behave",
+        "pytest": "pytest",
+        "the uv environment": "uv",
+    }[responsibility]
+    assert expected in body
+
+
+use_step_matcher("parse")
+
+
+@then("stdout contains no other optional Python trait")
+def step_no_other_python_trait(context):
+    names = {
+        meta["name"]
+        for meta, _ in parse_documents(context.result.stdout)
+        if meta["name"].startswith("python-")
+    }
+    assert len(names) == 1
+
+
+# Standard workflow trait ownership and delegated progression
+
+
+@given("the user-owned default profile is recorded")
+def step_record_default_profile(context):
+    context.default_profile_before = snapshot(
+        context.home / ".zpp" / "profiles" / "default"
+    )
+
+
+@then("the user-owned default profile is unchanged")
+def step_owned_default_unchanged(context):
+    assert snapshot(context.home / ".zpp" / "profiles" / "default") == (
+        context.default_profile_before
+    )
+
+
+@then("completed checkpoints, successful verification, and ordinary stage transitions are not human gates")
+def step_ordinary_transitions_not_gates(context):
+    output = context.result.stdout
+    assert "checkpoints, successful verification, or ordinary handoffs" in output
+
+
+@then(
+    "the effective trait pauses only for unresolved clarification, "
+    "a new product boundary, or a missing or changed utility shape"
+)
+def step_only_real_human_gates(context):
+    assert (
+        "Pause only for unresolved clarification, a new product boundary, "
+        "or a missing or changed utility shape"
+    ) in context.result.stdout
+
+
+@given('a participating layer activates automatic-workflow with mode "manual"')
+def step_manual_automatic_workflow(context):
+    initialize(context)
+    context.target = context.project
+    context.env["ZPP_PROFILE"] = "default"
+    git_init(context.project)
+    root = context.project / ".zpp"
+    write_layer(
+        root,
+        config={
+            "trait_overwrites": False,
+            "traitsConfig": {"automatic-workflow": {"mode": "manual"}},
+        },
+    )
+    context.manual_config_before = (root / "config.json").read_bytes()
+
+
+@given("the user explicitly delegates the complete change end to end")
+def step_complete_delegation(context):
+    context.complete_delegation = True
+
+
+@when("a workflow stage completes with its gate satisfied")
+def step_satisfied_stage(context):
+    assert context.complete_delegation
+    invoke(context, ["resolve", str(context.target)])
+
+
+@then(
+    "the effective guidance directs continuation through the next owning "
+    "workflow without requesting stage approval"
+)
+def step_delegated_continuation(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert "delegates a change end to end" in context.result.stdout
+    assert "without requesting approval" in context.result.stdout
+
+
+@then("the manual configuration remains unchanged")
+def step_manual_config_unchanged(context):
+    source = context.project / ".zpp" / "config.json"
+    assert source.read_bytes() == context.manual_config_before
+    metadata = parse_documents(context.result.stdout)[0][0]
+    assert metadata["config"]["mode"] == "manual"
+
+
+@then("the trait still cannot execute a skill or grant mutation authority")
+def step_manual_trait_advisory(context):
+    assert "Skill lookup remains passive and grants no authority" in context.result.stdout
+
+
+@given("the initialized default profile contains the platform-neutral base traits")
+def step_initialized_default_traits(context):
+    initialize(context)
+    step_default_profile_triggers(context)
+    step_default_optional_python_traits(context)
+
+
+@then("cross-cutting zero-assumption and Ponytail guidance remains in its owning trait")
+def step_cross_cutting_trait_ownership(context):
+    traits = context.home / ".zpp" / "profiles" / "default" / "traits"
+    zero = (traits / "zero-assumptions.md").read_text(encoding="utf-8")
+    ponytail = (traits / "ponytail.md").read_text(encoding="utf-8")
+    assert "Do not invent" in zero
+    assert "dependency" in ponytail
+
+
+@then("each permanent skill contains only its stage-specific operations and gates")
+def step_skills_stage_specific(context):
+    forbidden = (
+        "Persist established information before absorbing new details",
+        "Keep feature wiring thin by composing small focused utilities",
+    )
+    for root in context.installed_workflow_roots:
+        for name in context.workflow_skill_names:
+            source = (root / name / "SKILL.md").read_text(encoding="utf-8")
+            assert not any(text in source for text in forbidden)
+
+
+@then(
+    "hard OpenSpec operation ownership, verification authority, and zmem "
+    "materiality remain in their owning skills"
+)
+def step_hard_rules_remain_in_skills(context):
+    root = context.installed_workflow_roots[0]
+    mature = (root / "zpp-mature-utilities" / "SKILL.md").read_text(encoding="utf-8")
+    wire = (root / "zpp-wire-feature" / "SKILL.md").read_text(encoding="utf-8")
+    zmem = (root / "zpp-commit-zmem" / "SKILL.md").read_text(encoding="utf-8")
+    assert "OpenSpec operation prerequisite" in mature
+    assert "root agent exclusively owns" in wire
+    assert "material tracked work" in zmem
+
+
+@then(
+    "python-bdd, python-tdd, and python-build remain independent optional "
+    "traits outside the skill bodies"
+)
+def step_python_traits_outside_skills(context):
+    optional = ("python-bdd", "python-tdd", "python-build")
+    for root in context.installed_workflow_roots:
+        skill_text = "\n".join(
+            (root / name / "SKILL.md").read_text(encoding="utf-8")
+            for name in context.workflow_skill_names
+        )
+        leaked = [name for name in optional if name in skill_text]
+        assert not leaked, (root, leaked)

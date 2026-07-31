@@ -31,6 +31,7 @@ Canonical specs own mature product behavior only. Do not promote workflow mechan
 6. Resolve contradictions against the live proposal and evidence. Record a newly required decision in the proposal instead of assuming an answer.
 7. Validate that the complete formed specification set describes mature behavior and that no mature public obligation was lost during reconciliation.
 8. Hand the separate change-wide specification-formation checkpoint to `zpp-commit-zmem` for the current pass. If specification reconciliation is repeated after reopening, create a replacement checkpoint under the same criteria and preserve the earlier one as history.
+9. After that checkpoint, hand the validated change to the owning OpenSpec finalization workflow; invoke it immediately when automatic progression or explicit end-to-end delegation applies.
 
 The utility plan from a completed TDD pass must already be discarded. Never reconstruct it for specification formation and never sync, archive, summarize, or translate it into canonical specs.
 

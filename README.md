@@ -18,6 +18,10 @@ Initialization creates neutral user state without modifying the current project:
 │   ├── trait.json
 │   └── traits/
 ├── profiles/
+│   └── default/
+│       ├── config.json
+│       ├── trait.json
+│       └── traits/
 ├── saved/
 │   └── _bindings.json
 └── cached/
@@ -35,8 +39,10 @@ ZPP does not install agent skills, instruction paragraphs, repository-local inte
 
 ```console
 zpp profile create work
+zpp profile copy default work
 zpp profile list
 zpp profile remove work --yes
+zpp global activate work
 
 zpp profile saved create personal C:\work\project
 zpp profile saved list
@@ -46,7 +52,16 @@ zpp local init
 zpp local init src\package
 ```
 
-Set `ZPP_PROFILE` to layer one named profile after global state. If it is unset, only global user state is selected before saved and repository layers. Saved overrides bind one reusable layer to one or more canonical existing directories; the closest matching ancestor wins.
+The persistent, user-owned `default` profile contains the platform-neutral
+standard traits. Initialization creates it only when absent and never reapplies
+bundled content over an existing valid default.
+
+`zpp profile copy` copies authored profile bytes without copying cache state.
+`zpp global activate` archives the prior global layer as a collision-safe
+timestamped profile and copies the selected profile into global. Set
+`ZPP_PROFILE` for a temporary, non-mutating profile layer after global state.
+Saved overrides bind one reusable layer to one or more canonical existing
+directories; the closest matching ancestor wins.
 
 Repository and subfolder `.zpp` layers are opt-in and must be inside a Git worktree.
 

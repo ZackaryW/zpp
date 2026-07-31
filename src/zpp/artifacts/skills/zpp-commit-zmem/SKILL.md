@@ -38,3 +38,5 @@ Validate the message with the bundled validator appropriate to the active shell 
 Fix any validation failure before continuing. When execution is authorized, stage only the logical checkpoint and commit it. Refuse an empty index and never pass `--allow-empty`. Otherwise present exact staging and commit commands. Never rewrite published history.
 
 Only the root agent may evaluate gate evidence, run any verification command used to justify the checkpoint, stage files, or commit. Subagents must not declare checkpoint readiness or perform Git mutation.
+
+After a checkpoint, return control to the owning workflow. A successful checkpoint is not itself a human gate; when automatic progression or explicit end-to-end delegation applies, the owning workflow continues immediately.
