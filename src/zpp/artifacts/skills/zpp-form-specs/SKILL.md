@@ -13,7 +13,7 @@ Require all of these inputs before forming specifications:
 
 - the live proposal containing the accepted intent and decisions;
 - the complete green public feature/fix scenario set;
-- the complete green utility implementation, focused tests, and current mature-utility checkpoint;
+- the complete green utility implementation and focused tests, plus a current mature-utility checkpoint only when that pass produced material tracked utility work;
 - all implemented public behavior in the product change;
 - the change-wide green integration zmem checkpoint.
 
