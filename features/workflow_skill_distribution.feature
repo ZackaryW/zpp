@@ -171,3 +171,18 @@ Feature: Distribute the permanent ZPP workflow skills
     And each skill retains its required packaged resources and scripts
     And no skill body contains platform, framework, test-runner, or agent-specific policy
     And python-bdd, python-tdd, and python-build remain independent optional traits outside the skill bodies
+
+  Scenario: Related OpenSpec changes receive an owned terminal disposition
+    Given a workflow relates a product change, a utility companion, and a temporary internal anchor
+    And an unrelated OpenSpec change remains active
+    When the mature workflow reaches finalization
+    Then the product change is handed to the owning OpenSpec finalizer
+    And the verified utility companion and consumed internal anchor are discarded
+    And the unrelated active change is left untouched
+    And completion requires a final audit of the related change set
+
+  Scenario: An unowned related change blocks workflow completion
+    Given a consumed related OpenSpec change remains active without an owning stage
+    When the workflow evaluates its completion gate
+    Then the workflow cannot report completion
+    And the unrelated OpenSpec change list is not required to be empty
