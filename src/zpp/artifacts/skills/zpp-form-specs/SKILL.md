@@ -35,4 +35,3 @@ Canonical specs own mature product behavior only. Do not promote workflow mechan
 The utility plan from a completed TDD pass must already be discarded. Never reconstruct it for specification formation and never sync, archive, summarize, or translate it into canonical specs.
 
 Do not wire features, add utility behavior, archive the change, or infer a change-closure policy in this skill.
-

@@ -53,4 +53,3 @@ if [ "$ANNOTATIONS" -eq 0 ] && [ "$CC_TYPE" != "chore" ]; then
   emit false 23 "no zmem() annotation and type '$CC_TYPE' is not exempt" "$CC_TYPE" 0; exit 23
 fi
 emit true 0 "ok" "$CC_TYPE" "$ANNOTATIONS"
-

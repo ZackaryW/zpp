@@ -31,4 +31,3 @@ Complete TDD for every utility and adapter in the utility change before any prod
 The root agent runs every focused utility suite and the relevant broader unit suite, avoiding duplicate executions when no material state changed. Then hand the complete mature utility foundation to `zpp-commit-zmem` for the current pass. If this stage was reopened, create a replacement mature-utility checkpoint under the same criteria before feature wiring resumes; preserve the earlier checkpoint as history.
 
 After that checkpoint succeeds, delete the disposable companion utility change before feature wiring. Never sync or archive its plan into canonical OpenSpec specs. The green utility implementation, focused tests, and zmem checkpoint are the durable evidence; future visits rediscover the current internal graph from source with available code-intelligence tools such as CodeGraph. Stop before feature wiring.
-

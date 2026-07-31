@@ -36,4 +36,3 @@ The companion change is temporary execution scaffolding. Never sync, archive, tr
 If TDD or wiring reopens this plan, require a truthful fallback zmem checkpoint of the downstream stage's coherent tracked work before leaving it. Then suspend that stage and reconcile the complete utility change again. When revised utilities later regain complete maturity, repeat the established mature-utility checkpoint before wiring resumes. The fallback and any earlier utility checkpoint remain historical only.
 
 Subagents may perform explicitly delegated research or inspection, but they must not execute RED/GREEN commands, interpret gate evidence, or declare a workflow gate satisfied. Verification authority remains with the root agent.
-

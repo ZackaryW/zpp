@@ -59,4 +59,3 @@ if ($Annotations -eq 0 -and $ExemptTypes -notcontains $CcType) {
 }
 Emit-Result $true 0 'ok' $CcType $Annotations
 exit 0
-

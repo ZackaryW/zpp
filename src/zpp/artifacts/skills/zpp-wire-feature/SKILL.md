@@ -31,4 +31,3 @@ Treat the proposal and approved Gherkin scenarios as the complete product author
 Subagents may prepare explicitly delegated bounded edits, but they must not execute RED/GREEN commands, interpret verification output, declare the integration gate green, or create the checkpoint. The root agent exclusively owns integration verification and gate state.
 
 Do not formalize canonical OpenSpec specs here. That occurs only after mature green behavior is ready for reconciliation.
-

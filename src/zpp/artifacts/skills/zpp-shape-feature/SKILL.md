@@ -30,4 +30,3 @@ Before running any OpenSpec command or reading, creating, updating, validating, 
 Subagents may inspect or draft bounded feature text only when explicitly delegated. They must not run RED/GREEN verification, create bindings, declare a workflow gate satisfied, or create a checkpoint. Verification authority remains with the root agent.
 
 Do not begin or resume utility planning until every accepted public boundary in the change is represented in the approved feature set and the current feature pass has its checkpoint. Stop before bindings, utility planning, or production implementation. If an outcome-changing public behavior is unclear, return the whole change to `zpp-clarify-change`. Do not reopen clarification for an implementation choice that can remain free.
-
