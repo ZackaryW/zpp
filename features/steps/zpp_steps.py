@@ -2672,8 +2672,17 @@ def step_default_profile_exists(context):
 
 
 @then(
-    "the default profile activates exactly automatic-workflow, "
-    "zero-assumptions, and ponytail"
+    "the default profile is provisioned without participating in resolution"
+)
+def step_default_profile_inactive(context):
+    global_triggers = context.home / ".zpp" / "global" / "trait.json"
+    assert json.loads(global_triggers.read_text(encoding="utf-8")) == []
+    assert context.env["ZPP_PROFILE"] is None
+
+
+@then(
+    "the default profile selects exactly automatic-workflow, zero-assumptions, "
+    "and ponytail when explicitly used"
 )
 def step_default_profile_triggers(context):
     source = context.home / ".zpp" / "profiles" / "default" / "trait.json"
