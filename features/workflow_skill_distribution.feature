@@ -131,12 +131,14 @@ Feature: Distribute the permanent ZPP workflow skills
   Scenario: Removal requires confirmation and removes only managed selected state
     Given Pi has a managed local ZPP workflow bundle surrounded by unrelated skills
     And Claude Code has a managed local ZPP workflow bundle
+    And the user-owned default profile is recorded
     When the user runs zpp workflow remove with agent Pi and declines confirmation
     Then every agent skill scope is unchanged
     When the user runs zpp workflow remove with agent Pi and --yes
     Then only the managed shared Codex and Pi projection is removed
     And the unrelated skills are unchanged
     And the Claude Code projection is unchanged
+    And the user-owned default profile is unchanged
 
   Scenario: Automatic workflow guidance remains advisory and skill-backed
     Given a participating layer activates a conditionless automatic-workflow trait
@@ -146,9 +148,16 @@ Feature: Distribute the permanent ZPP workflow skills
     And the skill lookup remains passive frontmatter metadata
     And the trait does not grant mutation authority or bypass a failed gate
 
+  Scenario: Shared guidance is trait-owned rather than repeated across skills
+    Given the initialized default profile contains the platform-neutral base traits
+    When the user installs the managed bundle for every supported agent
+    Then cross-cutting zero-assumption and Ponytail guidance remains in its owning trait
+    And each permanent skill contains only its stage-specific operations and gates
+    And hard OpenSpec operation ownership, verification authority, and zmem materiality remain in their owning skills
+
   Scenario: Installed skill bodies remain platform-neutral
     When the user installs the managed bundle for every supported agent
     Then every native projection contains the same seven permanent workflow skills
     And each skill retains its required packaged resources and scripts
     And no skill body contains platform, framework, test-runner, or agent-specific policy
-    And platform-specific installation behavior remains outside the skill bodies
+    And python-bdd, python-tdd, and python-build remain independent optional traits outside the skill bodies

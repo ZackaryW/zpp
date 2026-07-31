@@ -1,6 +1,7 @@
 Feature: Bootstrap ZPP and configure agent applications
-  ZPP users can initialize neutral global state and opt into native lifecycle hooks
-  without modifying projects or leaking trait policy into agent setup.
+  ZPP users can initialize neutral global state, a reusable default profile, and
+  optional native lifecycle hooks without modifying projects or leaking trait
+  policy into agent setup.
 
   Scenario: ZPP reports its identity and initial command surface
     Given ZPP is installed
@@ -11,15 +12,17 @@ Feature: Bootstrap ZPP and configure agent applications
     And the help exposes the independent workflow lifecycle command group
     And the help does not expose a generic skill command group
 
-  Scenario: First noninteractive initialization creates only neutral user state
+  Scenario: First noninteractive initialization creates required user state
     Given a clean user home
     And a project without local ZPP state
     And no interactive terminal is available
     When the user runs zpp init
     Then initialization succeeds
     And the neutral global trait layer exists
-    And the empty profile, saved, and cache roots exist
-    And no named profile exists
+    And the persistent user-owned default profile exists
+    And the default profile activates exactly automatic-workflow, zero-assumptions, and ponytail
+    And the default profile contains inactive python-bdd, python-tdd, and python-build traits
+    And the saved and cache roots exist
     And no cache artifact exists
     And the project still has no local ZPP state
     And no agent application is configured
@@ -33,6 +36,15 @@ Feature: Bootstrap ZPP and configure agent applications
     And every missing required user-state entry is created
     And every pre-existing managed file is byte-for-byte unchanged
     And the second initialization makes no further change
+
+  Scenario: Initialization preserves a user-edited default profile
+    Given valid initialized user state
+    And the default profile has valid user-authored changes with distinctive formatting
+    And no interactive terminal is available
+    When the user runs zpp init
+    Then initialization succeeds
+    And the complete default profile is byte-for-byte unchanged
+    And no bundled default content is reapplied
 
   Scenario: Invalid managed user state blocks all bootstrap writes
     Given user state contains an invalid managed source

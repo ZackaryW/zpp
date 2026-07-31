@@ -19,6 +19,7 @@ Feature: Manage named profiles and saved override layers
       """
       alpha
       beta
+      default
       """
 
   Scenario Outline: Reject invalid profile creation without partial writes
@@ -47,14 +48,82 @@ Feature: Manage named profiles and saved override layers
     When the user runs zpp profile list
     Then the command succeeds with stdout:
       """
+      default
       keep
       """
 
-  Scenario: Empty profile and saved lists succeed without output
+  Scenario: The persistent default is the only initial profile
     When the user runs zpp profile list
-    Then the command succeeds with empty stdout
+    Then the command succeeds with stdout:
+      """
+      default
+      """
     When the user runs zpp profile saved list
     Then the command succeeds with empty stdout
+
+  Scenario: The default profile cannot be removed
+    Given the complete ZPP user state is recorded
+    When the user runs zpp profile remove default -y
+    Then the command is rejected with exit code 1
+    And the diagnostic identifies the persistent default profile
+    And the complete ZPP user state is unchanged
+
+  Scenario: Copy a profile without activating it or copying derived state
+    Given profile "source" has distinctive valid authored bytes and an independent cache
+    And no profile named "derived" exists
+    And the global layer has distinctive authored bytes
+    When the user runs zpp profile copy source derived
+    Then profile "derived" contains a byte-for-byte copy of the authored source layer
+    And profile "derived" has no derived cache
+    And profile "source" and its independent cache are unchanged
+    And the global layer is unchanged
+
+  Scenario Outline: Reject an invalid profile copy atomically
+    Given <precondition>
+    And the complete ZPP user state is recorded
+    When the user runs <command>
+    Then the command is rejected with exit code 1
+    And the diagnostic identifies <source>
+    And the complete ZPP user state is unchanged
+
+    Examples:
+      | precondition                                     | command                                  | source                     |
+      | no profile named "missing" exists               | zpp profile copy missing derived         | the missing source profile |
+      | profiles "source" and "existing" already exist  | zpp profile copy source existing         | the existing destination   |
+      | profile "broken" has invalid managed state       | zpp profile copy broken derived           | the invalid managed source |
+
+  Scenario: Activate a profile while preserving both configurations
+    Given the current timestamp for archive naming is 20260730-143522
+    And the global layer has distinctive valid authored bytes and derived state
+    And the default profile has different distinctive valid authored bytes and derived state
+    When the user runs zpp global activate default
+    Then profile "20260730-143522-global" contains the prior global authored layer
+    And the global layer contains a byte-for-byte copy of the default authored layer
+    And the default profile is byte-for-byte unchanged
+    And no derived cache or modification sidecar is copied into either authored layer
+    And affected derived caches are invalidated
+    When the user resolves traits without ZPP_PROFILE
+    Then the platform-neutral base traits resolve from global
+
+  Scenario: Persistent activation does not alter a temporary profile selection
+    Given ZPP_PROFILE is "work"
+    And profiles "work" and "default" exist
+    When the user runs zpp global activate default
+    Then ZPP_PROFILE remains "work"
+    And the default profile still exists unchanged
+
+  Scenario Outline: Reject invalid global activation atomically
+    Given <precondition>
+    And the complete ZPP user state is recorded
+    When the user runs zpp global activate <profile>
+    Then the command is rejected with exit code 1
+    And the diagnostic identifies <source>
+    And the complete ZPP user state is unchanged
+
+    Examples:
+      | precondition                               | profile | source                     |
+      | no profile named "missing" exists         | missing | the missing source profile |
+      | profile "broken" has invalid managed state | broken | the invalid managed source |
 
   Scenario: Create a neutral saved layer independently of named profiles
     Given "C:\work\b" is an existing directory and no saved layer named "shared" exists

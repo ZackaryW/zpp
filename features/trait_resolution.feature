@@ -2,6 +2,43 @@ Feature: Resolve effective traits as Markdown
   ZPP users can resolve activated trait documents through global, profile, saved,
   repository, and nested layers without exposing cache or policy internals.
 
+  Scenario: Selecting the default profile resolves the platform-neutral base
+    Given a clean user home with initialized ZPP state
+    And ZPP_PROFILE is "default"
+    When the user runs zpp resolve for an existing target
+    Then resolution succeeds
+    And stdout contains exactly these effective trait documents in order:
+      | name               |
+      | automatic-workflow |
+      | zero-assumptions   |
+      | ponytail           |
+    And automatic-workflow has effective mode "automatic"
+    And stdout contains no Python-specific trait
+
+  Scenario: A local configuration changes automatic progression to manual
+    Given a clean user home with initialized ZPP state
+    And ZPP_PROFILE is "default"
+    And the repository layer overrides automatic-workflow mode to "manual"
+    When the user runs zpp resolve for the repository target
+    Then resolution succeeds
+    And automatic-workflow remains active with effective mode "manual"
+    And the same platform-neutral base traits remain active
+
+  Scenario Outline: Optional Python traits remain independently selectable
+    Given a clean user home with initialized ZPP state
+    And ZPP_PROFILE is "default"
+    And the repository layer additionally activates <trait>
+    When the user runs zpp resolve for the repository target
+    Then resolution succeeds
+    And stdout contains <trait> with only <responsibility> guidance
+    And stdout contains no other optional Python trait
+
+    Examples:
+      | trait        | responsibility      |
+      | python-bdd   | Behave             |
+      | python-tdd   | pytest             |
+      | python-build | the uv environment |
+
   Scenario: Authored and configured traits remain inactive without a trigger
     Given a clean user home with an initialized global ZPP layer
     And the current directory is an existing target
