@@ -198,13 +198,31 @@ Feature: Distribute the permanent ZPP workflow skills
   Scenario: Current authority and decision history remain distinct
     Given canonical OpenSpec records the currently accepted product behavior
     And zmem records chronological decisions including a later change of direction
-    And an active proposal contains the current change's mutable working state
+    And an active OpenSpec change contains mutable proposal and capability delta specs
     When clarification establishes the product boundary
     Then it compares the later zmem direction with canonical OpenSpec
     And it treats canonical OpenSpec as the long-standing current authority
     And it treats zmem as temporal decision history rather than current product truth
-    And it treats the active proposal as temporary working state
+    And it treats the active OpenSpec planning artifacts as temporary working state
     And no zmem dependency graph is required
+
+  Scenario: Clarification preserves OpenSpec's multi-artifact proposal shape
+    Given an OpenSpec proposal declares multiple new or modified capabilities
+    When clarification settles behavior for the complete change
+    Then proposal.md retains the overview, capability inventory, impact, and unresolved owner decisions
+    And each declared capability has its own specs capability delta document
+    And settled behavior is persisted into its owning delta before clarification continues
+    And design and task artifacts follow the selected OpenSpec schema rather than a ZPP one-file rule
+
+  Scenario: Feature shaping and specification formation preserve artifact ownership
+    Given a confirmed OpenSpec change contains proposal and capability delta documents
+    When the workflow shapes the complete Gherkin feature set
+    Then shaping consumes both proposal and capability delta documents
+    And shaping removes only executable examples duplicated by Gherkin
+    And shaping preserves stable intent, constraints, invariants, and acceptance obligations
+    When mature green behavior later forms canonical specifications
+    Then formation reconciles the existing capability deltas
+    And formation does not create capability specifications for the first time
 
   Scenario: Memory validation is explicit rather than imposed on every commit
     Given a valid conventional commit message contains no zmem annotation
