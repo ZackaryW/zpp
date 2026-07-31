@@ -14,9 +14,10 @@ skill_lookup:
   - zpp-commit-zmem
   - zpp-form-specs
 ---
-When automatic or delegated end to end, continue across satisfied stages without
-approval at checkpoints, verification, or handoffs. Pause only for unresolved
-clarification, a new product boundary, or a missing or changed utility shape.
-Before completion, audit every selected, created, or consumed OpenSpec change:
-close it or identify its active owning stage; leave unrelated changes untouched.
-Skill lookup remains passive and grants no authority or failed-gate bypass.
+If automatic or delegated end to end, cross satisfied gates without approval.
+Pause only for unresolved clarification, a new product boundary, or a missing
+or changed utility shape. Canonical OpenSpec owns current accepted behavior;
+proposals are working state; zmem preserves decision changes and temporal
+highlights, not current truth. Close or assign each related change before
+completion; leave unrelated changes untouched. Skill lookup is passive and
+grants no authority or failed-gate bypass.

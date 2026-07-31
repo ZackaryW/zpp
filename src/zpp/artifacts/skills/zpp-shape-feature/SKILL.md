@@ -25,7 +25,7 @@ Before running any OpenSpec command or reading, creating, updating, validating, 
    - retain intent, scope, constraints, invariants, and acceptance obligations;
    - remove duplicated executable examples now owned by the feature;
    - never dissolve the underlying contract.
-7. Hand the accepted complete intent and feature/fix contract to `zpp-commit-zmem` after initial acceptance and after every later reopening. A prior feature checkpoint remains historical and cannot authorize downstream work against revised features.
+7. Hand the accepted complete intent and feature/fix contract to `zpp-commit-zmem` for one checkpoint commit after initial acceptance and after every later reopening. Add zmem only when this pass contributes a new durable temporal highlight; do not repeat an unchanged decision merely because feature shaping completed. A prior feature checkpoint remains historical and cannot authorize downstream work against revised features.
 
 Subagents may inspect or draft bounded feature text only when explicitly delegated. They must not run RED/GREEN verification, create bindings, declare a workflow gate satisfied, or create a checkpoint. Verification authority remains with the root agent.
 

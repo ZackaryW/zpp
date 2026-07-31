@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -14,6 +15,9 @@ from behave import given, then, use_step_matcher, when
 
 from zpp.cli import app
 from zpp.utils.models import CancelledAgentSelection, ConfirmedAgentSelection
+
+
+REPO_ROOT = Path(__file__).parents[2]
 
 
 def invoke(context, arguments: list[str], *, input_text: str | None = None):
@@ -2955,7 +2959,7 @@ def step_manual_config_unchanged(context):
 @then("the trait still cannot execute a skill or grant mutation authority")
 def step_manual_trait_advisory(context):
     output = " ".join(context.result.stdout.split())
-    assert "Skill lookup remains passive and grants no authority" in output
+    assert "skill lookup is passive and grants no authority" in output.lower()
 
 
 @given("the initialized default profile contains the platform-neutral base traits")
@@ -3056,7 +3060,7 @@ def step_workflow_reaches_finalization(context):
 @then("the product change is handed to the owning OpenSpec finalizer")
 def step_product_change_finalized(context):
     source = context.lifecycle_skills["zpp-form-specs"]
-    assert "owning OpenSpec finalization workflow" in source
+    assert "explicitly to `openspec-archive-change`" in source
     assert "Require the product change to be archived" in source
 
 
@@ -3064,9 +3068,9 @@ def step_product_change_finalized(context):
 def step_companions_discarded(context):
     mature = context.lifecycle_skills["zpp-mature-utilities"]
     form = context.lifecycle_skills["zpp-form-specs"]
-    assert "re-list active changes and require that companion to be absent" in mature
-    assert "consumed internal anchor" in form
-    assert "to be discarded" in form
+    assert "re-list active changes and require that companion to be absent" in mature.lower()
+    assert "consumed internal anchor" in form.lower()
+    assert "to be discarded" in form.lower()
 
 
 @then("the unrelated active change is left untouched")
@@ -3085,7 +3089,7 @@ def step_final_related_change_audit(context):
     trait = " ".join(context.lifecycle_trait.split())
     assert "session-local related set" in clarify
     assert "audit the session-local related change set" in form
-    assert "Before completion, audit every selected, created, or consumed" in trait
+    assert "Close or assign each related change before completion" in trait
 
 
 @given("a consumed related OpenSpec change remains active without an owning stage")
@@ -3112,3 +3116,159 @@ def step_unrelated_list_may_remain_active(context):
     assert "Leave unrelated active changes untouched" in (
         context.lifecycle_skills["zpp-form-specs"]
     )
+
+
+@given("canonical OpenSpec records the currently accepted product behavior")
+def step_canonical_openspec_current(context):
+    install_change_lifecycle_policy(context)
+
+
+@given("zmem records chronological decisions including a later change of direction")
+def step_zmem_temporal_decisions(context):
+    context.temporal_decisions = ("initial direction", "later direction")
+
+
+@given("an active proposal contains the current change's mutable working state")
+def step_active_proposal_working_state(context):
+    context.active_proposal = True
+
+
+@when("clarification establishes the product boundary")
+def step_clarification_establishes_boundary(context):
+    assert context.temporal_decisions
+    assert context.active_proposal
+
+
+@then("it compares the later zmem direction with canonical OpenSpec")
+def step_clarification_compares_history(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "compare the latest relevant direction with canonical OpenSpec" in clarify
+
+
+@then("it treats canonical OpenSpec as the long-standing current authority")
+def step_canonical_authority(context):
+    trait = " ".join(context.lifecycle_trait.split())
+    assert "Canonical OpenSpec owns current accepted behavior" in trait
+
+
+@then("it treats zmem as temporal decision history rather than current product truth")
+def step_zmem_temporal_not_current(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "chronological evidence of meaningful decision changes" in clarify
+    assert "never as current product truth" in clarify
+
+
+@then("it treats the active proposal as temporary working state")
+def step_proposal_temporary_working_state(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "mutable working state for the current change" in clarify
+
+
+@then("no zmem dependency graph is required")
+def step_no_zmem_dependency_graph(context):
+    zmem = context.lifecycle_skills["zpp-commit-zmem"]
+    assert "do not require a dependency graph" in zmem
+
+
+@given("a valid conventional commit message contains no zmem annotation")
+def step_unannotated_conventional_message(context):
+    context.commit_message = context.project / "commit-message.txt"
+    context.commit_message.write_text(
+        "fix(workflow): allow ordinary commit\n",
+        encoding="utf-8",
+    )
+
+
+def run_packaged_zmem_validator(context, *, require_zmem: bool) -> None:
+    scripts = (
+        REPO_ROOT
+        / "src"
+        / "zpp"
+        / "artifacts"
+        / "skills"
+        / "zpp-commit-zmem"
+        / "scripts"
+    )
+    if os.name == "nt":
+        executable = shutil.which("pwsh") or shutil.which("powershell")
+        assert executable is not None
+        command = [
+            executable,
+            "-NoProfile",
+            "-File",
+            str(scripts / "check-commit-msg.ps1"),
+        ]
+    else:
+        executable = shutil.which("sh")
+        assert executable is not None
+        command = [executable, str(scripts / "check-commit-msg.sh")]
+    if require_zmem:
+        command.append("--require-zmem")
+    command.extend(("--file", str(context.commit_message)))
+    context.validator_result = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    context.validator_output = json.loads(context.validator_result.stdout)
+
+
+@when("the bundled commit-message validator checks an ordinary commit")
+def step_validate_ordinary_commit(context):
+    run_packaged_zmem_validator(context, require_zmem=False)
+
+
+@then("validation succeeds with zero zmem annotations")
+def step_ordinary_commit_valid(context):
+    assert context.validator_result.returncode == 0
+    assert context.validator_output["ok"] is True
+    assert context.validator_output["annotations"] == 0
+
+
+@when("the bundled commit-message validator checks a memory-bearing checkpoint")
+def step_validate_memory_checkpoint(context):
+    run_packaged_zmem_validator(context, require_zmem=True)
+
+
+@then("validation fails because a canonical zmem annotation is required")
+def step_memory_checkpoint_requires_annotation(context):
+    assert context.validator_result.returncode == 23
+    assert context.validator_output["ok"] is False
+    assert context.validator_output["code"] == 23
+
+
+@given("mature green behavior reflects the latest accepted decision")
+def step_green_behavior_latest_decision(context):
+    install_change_lifecycle_policy(context)
+
+
+@given("zmem retains earlier directions, reversals, and their reasons")
+def step_zmem_retains_history(context):
+    context.temporal_history_retained = True
+
+
+@when("the workflow forms canonical OpenSpec specifications")
+def step_form_canonical_specs(context):
+    assert context.temporal_history_retained
+
+
+@then("only the enduring current behavior enters canonical OpenSpec")
+def step_only_current_behavior_is_canonical(context):
+    form = context.lifecycle_skills["zpp-form-specs"]
+    assert "Canonical specs own the current mature product behavior only" in form
+
+
+@then("abandoned or superseded chronology remains in zmem")
+def step_superseded_chronology_in_zmem(context):
+    form = context.lifecycle_skills["zpp-form-specs"]
+    assert "Zmem retains the meaningful temporal sequence" in form
+    assert "abandoned or superseded chronology" in form
+
+
+@then("no zmem checkpoint is created merely to mark specification formation")
+def step_no_spec_marker_zmem(context):
+    form = context.lifecycle_skills["zpp-form-specs"]
+    assert "never repeat an already recorded decision" in form
+    assert "merely to mark specification adoption" in form
