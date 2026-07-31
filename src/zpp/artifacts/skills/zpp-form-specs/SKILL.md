@@ -11,7 +11,8 @@ Before running any OpenSpec command or reading, creating, updating, validating, 
 
 Require all of these inputs before forming specifications:
 
-- the live proposal containing the accepted intent and decisions;
+- the live proposal containing the accepted overview and any remaining deferrals;
+- one existing capability delta for every new or modified capability declared by the proposal;
 - the complete green public feature/fix scenario set;
 - the complete green utility implementation and focused tests, plus a current mature-utility checkpoint commit only when that pass produced material tracked utility work;
 - all implemented public behavior in the product change;
@@ -23,17 +24,18 @@ If any prerequisite is absent or was superseded by a reopened earlier stage, pre
 
 Canonical specs own the current mature product behavior only. Zmem retains the meaningful temporal sequence that produced it. Do not promote abandoned or superseded chronology, workflow mechanics, trait execution policy, platform choices, diagnostics, or implementation artifacts into product requirements.
 
-1. Read the proposal, executable feature examples, focused utility tests, implementation, and green checkpoints. Use available code-intelligence tools such as CodeGraph when current internal relationships need inspection.
-2. Use `openspec-sync-specs` to form or update canonical OpenSpec specifications for the complete product change, only for behavior supported by the green evidence.
-3. Preserve stable intent, contract, constraints, invariants, and acceptance obligations in OpenSpec.
-4. Leave executable public examples and their concrete paths in Gherkin; do not duplicate them in OpenSpec.
-5. Leave utility algorithms, adapter details, and internal edge cases with their focused TDD tests unless they establish a public invariant.
-6. Resolve contradictions among canonical baseline, active proposal, and green evidence. Record a newly required decision in the proposal instead of assuming an answer; retain earlier directions and the reason for changing them in zmem.
-7. Validate that the complete formed specification set describes mature behavior and that no mature public obligation was lost during reconciliation.
-8. After specification formation, hand the complete formed specification diff to `zpp-commit-zmem` for a separate checkpoint commit. Add zmem only when formation surfaced a new durable decision, reversal, surprise, or lesson; never repeat an already recorded decision merely to mark specification adoption. If reconciliation is repeated after reopening, create a replacement commit and preserve the earlier one as history.
-9. After that commit, hand the validated change explicitly to `openspec-archive-change`; invoke it immediately when automatic progression or explicit end-to-end delegation applies.
-10. After finalization returns, re-list active changes and audit the session-local related change set. Require the product change to be archived, every utility companion to be absent, and every consumed internal anchor whose consumer condition is satisfied to be discarded. A genuinely unfinished related change may remain active only under an identified owning stage. Leave unrelated active changes untouched.
-11. If any consumed related change remains active without an owning stage, the workflow is incomplete. Report that change and return to its owner; never report overall completion.
+1. Read the proposal, every status-reported capability delta, executable feature examples, focused utility tests, implementation, and green checkpoints. Use available code-intelligence tools such as CodeGraph when current internal relationships need inspection.
+2. Reconcile each existing capability delta against the complete mature green evidence through `openspec-update-change`. Do not create a declared capability's delta for the first time at this stage; a missing delta reopens clarification.
+3. Use `openspec-sync-specs` to promote the reconciled deltas into canonical OpenSpec specifications for the complete product change, only for behavior supported by the green evidence.
+4. Preserve stable intent, contract, constraints, invariants, and acceptance obligations in OpenSpec.
+5. Leave executable public examples and their concrete paths in Gherkin; do not duplicate them in OpenSpec.
+6. Leave utility algorithms, adapter details, and internal edge cases with their focused TDD tests unless they establish a public invariant.
+7. Resolve contradictions among canonical baseline, active planning artifacts, and green evidence. Record a newly required decision in the proposal and affected delta instead of assuming an answer; retain earlier directions and the reason for changing them in zmem.
+8. Validate that the complete formed specification set describes mature behavior and that no mature public obligation was lost during reconciliation.
+9. After specification formation, hand the complete formed specification diff to `zpp-commit-zmem` for a separate checkpoint commit. Add zmem only when formation surfaced a new durable decision, reversal, surprise, or lesson; never repeat an already recorded decision merely to mark specification adoption. If reconciliation is repeated after reopening, create a replacement commit and preserve the earlier one as history.
+10. After that commit, hand the validated change explicitly to `openspec-archive-change`; invoke it immediately when automatic progression or explicit end-to-end delegation applies.
+11. After finalization returns, re-list active changes and audit the session-local related change set. Require the product change to be archived, every utility companion to be absent, and every consumed internal anchor whose consumer condition is satisfied to be discarded. A genuinely unfinished related change may remain active only under an identified owning stage. Leave unrelated active changes untouched.
+12. If any consumed related change remains active without an owning stage, the workflow is incomplete. Report that change and return to its owner; never report overall completion.
 
 The utility plan from a completed TDD pass must already be discarded. Never reconstruct it for specification formation and never sync, archive, summarize, or translate it into canonical specs.
 

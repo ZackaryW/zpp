@@ -3254,15 +3254,15 @@ def step_zmem_temporal_decisions(context):
     context.temporal_decisions = ("initial direction", "later direction")
 
 
-@given("an active proposal contains the current change's mutable working state")
-def step_active_proposal_working_state(context):
-    context.active_proposal = True
+@given("an active OpenSpec change contains mutable proposal and capability delta specs")
+def step_active_planning_artifacts(context):
+    context.active_planning_artifacts = True
 
 
 @when("clarification establishes the product boundary")
 def step_clarification_establishes_boundary(context):
     assert context.temporal_decisions
-    assert context.active_proposal
+    assert context.active_planning_artifacts
 
 
 @then("it compares the later zmem direction with canonical OpenSpec")
@@ -3284,16 +3284,107 @@ def step_zmem_temporal_not_current(context):
     assert "never as current product truth" in clarify
 
 
-@then("it treats the active proposal as temporary working state")
-def step_proposal_temporary_working_state(context):
+@then("it treats the active OpenSpec planning artifacts as temporary working state")
+def step_planning_artifacts_temporary_working_state(context):
     clarify = context.lifecycle_skills["zpp-clarify-change"]
-    assert "mutable working state for the current change" in clarify
+    assert "proposal and capability delta specs as mutable working state" in clarify
 
 
 @then("no zmem dependency graph is required")
 def step_no_zmem_dependency_graph(context):
     zmem = context.lifecycle_skills["zpp-commit-zmem"]
     assert "do not require a dependency graph" in zmem
+
+
+@given("an OpenSpec proposal declares multiple new or modified capabilities")
+def step_proposal_declares_capabilities(context):
+    install_change_lifecycle_policy(context)
+    context.declared_capabilities = ("first-capability", "second-capability")
+
+
+@when("clarification settles behavior for the complete change")
+def step_clarification_settles_complete_change(context):
+    assert context.declared_capabilities
+
+
+@then(
+    "proposal.md retains the overview, capability inventory, impact, "
+    "and unresolved owner decisions"
+)
+def step_proposal_retains_overview(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "motivation, scope, capability inventory, impact" in clarify
+    assert "Unresolved — Do Not Assume" in clarify
+
+
+@then("each declared capability has its own specs capability delta document")
+def step_each_capability_has_delta(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "one status-reported delta at `specs/<capability>/spec.md`" in clarify
+
+
+@then("settled behavior is persisted into its owning delta before clarification continues")
+def step_settled_behavior_persisted(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "settled normative behavior belongs in its owning capability delta" in clarify
+    assert "update the proposal and every affected capability delta before asking" in clarify
+
+
+@then(
+    "design and task artifacts follow the selected OpenSpec schema "
+    "rather than a ZPP one-file rule"
+)
+def step_schema_owns_other_artifacts(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "follow the selected schema's complete artifact graph" in clarify
+    assert "do not impose ZPP-specific artifact omissions" in clarify
+
+
+@given("a confirmed OpenSpec change contains proposal and capability delta documents")
+def step_confirmed_multi_artifact_change(context):
+    install_change_lifecycle_policy(context)
+
+
+@when("the workflow shapes the complete Gherkin feature set")
+def step_shape_complete_gherkin(context):
+    context.shaping_started = True
+
+
+@then("shaping consumes both proposal and capability delta documents")
+def step_shaping_consumes_artifacts(context):
+    assert context.shaping_started
+    shape = context.lifecycle_skills["zpp-shape-feature"]
+    assert "confirmed proposal and every status-reported capability delta" in shape
+
+
+@then("shaping removes only executable examples duplicated by Gherkin")
+def step_shaping_removes_only_examples(context):
+    shape = context.lifecycle_skills["zpp-shape-feature"]
+    assert "remove only duplicated executable examples" in shape
+
+
+@then("shaping preserves stable intent, constraints, invariants, and acceptance obligations")
+def step_shaping_preserves_contract(context):
+    shape = context.lifecycle_skills["zpp-shape-feature"]
+    assert "preserve intent, scope, constraints, invariants, and acceptance obligations" in shape
+
+
+@when("mature green behavior later forms canonical specifications")
+def step_mature_green_forms_specs(context):
+    context.specification_formation_started = True
+
+
+@then("formation reconciles the existing capability deltas")
+def step_formation_reconciles_deltas(context):
+    assert context.specification_formation_started
+    form = context.lifecycle_skills["zpp-form-specs"]
+    assert "Reconcile each existing capability delta" in form
+
+
+@then("formation does not create capability specifications for the first time")
+def step_formation_requires_existing_deltas(context):
+    form = context.lifecycle_skills["zpp-form-specs"]
+    assert "Do not create a declared capability's delta for the first time" in form
 
 
 @given("a valid conventional commit message contains no zmem annotation")
