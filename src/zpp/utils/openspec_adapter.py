@@ -138,13 +138,18 @@ def resolve_openspec_relations(project: Path) -> tuple[OpenSpecStoreRelation, ..
     if not isinstance(members, list):
         raise ValueError("OpenSpec returned invalid context members")
     for member in members:
-        role: Literal["governing", "reference"] = "governing"
-        if isinstance(member, dict) and (
+        is_reference = isinstance(member, dict) and (
             member.get("relation") == "reference"
             or member.get("role") in {"reference", "reference_only"}
-        ):
-            role = "reference"
-        candidates.append((member, role))
+        )
+        if isinstance(member, dict) and not is_reference:
+            store_id = _store_id(member)
+            path = member.get("path")
+            if store_id is not None and isinstance(path, str) and path:
+                raise ValueError(
+                    f"unclassified OpenSpec store relation: {store_id}"
+                )
+        candidates.append((member, "reference"))
 
     relations: list[OpenSpecStoreRelation] = []
     for value, role in candidates:

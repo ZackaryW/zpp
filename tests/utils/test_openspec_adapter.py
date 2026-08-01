@@ -99,6 +99,27 @@ def test_openspec_context_classifies_governing_and_reference_stores(
     ]
 
 
+def test_openspec_context_rejects_an_unclassified_path_bearing_store(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    member = str(tmp_path / "member").replace("\\", "\\\\")
+    payload = (
+        '{"root":{"path":"'
+        + str(tmp_path).replace("\\", "\\\\")
+        + '","role":"openspec_root"},"members":[{"path":"'
+        + member
+        + '","store_id":"unknown","role":"unexpected"}]}'
+    )
+    monkeypatch.setattr(
+        "zpp.utils.openspec_adapter.run_process",
+        lambda argv, **kwargs: _result(tuple(argv), payload),
+    )
+
+    with pytest.raises(ValueError, match="unclassified OpenSpec store relation"):
+        resolve_openspec_relations(tmp_path)
+
+
 def test_openspec_adapter_rejects_malformed_json_and_nonzero_commands(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
