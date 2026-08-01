@@ -8,10 +8,11 @@ Feature: Resolve effective traits as Markdown
     When the user runs zpp resolve for an existing target
     Then resolution succeeds
     And stdout contains exactly these effective trait documents in order:
-      | name               |
-      | automatic-workflow |
-      | zero-assumptions   |
-      | ponytail           |
+      | name                  |
+      | automatic-workflow    |
+      | codespace-claim-guard |
+      | zero-assumptions      |
+      | ponytail              |
     And automatic-workflow has effective mode "automatic"
     And stdout contains no Python-specific trait
 
@@ -22,6 +23,7 @@ Feature: Resolve effective traits as Markdown
     When the user runs zpp resolve for the repository target
     Then resolution succeeds
     And automatic-workflow remains active with effective mode "manual"
+    And codespace-claim-guard remains active
     And the same platform-neutral base traits remain active
 
   Scenario Outline: Optional Python traits remain independently selectable

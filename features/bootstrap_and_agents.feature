@@ -21,7 +21,7 @@ Feature: Bootstrap ZPP and configure agent applications
     And the neutral global trait layer exists
     And the persistent user-owned default profile exists
     And the default profile is provisioned without participating in resolution
-    And the default profile selects exactly automatic-workflow, zero-assumptions, and ponytail when explicitly used
+    And the default profile selects exactly automatic-workflow, codespace-claim-guard, zero-assumptions, and ponytail when explicitly used
     And the default profile contains inactive python-bdd, python-tdd, and python-build traits
     And the saved and cache roots exist
     And no cache artifact exists
@@ -134,6 +134,21 @@ Feature: Bootstrap ZPP and configure agent applications
     When the native ZPP hook is invoked
     Then hook execution succeeds
     And no ZPP trait context is injected into <agent>
+
+    Examples:
+      | agent       |
+      | Pi          |
+      | Codex       |
+      | Claude Code |
+
+  Scenario Outline: A configured agent cannot bypass an active codespace claim
+    Given <agent> was configured by ZPP
+    And another active codespace claims the physical checkout targeted by a ZPP-managed mutation
+    And codespace-claim-guard is inactive for the target
+    When <agent> attempts that mutation from a different codespace
+    Then the installed ZPP guard rejects the mutation before the checkout changes
+    And the conflict identifies the active owning codespace
+    And no OpenSpec workset is accepted as proof of write ownership
 
     Examples:
       | agent       |

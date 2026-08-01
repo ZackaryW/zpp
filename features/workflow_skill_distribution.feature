@@ -161,9 +161,22 @@ Feature: Distribute the permanent ZPP workflow skills
   Scenario: Shared guidance is trait-owned rather than repeated across skills
     Given the initialized default profile contains the platform-neutral base traits
     When the user installs the managed bundle for every supported agent
-    Then cross-cutting zero-assumption and Ponytail guidance remains in its owning trait
+    Then cross-cutting codespace claim, zero-assumption, and Ponytail guidance remains in its owning trait
     And each permanent skill contains only its stage-specific operations and gates
     And hard OpenSpec operation ownership, verification authority, and zmem materiality remain in their owning skills
+
+  Scenario Outline: Claim guidance follows workflow automation without granting authority
+    Given a participating layer activates codespace-claim-guard
+    And automatic-workflow has effective mode <mode>
+    When a write-capable ZPP workflow is about to mutate a physical checkout
+    Then the claim guard directs <claim behavior>
+    And the trait does not treat an OpenSpec workset as ownership
+    And the trait cannot override a conflicting claim or grant mutation authority
+
+    Examples:
+      | mode        | claim behavior                                      |
+      | "automatic" | automatic acquisition or verification of the claim |
+      | "manual"    | prompting before claim acquisition                  |
 
   Scenario: Installed skill bodies remain platform-neutral
     When the user installs the managed bundle for every supported agent
@@ -176,9 +189,10 @@ Feature: Distribute the permanent ZPP workflow skills
     Given a mitigated codespace records its generated project and store branches
     When the user installs the managed bundle for every supported agent
     Then every native projection contains the permanent codespace worktree-reconciliation skill
-    And the skill consumes the recorded codespace branch metadata
+    And the skill consumes the released claim's generated-checkout and branch metadata
     And reconciliation requires explicit invocation
     And the skill never makes codespace locking merge work automatically
+    And successful reconciliation can give every retained branch a disposition before finalization
 
   Scenario: Related OpenSpec changes receive an owned terminal disposition
     Given a workflow relates a product change, a utility companion, and a temporary internal anchor
