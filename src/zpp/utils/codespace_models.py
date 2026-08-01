@@ -29,14 +29,20 @@ class CodespaceMember(BaseModel):
         return value
 
 
+class CodespaceProjection(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    generation: int = Field(ge=1)
+    structure_key: str = Field(min_length=1)
+
+
 class CodespaceClaim(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     instance_id: str = Field(min_length=1)
     snapshot_key: str = Field(min_length=1)
-    workset_name: str = Field(min_length=1)
     members: tuple[CodespaceMember, ...]
-    workset_owned: bool = True
+    projection: CodespaceProjection | None = None
 
     @model_validator(mode="after")
     def checkout_keys_are_unique(self) -> "CodespaceClaim":
@@ -46,28 +52,35 @@ class CodespaceClaim(BaseModel):
         return self
 
 
+class ReleasedCheckoutDebt(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    original_path: Path
+    effective_path: Path
+    checkout_key: str = Field(min_length=1)
+    branch: str = Field(min_length=1)
+    worktree_removed: bool = False
+    branch_disposition: Literal["pending", "reconciled", "abandoned"] = "pending"
+
+
 class ReleasedCodespace(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    claim: CodespaceClaim
-    removed_worktree_keys: frozenset[str] = frozenset()
+    instance_id: str = Field(min_length=1)
+    debts: tuple[ReleasedCheckoutDebt, ...] = ()
 
     @model_validator(mode="after")
-    def removed_keys_are_owned_generated_worktrees(self) -> "ReleasedCodespace":
-        generated = {
-            member.checkout_key
-            for member in self.claim.members
-            if member.generated_worktree
-        }
-        if not self.removed_worktree_keys <= generated:
-            raise ValueError("removed key is not an owned generated worktree")
+    def debt_keys_are_unique(self) -> "ReleasedCodespace":
+        keys = [debt.checkout_key for debt in self.debts]
+        if len(keys) != len(set(keys)):
+            raise ValueError("released codespace contains duplicate checkout debts")
         return self
 
 
 class CodespaceIndex(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[1] = 1
+    schema_version: Literal[2] = 2
     claims: dict[str, CodespaceClaim] = Field(default_factory=dict)
     released: dict[str, ReleasedCodespace] = Field(default_factory=dict)
 
@@ -76,7 +89,7 @@ class CodespaceIndex(BaseModel):
         if any(key != claim.instance_id for key, claim in self.claims.items()):
             raise ValueError("claim key does not match its instance id")
         if any(
-            key != released.claim.instance_id
+            key != released.instance_id
             for key, released in self.released.items()
         ):
             raise ValueError("released key does not match its instance id")

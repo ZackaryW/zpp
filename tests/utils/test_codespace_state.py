@@ -4,10 +4,17 @@ from pathlib import Path
 from filelock import Timeout
 import pytest
 
-from zpp.utils.codespace_models import CodespaceClaim, CodespaceIndex, CodespaceMember
+from zpp.utils.codespace_models import (
+    CodespaceClaim,
+    CodespaceIndex,
+    CodespaceMember,
+    CodespaceProjection,
+    ReleasedCodespace,
+)
 from zpp.utils.codespace_state import (
     codespace_index_lock,
     load_codespace_index,
+    migrate_codespace_index,
     mutate_codespace_index,
 )
 
@@ -16,7 +23,6 @@ def _claim(root: Path, instance_id: str = "实例") -> CodespaceClaim:
     return CodespaceClaim(
         instance_id=instance_id,
         snapshot_key="snapshot",
-        workset_name=f"zpp-{instance_id}",
         members=(
             CodespaceMember(
                 name="项目",
@@ -53,7 +59,7 @@ def test_codespace_index_is_validated_utf8_atomic_state(tmp_path: Path) -> None:
     assert load_codespace_index(root) == updated
     assert "\\u" not in (root / "index.json").read_text(encoding="utf-8")
 
-    (root / "index.json").write_text('{"schema_version":2}', encoding="utf-8")
+    (root / "index.json").write_text('{"schema_version":3}', encoding="utf-8")
     with pytest.raises(ValueError, match="invalid codespace index"):
         load_codespace_index(root)
 
@@ -76,6 +82,7 @@ def test_codespace_lock_contention_preserves_state_and_releases_on_error(
                 lambda index: index.model_copy(
                     update={"claims": {"blocked": _claim(tmp_path, "blocked")}}
                 ),
+                timeout=0,
             )
     assert load_codespace_index(root) == CodespaceIndex()
 
@@ -138,3 +145,83 @@ def test_member_backward_loading_defaults_source_to_effective(tmp_path: Path) ->
     loaded = CodespaceMember.model_validate(payload)
 
     assert loaded.source_checkout_key == loaded.checkout_key
+
+
+def test_version_one_index_migrates_claim_projection_and_generated_debt(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "codespaces"
+    root.mkdir()
+    active = _claim(tmp_path / "项目", "active")
+    generated = active.members[0].model_copy(
+        update={
+            "generated_worktree": True,
+            "branch": "zpp/active/0",
+            "effective_path": tmp_path / "项目-active",
+            "checkout_key": "generated-key",
+        }
+    )
+    payload = {
+        "schema_version": 1,
+        "claims": {
+            "active": {
+                **active.model_dump(mode="json"),
+                "workset_name": "zpp-active",
+                "workset_owned": True,
+            },
+        },
+        "released": {
+            "released": {
+                "claim": {
+                    **active.model_copy(
+                        update={"instance_id": "released", "members": (generated,)}
+                    ).model_dump(mode="json"),
+                    "workset_name": "zpp-released",
+                    "workset_owned": True,
+                },
+                "removed_worktree_keys": ["generated-key"],
+            }
+        },
+    }
+    (root / "index.json").write_text(
+        json.dumps(payload, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    migrated = load_codespace_index(root)
+
+    assert migrated.schema_version == 2
+    assert migrated.claims["active"].projection == CodespaceProjection(
+        generation=1,
+        structure_key=migrated.claims["active"].projection.structure_key,
+    )
+    assert migrated.claims["active"].snapshot_key == "snapshot"
+    assert migrated.released["released"] == ReleasedCodespace.model_validate(
+        {
+            "instance_id": "released",
+            "debts": [
+                {
+                    "original_path": str(generated.original_path),
+                    "effective_path": str(generated.effective_path),
+                    "checkout_key": "generated-key",
+                    "branch": "zpp/active/0",
+                    "worktree_removed": True,
+                    "branch_disposition": "pending",
+                }
+            ],
+        }
+    )
+
+
+def test_version_one_user_owned_workset_is_not_claimed_as_a_projection(
+    tmp_path: Path,
+) -> None:
+    claim = _claim(tmp_path, "legacy")
+    payload = claim.model_dump(mode="json")
+    payload.update({"workset_name": "user-view", "workset_owned": False})
+
+    migrated = migrate_codespace_index(
+        {"schema_version": 1, "claims": {"legacy": payload}, "released": {}}
+    )
+
+    assert migrated.claims["legacy"].projection is None

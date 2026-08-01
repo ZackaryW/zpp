@@ -6,10 +6,17 @@ from typing import Literal, Mapping, Sequence
 
 from zpp.utils.codespace_identity import (
     checkout_path_claim_key,
+    projection_name,
+    projection_structure_key,
     sibling_worktree_path,
-    snapshot_key,
 )
-from zpp.utils.codespace_models import CodespaceClaim, CodespaceIndex, CodespaceMember
+from zpp.utils.codespace_models import (
+    CodespaceClaim,
+    CodespaceIndex,
+    CodespaceMember,
+    CodespaceProjection,
+    ReleasedCheckoutDebt,
+)
 from zpp.utils.git_layers import GitCheckout
 
 
@@ -27,7 +34,6 @@ class ResolvedMember:
 class CodespaceRequest:
     instance_id: str
     snapshot_key: str
-    workset_name: str
     members: tuple[ResolvedMember, ...]
 
 
@@ -44,21 +50,27 @@ class CodespaceAddPlan:
     replacement: CodespaceClaim
     additions: tuple[ResolvedMember, ...]
     conflicting_checkout_keys: tuple[str, ...]
-    superseded_workset_name: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class CodespaceProjectionPlan:
+    action: Literal["create", "reuse", "replace"]
+    projection: CodespaceProjection
+    superseded_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class CodespaceReleasePlan:
     instance_id: str
-    workset_name: str | None
+    projection_name: str | None
     preserved_worktrees: tuple[Path, ...]
     forced: bool
 
 
 @dataclass(frozen=True, slots=True)
 class CodespaceCleanupPlan:
-    removable: tuple[CodespaceMember, ...]
-    preserved: tuple[CodespaceMember, ...]
+    removable: tuple[CodespaceMember | ReleasedCheckoutDebt, ...]
+    preserved: tuple[CodespaceMember | ReleasedCheckoutDebt, ...]
 
 
 def _claimed_keys(index: CodespaceIndex, *, excluding: str | None = None) -> set[str]:
@@ -137,7 +149,6 @@ def plan_codespace_lock(
         claim=CodespaceClaim(
             instance_id=request.instance_id,
             snapshot_key=request.snapshot_key,
-            workset_name=request.workset_name,
             members=tuple(claim_members),
         ),
         conflicting_checkout_keys=conflicts,
@@ -190,29 +201,37 @@ def plan_codespace_add(
                 ),
             )
         )
-    checkouts = tuple(
-        GitCheckout(
-            root=member.original_path,
-            common_dir=member.original_path,
-            head=member.commit,
-            dirty=False,
-        )
-        for member in replacement_members
-    )
-    replacement_snapshot = snapshot_key(checkouts)
     replacement = CodespaceClaim(
         instance_id=current.instance_id,
-        snapshot_key=replacement_snapshot,
-        workset_name=f"{current.workset_name}-add-{replacement_snapshot[:8]}",
+        snapshot_key=current.snapshot_key,
         members=tuple(replacement_members),
-        workset_owned=True,
+        projection=current.projection,
     )
     return CodespaceAddPlan(
         current=current,
         replacement=replacement,
         additions=writable,
         conflicting_checkout_keys=conflicts,
-        superseded_workset_name=current.workset_name if current.workset_owned else None,
+    )
+
+
+def plan_codespace_projection(claim: CodespaceClaim) -> CodespaceProjectionPlan:
+    structure_key = projection_structure_key(claim.members)
+    current = claim.projection
+    if current is None:
+        return CodespaceProjectionPlan(
+            action="create",
+            projection=CodespaceProjection(generation=1, structure_key=structure_key),
+        )
+    if current.structure_key == structure_key:
+        return CodespaceProjectionPlan(action="reuse", projection=current)
+    return CodespaceProjectionPlan(
+        action="replace",
+        projection=CodespaceProjection(
+            generation=current.generation + 1,
+            structure_key=structure_key,
+        ),
+        superseded_name=projection_name(claim.instance_id, current.generation),
     )
 
 
@@ -223,7 +242,11 @@ def plan_codespace_unlock(
 ) -> CodespaceReleasePlan:
     return CodespaceReleasePlan(
         instance_id=claim.instance_id,
-        workset_name=claim.workset_name if claim.workset_owned else None,
+        projection_name=(
+            projection_name(claim.instance_id, claim.projection.generation)
+            if claim.projection is not None
+            else None
+        ),
         preserved_worktrees=tuple(
             member.effective_path
             for member in claim.members

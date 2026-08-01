@@ -15,7 +15,6 @@ def _claim(tmp_path: Path) -> CodespaceClaim:
     return CodespaceClaim(
         instance_id="instance",
         snapshot_key="snapshot",
-        workset_name="zpp-instance",
         members=(
             CodespaceMember(
                 name="store",

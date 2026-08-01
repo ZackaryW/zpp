@@ -1,18 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
 from pathlib import Path
 from typing import Sequence
 
 from zpp.utils.codespace_models import CodespaceClaim
-from zpp.utils.openspec_adapter import OpenSpecWorkset
 
 
-@dataclass(frozen=True, slots=True)
-class CodespaceDiscovery:
-    active_id: str | None
-    candidates: tuple[OpenSpecWorkset, ...]
+CodespaceDiscovery = str | None
 
 
 def _contains(root: Path, target: Path) -> bool:
@@ -28,8 +23,7 @@ def discover_codespace(
     target: Path,
     *,
     claims: Sequence[CodespaceClaim],
-    worksets: Sequence[OpenSpecWorkset],
-) -> CodespaceDiscovery:
+) -> str | None:
     active = [
         claim.instance_id
         for claim in claims
@@ -37,12 +31,4 @@ def discover_codespace(
     ]
     if len(active) > 1:
         raise ValueError("target belongs to multiple active codespace claims")
-    if active:
-        return CodespaceDiscovery(active_id=active[0], candidates=())
-
-    candidates = tuple(
-        workset
-        for workset in worksets
-        if any(_contains(member.path, target) for member in workset.members)
-    )
-    return CodespaceDiscovery(active_id=None, candidates=candidates)
+    return active[0] if active else None

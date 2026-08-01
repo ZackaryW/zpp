@@ -3,7 +3,9 @@ from copy import deepcopy
 import pytest
 
 from zpp.utils.agent_hooks import (
+    claude_pre_tool_use_hook,
     claude_session_start_hook,
+    codex_pre_tool_use_hook,
     codex_session_start_hook,
     reconcile_claude_settings,
     reconcile_codex_hooks,
@@ -43,3 +45,36 @@ def test_native_hook_reconciliation_rejects_a_competing_zpp_command() -> None:
 
     with pytest.raises(ManagedStateError):
         reconcile_codex_hooks(conflicting, codex_session_start_hook())
+
+
+def test_native_hook_reconciliation_adds_one_managed_pre_tool_guard() -> None:
+    codex = reconcile_codex_hooks(None, codex_session_start_hook())
+    codex = reconcile_codex_hooks(codex, codex_pre_tool_use_hook())
+    claude = reconcile_claude_settings(None, claude_session_start_hook())
+    claude = reconcile_claude_settings(claude, claude_pre_tool_use_hook())
+
+    assert codex["hooks"]["PreToolUse"] == [codex_pre_tool_use_hook()]
+    assert claude["hooks"]["PreToolUse"] == [claude_pre_tool_use_hook()]
+    assert reconcile_codex_hooks(codex, codex_pre_tool_use_hook()) == codex
+    assert reconcile_claude_settings(claude, claude_pre_tool_use_hook()) == claude
+
+
+def test_native_hook_reconciliation_rejects_a_competing_guard_record() -> None:
+    conflicting = {
+        "hooks": {
+            "PreToolUse": [
+                {
+                    "matcher": "Bash",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "zpp codespace guard --agent codex",
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+
+    with pytest.raises(ManagedStateError, match="non-identical"):
+        reconcile_codex_hooks(conflicting, codex_pre_tool_use_hook())

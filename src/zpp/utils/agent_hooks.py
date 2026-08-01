@@ -25,6 +25,30 @@ def claude_session_start_hook() -> ClaudeHookRecord:
     }
 
 
+def codex_pre_tool_use_hook() -> CodexHookRecord:
+    return {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+            {
+                "type": "command",
+                "command": "zpp codespace guard --agent codex",
+            }
+        ],
+    }
+
+
+def claude_pre_tool_use_hook() -> ClaudeHookRecord:
+    return {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+            {
+                "type": "command",
+                "command": "zpp codespace guard --agent claude",
+            }
+        ],
+    }
+
+
 def reconcile_codex_hooks(
     document: Mapping[str, Any] | None,
     expected: CodexHookRecord,
@@ -48,6 +72,10 @@ def _reconcile(
     if not isinstance(hooks, dict):
         raise ManagedStateError("native hooks value is not an object")
 
+    expected_command = _managed_command(expected)
+    expected_event = (
+        "SessionStart" if expected_command == "zpp resolve" else "PreToolUse"
+    )
     claims: list[tuple[str, dict[str, Any]]] = []
     for event, groups in hooks.items():
         if not isinstance(event, str) or not isinstance(groups, list):
@@ -58,16 +86,28 @@ def _reconcile(
             for handler in group["hooks"]:
                 if not isinstance(handler, dict):
                     raise ManagedStateError("native hook handler is malformed")
-                if handler.get("command") == "zpp resolve":
+                if handler.get("command") == expected_command:
                     claims.append((event, group))
 
     if claims:
-        if len(claims) == 1 and claims[0] == ("SessionStart", expected):
+        if len(claims) == 1 and claims[0] == (expected_event, expected):
             return result
-        raise ManagedStateError("a non-identical native hook claims 'zpp resolve'")
+        raise ManagedStateError(
+            f"a non-identical native hook claims {expected_command!r}"
+        )
 
-    session_start = hooks.setdefault("SessionStart", [])
-    if not isinstance(session_start, list):
-        raise ManagedStateError("SessionStart hooks are malformed")
-    session_start.append(deepcopy(expected))
+    event_groups = hooks.setdefault(expected_event, [])
+    if not isinstance(event_groups, list):
+        raise ManagedStateError(f"{expected_event} hooks are malformed")
+    event_groups.append(deepcopy(expected))
     return result
+
+
+def _managed_command(expected: dict[str, Any]) -> str:
+    handlers = expected.get("hooks")
+    if not isinstance(handlers, list) or len(handlers) != 1:
+        raise ManagedStateError("managed native hook must have one handler")
+    handler = handlers[0]
+    if not isinstance(handler, dict) or not isinstance(handler.get("command"), str):
+        raise ManagedStateError("managed native hook command is malformed")
+    return handler["command"]

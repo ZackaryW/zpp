@@ -1,10 +1,13 @@
 from dataclasses import replace
 from pathlib import Path
 
+import pytest
+
 from zpp.utils.codespace_identity import (
     checkout_claim_key,
     checkout_path_claim_key,
     new_codespace_instance_id,
+    projection_name,
     sibling_worktree_path,
     snapshot_key,
 )
@@ -37,3 +40,11 @@ def test_codespace_identity_separates_snapshot_checkout_and_instance(
     assert sibling_worktree_path(first, instance) == (
         tmp_path / f"one-{instance}"
     )
+
+
+def test_projection_name_requires_an_instance_and_positive_generation() -> None:
+    assert projection_name("instance", 3) == "zpp-instance-g3"
+    with pytest.raises(ValueError, match="instance"):
+        projection_name("", 1)
+    with pytest.raises(ValueError, match="generation"):
+        projection_name("instance", 0)

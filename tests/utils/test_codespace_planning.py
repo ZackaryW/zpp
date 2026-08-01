@@ -1,12 +1,19 @@
 from pathlib import Path
 
-from zpp.utils.codespace_models import CodespaceClaim, CodespaceIndex, CodespaceMember
+from zpp.utils.codespace_identity import projection_structure_key
+from zpp.utils.codespace_models import (
+    CodespaceClaim,
+    CodespaceIndex,
+    CodespaceMember,
+    CodespaceProjection,
+)
 from zpp.utils.codespace_planning import (
     CodespaceRequest,
     ResolvedMember,
     plan_codespace_add,
     plan_codespace_cleanup,
     plan_codespace_lock,
+    plan_codespace_projection,
     plan_codespace_unlock,
 )
 from zpp.utils.git_layers import GitCheckout
@@ -34,7 +41,6 @@ def _active(member: ResolvedMember, instance: str = "active") -> CodespaceClaim:
     return CodespaceClaim(
         instance_id=instance,
         snapshot_key="old",
-        workset_name=f"zpp-{instance}",
         members=(
             CodespaceMember(
                 name=member.name,
@@ -73,7 +79,6 @@ def test_lock_plan_claims_writable_members_and_mitigates_only_conflicts(
     request = CodespaceRequest(
         instance_id="new-instance",
         snapshot_key="snapshot",
-        workset_name="zpp-new-instance",
         members=(project_c, project_b, store_reference, store, reference),
     )
     active = CodespaceIndex(
@@ -81,7 +86,6 @@ def test_lock_plan_claims_writable_members_and_mitigates_only_conflicts(
             "active": CodespaceClaim(
                 instance_id="active",
                 snapshot_key="old",
-                workset_name="zpp-active",
                 members=(
                     _active(project_b).members[0],
                     _active(store).members[0],
@@ -93,6 +97,7 @@ def test_lock_plan_claims_writable_members_and_mitigates_only_conflicts(
     plan = plan_codespace_lock(request, active)
 
     assert plan.conflicting_checkout_keys == ("key-b", "key-store")
+    assert plan.claim.projection is None
     assert [member.name for member in plan.claim.members] == ["c", "b", "store-ref"]
     assert plan.claim.members[0].effective_path == project_c.checkout.root
     assert plan.claim.members[1].generated_worktree
@@ -115,9 +120,15 @@ def test_add_release_and_cleanup_plans_preserve_ownership_boundaries(
     index = CodespaceIndex(claims={"current": current, "competing": competing})
 
     add = plan_codespace_add(current, (addition,), index)
-    release = plan_codespace_unlock(current)
-    user_owned = current.model_copy(update={"workset_owned": False})
-    user_release = plan_codespace_unlock(user_owned, force=True)
+    projected = current.model_copy(
+        update={
+            "projection": CodespaceProjection(
+                generation=1,
+                structure_key=projection_structure_key(current.members),
+            )
+        }
+    )
+    release = plan_codespace_unlock(projected)
 
     generated_clean = current.members[0].model_copy(
         update={"generated_worktree": True, "branch": "zpp/current/0"}
@@ -158,20 +169,67 @@ def test_add_release_and_cleanup_plans_preserve_ownership_boundaries(
     )
 
     assert add.conflicting_checkout_keys == ("key-addition",)
-    assert add.superseded_workset_name == current.workset_name
     assert [member.name for member in add.replacement.members] == [
         "existing",
         "addition",
     ]
-    assert add.replacement.workset_name != current.workset_name
-    assert add.replacement.snapshot_key != current.snapshot_key
+    assert add.replacement.snapshot_key == current.snapshot_key
     added_member = add.replacement.members[-1]
     assert added_member.generated_worktree
     assert added_member.source_checkout_key == "key-addition"
     assert added_member.checkout_key != added_member.source_checkout_key
     assert current.members == _active(existing, "current").members
-    assert release.workset_name == current.workset_name
+    assert release.projection_name == "zpp-current-g1"
     assert release.preserved_worktrees == ()
-    assert user_release.workset_name is None and user_release.forced
     assert cleanup.removable == (generated_clean,)
     assert cleanup.preserved == (generated_dirty,)
+
+
+def test_add_preserves_starting_snapshot_and_advances_only_existing_projection(
+    tmp_path: Path,
+) -> None:
+    existing = _resolved(tmp_path / "existing", "existing", "key-existing")
+    addition = _resolved(tmp_path / "addition", "addition", "key-addition")
+    current = _active(existing, "current")
+    current = current.model_copy(
+        update={
+            "projection": CodespaceProjection(
+                generation=2,
+                structure_key=projection_structure_key(current.members),
+            )
+        }
+    )
+
+    add = plan_codespace_add(
+        current,
+        (addition,),
+        CodespaceIndex(claims={"current": current}),
+    )
+    projection = plan_codespace_projection(add.replacement)
+
+    assert add.replacement.snapshot_key == current.snapshot_key
+    assert add.replacement.projection == current.projection
+    assert projection.action == "replace"
+    assert projection.projection.generation == 3
+    assert projection.superseded_name == "zpp-current-g2"
+
+
+def test_projection_plan_ignores_commit_state_and_reuses_unchanged_structure(
+    tmp_path: Path,
+) -> None:
+    resolved = _resolved(tmp_path / "project", "project", "key")
+    claim = _active(resolved, "instance")
+
+    created = plan_codespace_projection(claim)
+    projected = claim.model_copy(update={"projection": created.projection})
+    moved_commit = projected.model_copy(
+        update={
+            "members": (
+                projected.members[0].model_copy(update={"commit": "new-commit"}),
+            )
+        }
+    )
+
+    assert created.action == "create" and created.projection.generation == 1
+    assert plan_codespace_projection(projected).action == "reuse"
+    assert plan_codespace_projection(moved_commit).action == "reuse"
