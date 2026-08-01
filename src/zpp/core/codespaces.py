@@ -14,6 +14,7 @@ from zpp.utils.codespace_catalog import (
     release_codespace_claim,
 )
 from zpp.utils.codespace_claims import (
+    claimed_checkout_owners,
     find_matching_codespace_claim,
     register_codespace_claim,
     replace_codespace_claim,
@@ -76,9 +77,17 @@ class CodespaceLockResult:
 
 
 class CodespaceConflictError(ZppDomainError):
-    def __init__(self, names: tuple[str, ...]) -> None:
+    def __init__(
+        self,
+        names: tuple[str, ...],
+        owner_ids: tuple[str, ...] = (),
+    ) -> None:
         self.names = names
-        super().__init__("conflicting writable checkouts: " + ", ".join(names))
+        self.owner_ids = owner_ids
+        message = "conflicting writable checkouts: " + ", ".join(names)
+        if owner_ids:
+            message += "; active owners: " + ", ".join(owner_ids)
+        super().__init__(message)
 
 
 def codespace_root(home: Path) -> Path:
@@ -206,7 +215,11 @@ def lock_codespace(
     )
     conflict_names = _conflict_names(plan)
     if conflict_names and not mitigate:
-        raise CodespaceConflictError(conflict_names)
+        owners = claimed_checkout_owners(index, plan.conflicting_checkout_keys)
+        raise CodespaceConflictError(
+            conflict_names,
+            tuple(dict.fromkeys(conflict.owner_id for conflict in owners)),
+        )
 
     _preflight_worktrees(plan.claim)
     sources = {member.checkout_key: member.checkout for member in resolved}
@@ -282,7 +295,15 @@ def add_codespace_paths(
         item.name for item in plan.additions if item.checkout_key in conflicts
     )
     if names and not mitigate:
-        raise CodespaceConflictError(names)
+        owners = claimed_checkout_owners(
+            read_codespaces(home),
+            plan.conflicting_checkout_keys,
+            excluding=claim.instance_id,
+        )
+        raise CodespaceConflictError(
+            names,
+            tuple(dict.fromkeys(conflict.owner_id for conflict in owners)),
+        )
 
     replacement = plan.replacement
     existing_keys = {member.checkout_key for member in claim.members}

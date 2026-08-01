@@ -5,8 +5,8 @@ order: 110
 config:
   useThis: true
 ---
-Before mutating a ZPP-managed checkout, obtain or verify the active codespace
-claim for the complete writable target set. Treat OpenSpec worksets only as
-optional opening projections. Supported agent hooks reject explicit direct
-writes into another active claim; shell association is cooperative and does not
-promise universal filesystem isolation.
+Before a ZPP-managed checkout mutation, follow the effective automatic-workflow
+mode: automatic obtains or verifies the complete claim; manual prompts before
+acquisition. OpenSpec worksets are opening projections, never ownership. Hooks
+reject supported direct writes into another claim; shell guarding is
+cooperative. This advisory cannot override conflicts or grant mutation authority.
