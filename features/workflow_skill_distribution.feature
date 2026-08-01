@@ -121,6 +121,22 @@ Feature: Distribute the permanent ZPP workflow skills
     And every Claude Code scope is unchanged
     And the differing Codex scope versions are reported
 
+  Scenario: Update an intact historical managed bundle
+    Given Codex has a historical managed global workflow bundle that predates one permanent skill
+    And unrelated skills surround the historical managed projection
+    When the user runs zpp workflow update --global with agent Codex
+    Then the Codex global projection contains the complete current workflow bundle
+    And only paths owned by the historical manifest were replaced
+    And the unrelated global skills are byte-for-byte unchanged
+
+  Scenario: Update reports an absent selected scope distinctly
+    Given Codex has a compatible managed global ZPP workflow bundle
+    And Codex has no local ZPP workflow bundle
+    When the user runs zpp workflow update with agent Codex
+    Then update reports that the local projection is not installed
+    And it does not describe absent local state as unmanaged content
+    And the compatible global bundle remains unchanged
+
   Scenario: Update rejects a selected scope that is not ZPP-managed
     Given Claude Code has an unmanaged global skill directory matching a permanent skill name
     And every agent skill scope is recorded
