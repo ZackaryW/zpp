@@ -3,39 +3,56 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Literal, Mapping, Sequence
 
 from zpp.core.errors import ZppDomainError
-from zpp.utils.codespace_discovery import discover_codespace
 from zpp.utils.codespace_catalog import (
+    finalize_released_codespace,
     plan_released_codespace_cleanup,
+    record_branch_disposition,
     record_codespace_cleanup,
     release_codespace_claim,
 )
+from zpp.utils.codespace_claims import (
+    find_matching_codespace_claim,
+    register_codespace_claim,
+    replace_codespace_claim,
+)
+from zpp.utils.codespace_discovery import discover_codespace
 from zpp.utils.codespace_environment import (
     activate_codespace_shell,
     execute_codespace_command,
     materialize_private_registry,
     private_openspec_environment,
 )
+from zpp.utils.codespace_guard import (
+    AgentName,
+    UnsupportedGuardTool,
+    decode_agent_guard_request,
+    encode_agent_guard_decision,
+    evaluate_codespace_guard,
+)
 from zpp.utils.codespace_identity import (
-    checkout_claim_key,
     new_codespace_instance_id,
+    projection_name,
     snapshot_key,
 )
 from zpp.utils.codespace_models import CodespaceClaim, CodespaceIndex, ReleasedCodespace
 from zpp.utils.codespace_planning import (
     CodespaceAddPlan,
     CodespaceLockPlan,
+    CodespaceProjectionPlan,
     CodespaceRequest,
-    ResolvedMember,
     plan_codespace_add,
-    plan_codespace_cleanup,
     plan_codespace_lock,
+    plan_codespace_projection,
     plan_codespace_unlock,
 )
+from zpp.utils.codespace_projection import orphaned_codespace_projections
 from zpp.utils.codespace_state import load_codespace_index, mutate_codespace_index
+from zpp.utils.codespace_targets import resolve_codespace_members
 from zpp.utils.git_layers import (
+    GitCheckout,
     create_git_worktree,
     git_branch_exists,
     inspect_git_checkout,
@@ -43,14 +60,11 @@ from zpp.utils.git_layers import (
 )
 from zpp.utils.openspec_adapter import (
     OpenSpecMember,
-    OpenSpecWorkset,
     create_openspec_workset,
     list_openspec_worksets,
     open_openspec_workset,
     remove_openspec_workset,
-    resolve_openspec_relations,
 )
-from zpp.utils.workspace_descriptors import load_code_workspace
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +89,12 @@ def read_codespaces(home: Path) -> CodespaceIndex:
     return load_codespace_index(codespace_root(home))
 
 
+def _remove_orphaned_projections(home: Path) -> None:
+    index = read_codespaces(home)
+    for name in orphaned_codespace_projections(index, list_openspec_worksets()):
+        remove_openspec_workset(name)
+
+
 def discover_codespace_view(
     *,
     home: Path,
@@ -84,67 +104,7 @@ def discover_codespace_view(
     return discover_codespace(
         current_directory,
         claims=tuple(index.claims.values()),
-        worksets=list_openspec_worksets(),
     )
-
-
-def select_workset(name: str) -> OpenSpecWorkset:
-    matches = [item for item in list_openspec_worksets() if item.name == name]
-    if not matches:
-        raise ZppDomainError(f"OpenSpec workset does not exist: {name}")
-    return matches[0]
-
-
-def explicit_members(
-    *,
-    workset: str | None,
-    workspace: Path | None,
-    paths: Sequence[Path],
-) -> tuple[OpenSpecMember, ...] | None:
-    supplied = int(workset is not None) + int(workspace is not None) + int(bool(paths))
-    if supplied > 1:
-        raise ZppDomainError("choose one of --workset, --workspace, or paths")
-    if workset is not None:
-        return select_workset(workset).members
-    if workspace is not None:
-        return load_code_workspace(workspace)
-    if paths:
-        return tuple(OpenSpecMember(path.resolve().name, path.resolve()) for path in paths)
-    return None
-
-
-def _resolved_members(members: Sequence[OpenSpecMember]) -> tuple[ResolvedMember, ...]:
-    resolved: list[ResolvedMember] = []
-    seen: set[tuple[str, str]] = set()
-    for member in members:
-        checkout = inspect_git_checkout(member.path)
-        project_key = ("project", checkout_claim_key(checkout))
-        resolved.append(
-            ResolvedMember(
-                name=member.name,
-                checkout=checkout,
-                checkout_key=project_key[1],
-                kind="project",
-            )
-        )
-        for relation in resolve_openspec_relations(checkout.root):
-            store_checkout = inspect_git_checkout(relation.root)
-            store_key = checkout_claim_key(store_checkout)
-            key = ("store", store_key)
-            if key in seen and relation.role == "reference":
-                continue
-            seen.add(key)
-            resolved.append(
-                ResolvedMember(
-                    name=relation.store_id,
-                    checkout=store_checkout,
-                    checkout_key=store_key,
-                    kind="store",
-                    role=relation.role,
-                    store_id=relation.store_id,
-                )
-            )
-    return tuple(resolved)
 
 
 def _conflict_names(plan: CodespaceLockPlan) -> tuple[str, ...]:
@@ -156,65 +116,12 @@ def _conflict_names(plan: CodespaceLockPlan) -> tuple[str, ...]:
     )
 
 
-def lock_codespace(
-    *,
-    home: Path,
-    members: Sequence[OpenSpecMember],
-    mitigate: bool,
-) -> CodespaceLockResult:
-    resolved = _resolved_members(members)
-    writable = tuple(member for member in resolved if member.role == "governing")
-    snapshot = snapshot_key(tuple(member.checkout for member in writable))
-    instance = new_codespace_instance_id(snapshot)
-    plan = plan_codespace_lock(
-        CodespaceRequest(instance, snapshot, f"zpp-{instance}", resolved),
-        read_codespaces(home),
+def _current_dirty_members(claim: CodespaceClaim) -> tuple[str, ...]:
+    return tuple(
+        member.name
+        for member in claim.members
+        if inspect_git_checkout(member.effective_path).dirty
     )
-    conflict_names = _conflict_names(plan)
-    if conflict_names and not mitigate:
-        raise CodespaceConflictError(conflict_names)
-    _preflight_worktrees(plan.claim)
-    created: list[tuple[object, Path]] = []
-    workset_created = False
-    try:
-        sources = {member.checkout_key: member.checkout for member in writable}
-        for target in plan.claim.members:
-            if target.generated_worktree:
-                source = sources[target.source_checkout_key]
-                create_git_worktree(
-                    source,
-                    destination=target.effective_path,
-                    branch=target.branch or "",
-                    start_commit=target.commit,
-                )
-                created.append((source, target.effective_path))
-        environment = private_openspec_environment(
-            codespace_root(home) / plan.claim.instance_id,
-            os.environ,
-        )
-        materialize_private_registry(plan.claim, environment=environment)
-        create_openspec_workset(
-            plan.claim.workset_name,
-            tuple(OpenSpecMember(item.name, item.effective_path) for item in plan.claim.members),
-        )
-        workset_created = True
-        mutate_codespace_index(
-            codespace_root(home),
-            lambda index: CodespaceIndex(
-                claims={**index.claims, plan.claim.instance_id: plan.claim},
-                released=index.released,
-            ),
-        )
-    except BaseException:
-        if workset_created:
-            remove_openspec_workset(plan.claim.workset_name)
-        for checkout, destination in reversed(created):
-            try:
-                remove_git_worktree(checkout, destination=destination)  # type: ignore[arg-type]
-            except (OSError, ValueError):
-                pass
-        raise
-    return CodespaceLockResult(plan.claim, conflict_names, plan.dirty_member_names)
 
 
 def _preflight_worktrees(claim: CodespaceClaim) -> None:
@@ -228,6 +135,95 @@ def _preflight_worktrees(claim: CodespaceClaim) -> None:
             raise ZppDomainError(f"branch already exists: {member.branch}")
 
 
+def _create_worktrees(
+    claim: CodespaceClaim,
+    sources: Mapping[str, GitCheckout],
+    *,
+    existing_keys: set[str] | None = None,
+) -> list[tuple[GitCheckout, Path]]:
+    created: list[tuple[GitCheckout, Path]] = []
+    retained = existing_keys or set()
+    for member in claim.members:
+        if not member.generated_worktree or member.checkout_key in retained:
+            continue
+        source = sources[member.source_checkout_key]
+        create_git_worktree(
+            source,
+            destination=member.effective_path,
+            branch=member.branch or "",
+            start_commit=member.commit,
+        )
+        created.append((source, member.effective_path))
+    return created
+
+
+def _rollback_worktrees(created: Sequence[tuple[GitCheckout, Path]]) -> None:
+    for source, destination in reversed(created):
+        try:
+            remove_git_worktree(source, destination=destination)
+        except (OSError, ValueError):
+            pass
+
+
+def _materialize_registry(home: Path, claim: CodespaceClaim) -> None:
+    materialize_private_registry(
+        claim,
+        environment=private_openspec_environment(
+            codespace_root(home) / claim.instance_id,
+            os.environ,
+        ),
+    )
+
+
+def lock_codespace(
+    *,
+    home: Path,
+    members: Sequence[OpenSpecMember],
+    mitigate: bool,
+) -> CodespaceLockResult:
+    _remove_orphaned_projections(home)
+    resolved = resolve_codespace_members(members)
+    if not resolved:
+        raise ZppDomainError("no writable codespace targets were resolved")
+    index = read_codespaces(home)
+    matching = find_matching_codespace_claim(
+        index,
+        {member.checkout_key for member in resolved},
+    )
+    if matching is not None:
+        return CodespaceLockResult(
+            matching,
+            (),
+            _current_dirty_members(matching),
+            existing=True,
+        )
+
+    snapshot = snapshot_key(tuple(member.checkout for member in resolved))
+    instance = new_codespace_instance_id(snapshot)
+    plan = plan_codespace_lock(
+        CodespaceRequest(instance, snapshot, resolved),
+        index,
+    )
+    conflict_names = _conflict_names(plan)
+    if conflict_names and not mitigate:
+        raise CodespaceConflictError(conflict_names)
+
+    _preflight_worktrees(plan.claim)
+    sources = {member.checkout_key: member.checkout for member in resolved}
+    created: list[tuple[GitCheckout, Path]] = []
+    try:
+        created = _create_worktrees(plan.claim, sources)
+        _materialize_registry(home, plan.claim)
+        mutate_codespace_index(
+            codespace_root(home),
+            lambda current: register_codespace_claim(current, plan.claim),
+        )
+    except BaseException:
+        _rollback_worktrees(created)
+        raise
+    return CodespaceLockResult(plan.claim, conflict_names, plan.dirty_member_names)
+
+
 def find_claim(home: Path, identifier: str | None, cwd: Path) -> CodespaceClaim:
     index = read_codespaces(home)
     if identifier is not None:
@@ -235,14 +231,13 @@ def find_claim(home: Path, identifier: str | None, cwd: Path) -> CodespaceClaim:
         if claim is None:
             raise ZppDomainError(f"codespace does not exist: {identifier}")
         return claim
-    discovery = discover_codespace(
+    active_id = discover_codespace(
         cwd,
         claims=tuple(index.claims.values()),
-        worksets=(),
     )
-    if discovery.active_id is None:
+    if active_id is None:
         raise ZppDomainError("current directory is not inside an active codespace")
-    return index.claims[discovery.active_id]
+    return index.claims[active_id]
 
 
 def find_released(home: Path, identifier: str) -> ReleasedCodespace:
@@ -252,6 +247,20 @@ def find_released(home: Path, identifier: str) -> ReleasedCodespace:
     return released
 
 
+def _projection_members(claim: CodespaceClaim) -> tuple[OpenSpecMember, ...]:
+    return tuple(
+        OpenSpecMember(member.name, member.effective_path)
+        for member in claim.members
+    )
+
+
+def _projection_claim(
+    claim: CodespaceClaim,
+    plan: CodespaceProjectionPlan,
+) -> CodespaceClaim:
+    return claim.model_copy(update={"projection": plan.projection})
+
+
 def add_codespace_paths(
     *,
     home: Path,
@@ -259,17 +268,22 @@ def add_codespace_paths(
     paths: Sequence[Path],
     mitigate: bool,
 ) -> CodespaceClaim:
-    additions = _resolved_members(
+    _remove_orphaned_projections(home)
+    additions = resolve_codespace_members(
         tuple(OpenSpecMember(path.resolve().name, path.resolve()) for path in paths)
     )
-    plan: CodespaceAddPlan = plan_codespace_add(claim, additions, read_codespaces(home))
+    plan: CodespaceAddPlan = plan_codespace_add(
+        claim,
+        additions,
+        read_codespaces(home),
+    )
+    conflicts = set(plan.conflicting_checkout_keys)
     names = tuple(
-        item.name
-        for item in plan.additions
-        if item.checkout_key in set(plan.conflicting_checkout_keys)
+        item.name for item in plan.additions if item.checkout_key in conflicts
     )
     if names and not mitigate:
         raise CodespaceConflictError(names)
+
     replacement = plan.replacement
     existing_keys = {member.checkout_key for member in claim.members}
     _preflight_worktrees(
@@ -283,92 +297,175 @@ def add_codespace_paths(
             }
         )
     )
-    created: list[tuple[object, Path]] = []
-    registered = False
-    try:
-        source_by_key = {item.checkout_key: item.checkout for item in plan.additions}
-        for member in replacement.members:
-            if member.generated_worktree and member.checkout_key not in {
-                item.checkout_key for item in claim.members
-            }:
-                source = source_by_key[member.source_checkout_key]
-                create_git_worktree(
-                    source,
-                    destination=member.effective_path,
-                    branch=member.branch or "",
-                    start_commit=member.commit,
-                )
-                created.append((source, member.effective_path))
-        create_openspec_workset(
-            replacement.workset_name,
-            tuple(OpenSpecMember(item.name, item.effective_path) for item in replacement.members),
+    sources = {item.checkout_key: item.checkout for item in plan.additions}
+    projection_plan = (
+        plan_codespace_projection(replacement)
+        if claim.projection is not None
+        else None
+    )
+    created_projection: str | None = None
+    if projection_plan is not None and projection_plan.action != "reuse":
+        replacement = _projection_claim(replacement, projection_plan)
+        created_projection = projection_name(
+            replacement.instance_id,
+            replacement.projection.generation,
         )
-        registered = True
+
+    created: list[tuple[GitCheckout, Path]] = []
+    try:
+        created = _create_worktrees(
+            replacement,
+            sources,
+            existing_keys=existing_keys,
+        )
+        _materialize_registry(home, replacement)
+        if created_projection is not None:
+            create_openspec_workset(
+                created_projection,
+                _projection_members(replacement),
+            )
         mutate_codespace_index(
             codespace_root(home),
-            lambda index: CodespaceIndex(
-                claims={**index.claims, claim.instance_id: replacement},
-                released=index.released,
-            ),
+            lambda index: replace_codespace_claim(index, claim, replacement),
         )
-        if plan.superseded_workset_name:
-            remove_openspec_workset(plan.superseded_workset_name)
     except BaseException:
-        if registered:
-            remove_openspec_workset(replacement.workset_name)
-        for source, path in reversed(created):
+        if created_projection is not None:
             try:
-                remove_git_worktree(source, destination=path)  # type: ignore[arg-type]
+                remove_openspec_workset(created_projection)
             except (OSError, ValueError):
                 pass
+        _rollback_worktrees(created)
         raise
+
+    if projection_plan is not None and projection_plan.superseded_name is not None:
+        remove_openspec_workset(projection_plan.superseded_name)
     return replacement
 
 
 def unlock_codespace(home: Path, claim: CodespaceClaim, *, force: bool = False) -> None:
+    _remove_orphaned_projections(home)
     plan = plan_codespace_unlock(claim, force=force)
-    if plan.workset_name:
-        remove_openspec_workset(plan.workset_name)
     mutate_codespace_index(
         codespace_root(home),
         lambda index: release_codespace_claim(index, claim.instance_id)[0],
     )
+    if plan.projection_name is not None:
+        remove_openspec_workset(plan.projection_name)
 
 
 def cleanup_codespace(
     home: Path,
     released: ReleasedCodespace,
 ) -> tuple[Path, ...]:
-    inspections = {}
-    for member in released.claim.members:
-        if (
-            member.generated_worktree
-            and member.checkout_key not in released.removed_worktree_keys
-            and member.effective_path.exists()
-        ):
-            inspections[member.checkout_key] = inspect_git_checkout(member.effective_path)
+    _remove_orphaned_projections(home)
+    inspections = {
+        debt.checkout_key: inspect_git_checkout(debt.effective_path)
+        for debt in released.debts
+        if not debt.worktree_removed and debt.effective_path.exists()
+    }
     plan = plan_released_codespace_cleanup(released, inspections)
     removed: list[Path] = []
     removed_keys: list[str] = []
-    for member in plan.removable:
-        source = inspect_git_checkout(member.original_path)
-        remove_git_worktree(source, destination=member.effective_path)
-        removed.append(member.effective_path)
-        removed_keys.append(member.checkout_key)
+    for debt in plan.removable:
+        source = inspect_git_checkout(debt.original_path)
+        remove_git_worktree(source, destination=debt.effective_path)
+        removed.append(debt.effective_path)
+        removed_keys.append(debt.checkout_key)
     if removed_keys:
         mutate_codespace_index(
             codespace_root(home),
             lambda index: record_codespace_cleanup(
                 index,
-                released.claim.instance_id,
+                released.instance_id,
                 removed_keys,
             ),
         )
     return tuple(removed)
 
 
-def open_codespace(claim: CodespaceClaim, tool: str | None = None) -> int:
-    return open_openspec_workset(claim.workset_name, tool=tool)
+def record_codespace_disposition(
+    home: Path,
+    identifier: str,
+    checkout_key: str,
+    disposition: Literal["reconciled", "abandoned"],
+) -> None:
+    _remove_orphaned_projections(home)
+    mutate_codespace_index(
+        codespace_root(home),
+        lambda index: record_branch_disposition(
+            index,
+            identifier,
+            checkout_key,
+            disposition,
+        ),
+    )
+
+
+def finalize_codespace(home: Path, identifier: str) -> None:
+    _remove_orphaned_projections(home)
+    mutate_codespace_index(
+        codespace_root(home),
+        lambda index: finalize_released_codespace(index, identifier),
+    )
+
+
+def open_codespace(
+    home: Path,
+    claim: CodespaceClaim,
+    tool: str | None = None,
+) -> int:
+    _remove_orphaned_projections(home)
+    plan = plan_codespace_projection(claim)
+    current = claim
+    created_name: str | None = None
+    if plan.action != "reuse":
+        current = _projection_claim(claim, plan)
+        created_name = projection_name(
+            current.instance_id,
+            current.projection.generation,
+        )
+        create_openspec_workset(created_name, _projection_members(current))
+        try:
+            mutate_codespace_index(
+                codespace_root(home),
+                lambda index: replace_codespace_claim(index, claim, current),
+            )
+        except BaseException:
+            remove_openspec_workset(created_name)
+            raise
+        if plan.superseded_name is not None:
+            remove_openspec_workset(plan.superseded_name)
+    name = projection_name(current.instance_id, current.projection.generation)
+    return open_openspec_workset(name, tool=tool)
+
+
+def inspect_codespace_claim(claim: CodespaceClaim) -> tuple[dict[str, object], ...]:
+    states: list[dict[str, object]] = []
+    for member in claim.members:
+        checkout = inspect_git_checkout(member.effective_path)
+        states.append(
+            {
+                "name": member.name,
+                "path": str(member.effective_path),
+                "starting_commit": member.commit,
+                "current_commit": checkout.head,
+                "dirty": checkout.dirty,
+            }
+        )
+    return tuple(states)
+
+
+def guard_codespace_request(
+    home: Path,
+    agent: AgentName,
+    payload: Mapping[str, object],
+) -> Mapping[str, object]:
+    try:
+        request = decode_agent_guard_request(agent, payload)
+    except UnsupportedGuardTool:
+        return {}
+    decision = evaluate_codespace_guard(request, read_codespaces(home))
+    return encode_agent_guard_decision(agent, decision)
 
 
 def codespace_environment(home: Path, claim: CodespaceClaim) -> dict[str, str]:

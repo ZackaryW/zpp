@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Any, Literal
 
 from zpp.utils.agent_hooks import (
+    claude_pre_tool_use_hook,
     claude_session_start_hook,
+    codex_pre_tool_use_hook,
     codex_session_start_hook,
     reconcile_claude_settings,
     reconcile_codex_hooks,
@@ -105,6 +107,7 @@ def bootstrap_claude_code(home: Path) -> None:
 def _prepare_codex(destination: Path) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     current = _read_json_object(destination)
     reconciled = reconcile_codex_hooks(current, codex_session_start_hook())
+    reconciled = reconcile_codex_hooks(reconciled, codex_pre_tool_use_hook())
     if current != reconciled:
         _missing_parent_entries(destination.parent)
     return current, reconciled
@@ -115,6 +118,7 @@ def _prepare_claude_code(
 ) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     current = _read_json_object(destination)
     reconciled = reconcile_claude_settings(current, claude_session_start_hook())
+    reconciled = reconcile_claude_settings(reconciled, claude_pre_tool_use_hook())
     if current != reconciled:
         _missing_parent_entries(destination.parent)
     return current, reconciled

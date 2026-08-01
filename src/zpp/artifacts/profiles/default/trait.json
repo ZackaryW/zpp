@@ -3,6 +3,9 @@
     "trait": "automatic-workflow"
   },
   {
+    "trait": "codespace-claim-guard"
+  },
+  {
     "trait": "zero-assumptions"
   },
   {

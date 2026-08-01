@@ -7,7 +7,12 @@ from zpp.utils.packaged_profiles import load_packaged_default_profile
 from zpp.utils.models import ZppValidationError
 
 
-BASE_TRAITS = ("automatic-workflow", "zero-assumptions", "ponytail")
+BASE_TRAITS = (
+    "automatic-workflow",
+    "codespace-claim-guard",
+    "zero-assumptions",
+    "ponytail",
+)
 PYTHON_TRAITS = ("python-bdd", "python-tdd", "python-build")
 
 

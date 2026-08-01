@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 function resolveTraits(cwd: string): Promise<string> {
@@ -13,7 +13,43 @@ function resolveTraits(cwd: string): Promise<string> {
   });
 }
 
+function guardToolCall(
+  cwd: string,
+  toolName: string,
+  input: unknown,
+): Promise<{ block?: boolean; reason?: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("zpp", ["codespace", "guard", "--agent", "pi"], {
+      cwd,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(stderr || `ZPP codespace guard exited with ${code}`));
+        return;
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    child.stdin.end(JSON.stringify({ cwd, toolName, input }));
+  });
+}
+
 export default function zpp(pi: ExtensionAPI) {
+  pi.on("tool_call", async (event, ctx) => {
+    return guardToolCall(ctx.cwd, event.toolName, event.input);
+  });
+
   pi.on("before_agent_start", async (event, ctx) => {
     try {
       const traits = await resolveTraits(event.systemPromptOptions.cwd);

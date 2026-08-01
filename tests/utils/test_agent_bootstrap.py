@@ -31,8 +31,10 @@ def test_agent_bootstraps_write_only_global_user_home_integrations(tmp_path: Pat
     claude_path = tmp_path / ".claude" / "settings.json"
     assert pi_path.read_text(encoding="utf-8") == artifact.source
     assert results == (None, None, None)
-    assert json.loads(codex_path.read_text(encoding="utf-8"))["hooks"]["SessionStart"]
-    assert json.loads(claude_path.read_text(encoding="utf-8"))["hooks"]["SessionStart"]
+    codex_hooks = json.loads(codex_path.read_text(encoding="utf-8"))["hooks"]
+    claude_hooks = json.loads(claude_path.read_text(encoding="utf-8"))["hooks"]
+    assert codex_hooks["SessionStart"] and codex_hooks["PreToolUse"]
+    assert claude_hooks["SessionStart"] and claude_hooks["PreToolUse"]
     assert inspect_pi_extension(pi_path, artifact) == "identical"
     assert not (tmp_path / ".codex" / "skills").exists()
     assert not (tmp_path / ".claude" / "skills").exists()
@@ -58,6 +60,9 @@ def test_packaged_pi_extension_resolves_fresh_traits_on_each_agent_start(
     assert "event.systemPrompt" in artifact.source
     assert "if (!traits)" in artifact.source
     assert ".trim()" not in artifact.source
+    assert 'pi.on("tool_call"' in artifact.source
+    assert '["codespace", "guard", "--agent", "pi"]' in artifact.source
+    assert "JSON.stringify({ cwd, toolName, input })" in artifact.source
 
 
 def test_pi_extension_install_is_idempotent_and_rejects_unmanaged_state(
