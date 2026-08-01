@@ -14,6 +14,10 @@ AgentName = Literal["pi", "codex", "claude"]
 _PATCH_PATH = re.compile(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", re.MULTILINE)
 
 
+class UnsupportedGuardTool(ValueError):
+    pass
+
+
 class GuardRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -117,7 +121,7 @@ def decode_agent_guard_request(
     elif tool_name in {"NotebookEdit", "notebook_edit"}:
         targets = (_path(cwd, tool_input.get("notebook_path")),)
     else:
-        raise ValueError(f"unsupported agent guard tool: {tool_name}")
+        raise UnsupportedGuardTool(f"unsupported agent guard tool: {tool_name}")
     return GuardRequest(kind="direct_write", cwd=cwd, target_paths=targets)
 
 

@@ -7,6 +7,7 @@ import pytest
 from zpp.utils.codespace_claims import (
     CodespaceClaimConflictError,
     claimed_checkout_owners,
+    find_matching_codespace_claim,
     register_codespace_claim,
     replace_codespace_claim,
 )
@@ -60,6 +61,29 @@ def test_claim_replacement_rejects_a_stale_expected_claim(tmp_path: Path) -> Non
         replace_codespace_claim(index, original, replacement)
 
     assert index.claims["current"] == advanced
+
+
+def test_claim_matching_uses_the_complete_effective_checkout_key_set(
+    tmp_path: Path,
+) -> None:
+    first = _claim(tmp_path / "first", "first", "key-first").members[0]
+    second = _claim(tmp_path / "second", "second", "key-second").members[0]
+    claim = CodespaceClaim(
+        instance_id="current",
+        snapshot_key="original-snapshot",
+        members=(first, second),
+    )
+    index = CodespaceIndex(claims={"current": claim})
+
+    assert find_matching_codespace_claim(
+        index,
+        ["key-second", "key-first"],
+    ) == claim
+    assert find_matching_codespace_claim(index, ["key-first"]) is None
+    assert find_matching_codespace_claim(
+        index,
+        ["key-first", "key-second", "key-third"],
+    ) is None
 
 
 def test_competing_processes_cannot_both_register_one_checkout(

@@ -22,6 +22,21 @@ class CodespaceClaimConflictError(ValueError):
         super().__init__(f"physical checkouts are already claimed: {owners}")
 
 
+def find_matching_codespace_claim(
+    index: CodespaceIndex,
+    checkout_keys: Collection[str],
+) -> CodespaceClaim | None:
+    requested = set(checkout_keys)
+    return next(
+        (
+            claim
+            for claim in index.claims.values()
+            if {member.checkout_key for member in claim.members} == requested
+        ),
+        None,
+    )
+
+
 def claimed_checkout_owners(
     index: CodespaceIndex,
     checkout_keys: Collection[str],

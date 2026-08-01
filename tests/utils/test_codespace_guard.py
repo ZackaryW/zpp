@@ -5,6 +5,7 @@ import pytest
 from zpp.utils.codespace_guard import (
     GuardDecision,
     GuardRequest,
+    UnsupportedGuardTool,
     decode_agent_guard_request,
     encode_agent_guard_decision,
     evaluate_codespace_guard,
@@ -137,7 +138,7 @@ def test_shell_guard_verifies_cwd_without_parsing_the_command(tmp_path: Path) ->
 
 
 def test_malformed_supported_direct_write_payload_is_rejected(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="no target path"):
+    with pytest.raises(ValueError, match="no target path") as caught:
         decode_agent_guard_request(
             "codex",
             {
@@ -146,3 +147,33 @@ def test_malformed_supported_direct_write_payload_is_rejected(tmp_path: Path) ->
                 "tool_input": {"command": "*** Begin Patch\n*** End Patch"},
             },
         )
+
+    assert not isinstance(caught.value, UnsupportedGuardTool)
+
+
+@pytest.mark.parametrize(
+    ("agent", "payload"),
+    [
+        (
+            "codex",
+            {"tool_name": "read_file", "tool_input": {}},
+        ),
+        (
+            "claude",
+            {"tool_name": "Read", "tool_input": {}},
+        ),
+        (
+            "pi",
+            {"toolName": "read", "input": {}},
+        ),
+    ],
+)
+def test_unsupported_agent_tools_are_outside_the_guard_contract(
+    tmp_path: Path,
+    agent: str,
+    payload: dict[str, object],
+) -> None:
+    payload["cwd"] = str(tmp_path)
+
+    with pytest.raises(UnsupportedGuardTool, match="unsupported agent guard tool"):
+        decode_agent_guard_request(agent, payload)

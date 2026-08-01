@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Mapping, Sequence
 
 from zpp.core.errors import ZppDomainError
-from zpp.utils.codespace_discovery import CodespaceDiscovery, discover_codespace
+from zpp.utils.codespace_discovery import discover_codespace
 from zpp.utils.codespace_catalog import (
     plan_released_codespace_cleanup,
     record_codespace_cleanup,
@@ -79,7 +79,7 @@ def discover_codespace_view(
     *,
     home: Path,
     current_directory: Path,
-) -> CodespaceDiscovery:
+) -> str | None:
     index = read_codespaces(home)
     return discover_codespace(
         current_directory,

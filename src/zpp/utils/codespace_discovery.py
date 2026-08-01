@@ -7,9 +7,6 @@ from typing import Sequence
 from zpp.utils.codespace_models import CodespaceClaim
 
 
-CodespaceDiscovery = str | None
-
-
 def _contains(root: Path, target: Path) -> bool:
     canonical_root = os.path.normcase(str(root.resolve()))
     canonical_target = os.path.normcase(str(target.resolve()))
