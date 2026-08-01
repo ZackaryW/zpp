@@ -141,14 +141,28 @@ Feature: Bootstrap ZPP and configure agent applications
       | Codex       |
       | Claude Code |
 
-  Scenario Outline: A configured agent cannot bypass an active codespace claim
+  Scenario Outline: A configured agent guards supported direct writes
     Given <agent> was configured by ZPP
     And another active codespace claims the physical checkout targeted by a ZPP-managed mutation
     And codespace-claim-guard is inactive for the target
-    When <agent> attempts that mutation from a different codespace
+    When <agent> attempts a supported direct edit or write tool call from a different codespace
     Then the installed ZPP guard rejects the mutation before the checkout changes
     And the conflict identifies the active owning codespace
     And no OpenSpec workset is accepted as proof of write ownership
+
+    Examples:
+      | agent       |
+      | Pi          |
+      | Codex       |
+      | Claude Code |
+
+  Scenario Outline: An agent guard reports its cooperative shell boundary
+    Given <agent> was configured by ZPP
+    And its shell work is associated with an active codespace and current checkout
+    When <agent> submits a supported shell tool call
+    Then the installed ZPP guard verifies that codespace and current checkout association
+    And it does not claim to infer every path the arbitrary shell command may mutate
+    And manual editor actions, unrelated processes, and unsupported tool paths remain outside its guarantee
 
     Examples:
       | agent       |

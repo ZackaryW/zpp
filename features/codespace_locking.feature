@@ -3,14 +3,13 @@ Feature: Gate concurrent writes through explicit ZPP codespaces
   conflicts, and open optional multi-folder views without treating those views
   as write ownership.
 
-  Scenario: Lock an uncontested workspace and its writable OpenSpec authority
-    Given the current workspace contains committed project checkouts
-    And the user supplies additional committed project paths
+  Scenario Outline: Lock an uncontested explicit target set and its writable OpenSpec authority
+    Given <input source> names committed project checkouts
     And one project uses a repo-local OpenSpec root
     And another project resolves to an external writable OpenSpec store
     And the projects also use a registered store only as a reference
     And no active codespace claims any resolved physical checkout
-    When the user runs zpp codespace lock for the current workspace and additional paths
+    When the user runs zpp codespace lock using <input source>
     Then one durable codespace claim owns every complete project checkout exactly once
     And the claim also owns the external writable store checkout exactly once
     And the repo-local OpenSpec root is covered by its containing project checkout
@@ -19,14 +18,20 @@ Feature: Gate concurrent writes through explicit ZPP codespaces
     And no Git worktree or OpenSpec workset is created
     And no editor or agent is opened
 
+    Examples:
+      | input source                     |
+      | an explicit workspace descriptor |
+      | an explicit path list            |
+
   Scenario: Resolve a path-free lock without using worksets as authority
     Given the current directory is inside a checkout claimed by one active ZPP codespace
     When the user runs zpp codespace lock without paths
     Then ZPP identifies the existing codespace
     And no second claim or OpenSpec workset is created
-    Given instead no current workspace or active claim can supply writable targets
+    Given instead no active claim or explicit input supplies writable targets
     When the user runs zpp codespace lock without paths
     Then locking is rejected without inferring ownership from an OpenSpec workset
+    And locking does not guess the folders open in an editor
     When the user repeats locking with an explicit workspace descriptor or path list
     Then ZPP resolves the explicitly requested writable targets
 
