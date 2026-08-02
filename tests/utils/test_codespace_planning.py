@@ -12,6 +12,7 @@ from zpp.utils.codespace_planning import (
     ResolvedMember,
     plan_codespace_cleanup,
     plan_codespace_lock,
+    plan_codespace_edit_projection,
     plan_codespace_projection,
     plan_codespace_unlock,
 )
@@ -153,3 +154,41 @@ def test_projection_plan_uses_access_and_paths_but_ignores_commit_movement(
     assert plan_codespace_projection(projected).action == "reuse"
     assert plan_codespace_projection(moved_commit).action == "reuse"
     assert plan_codespace_projection(changed_access).action == "replace"
+
+
+def test_edit_projection_plan_uses_current_owner_and_successor_structure(
+    tmp_path: Path,
+) -> None:
+    current = _active(
+        _resolved(tmp_path / "current", "current", "key-current"),
+        "current-id",
+    ).model_copy(
+        update={
+            "projection": CodespaceProjection(
+                generation=2,
+                structure_key="current-structure",
+            )
+        }
+    )
+    successor = _active(
+        _resolved(
+            tmp_path / "reference",
+            "reference",
+            "key-reference",
+            access="read_only",
+        ),
+        "successor-id",
+    )
+
+    plan = plan_codespace_edit_projection(current, successor)
+
+    assert plan is not None
+    assert plan.action == "replace"
+    assert plan.superseded_name == "zpp-current-id-g2"
+    assert plan.projection.generation == 3
+    assert plan.projection.structure_key == projection_structure_key(
+        successor.members
+    )
+    assert plan_codespace_edit_projection(
+        current.model_copy(update={"projection": None}), successor
+    ) is None

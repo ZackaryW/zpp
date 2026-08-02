@@ -314,6 +314,26 @@ def plan_codespace_projection(claim: CodespaceClaim) -> CodespaceProjectionPlan:
     )
 
 
+def plan_codespace_edit_projection(
+    current: CodespaceClaim,
+    successor: CodespaceClaim,
+) -> CodespaceProjectionPlan | None:
+    projection = current.projection
+    if projection is None:
+        return None
+    return CodespaceProjectionPlan(
+        action="replace",
+        projection=CodespaceProjection(
+            generation=projection.generation + 1,
+            structure_key=projection_structure_key(successor.members),
+        ),
+        superseded_name=projection_name(
+            current.instance_id,
+            projection.generation,
+        ),
+    )
+
+
 def plan_codespace_unlock(
     claim: CodespaceClaim,
     *,
