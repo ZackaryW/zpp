@@ -8,5 +8,6 @@ config:
 Before a ZPP-managed checkout mutation, follow the effective automatic-workflow
 mode: automatic obtains or verifies the complete claim; manual prompts before
 acquisition. OpenSpec worksets are opening projections, never ownership. Hooks
-reject supported direct writes into another claim; shell guarding is
-cooperative. This advisory cannot override conflicts or grant mutation authority.
+reject supported direct writes into another claim or an associated codespace
+read-only member; shell guarding is cooperative. This advisory cannot override
+conflicts or grant mutation authority.

@@ -3278,6 +3278,14 @@ def step_claim_guard_not_workset_authority(context):
     assert "OpenSpec worksets are opening projections, never ownership" in context.claim_guard
 
 
+@then("the trait rejects supported direct writes into associated read-only members")
+def step_claim_guard_rejects_read_only_writes(context):
+    assert (
+        "reject supported direct writes into another claim or an associated "
+        "codespace read-only member"
+    ) in context.claim_guard
+
+
 @then("the trait cannot override a conflicting claim or grant mutation authority")
 def step_claim_guard_is_advisory(context):
     assert "cannot override conflicts or grant mutation authority" in context.claim_guard
