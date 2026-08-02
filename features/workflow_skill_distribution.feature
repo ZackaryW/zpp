@@ -237,6 +237,7 @@ Feature: Distribute the permanent ZPP workflow skills
     Then the exact finalized archive is handed to zpp-commit-zmem as material repository history
     And the archive checkpoint excludes unrelated active changes and disposable utility plans
     And archiving alone does not require a zmem annotation
+    And the repository ignore policy keeps active changes hidden and finalized archives trackable
 
   Scenario: An unowned related change blocks workflow completion
     Given a consumed related OpenSpec change remains active without an owning stage

@@ -4,8 +4,10 @@
 # .cc-history: the VSCode chat-archiving extension's store, not project content
 .cc-history/
 
-# OpenSpec changes are working state and must never be committed.
-openspec/changes/
+# Active OpenSpec changes are mutable working state; finalized archives are history.
+openspec/changes/*
+!openspec/changes/archive/
+!openspec/changes/archive/**
 
 # Local workflow skills are ignored development projections of packaged artifacts.
 .codex/skills/

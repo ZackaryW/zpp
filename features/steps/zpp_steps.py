@@ -3623,6 +3623,36 @@ def step_archive_does_not_force_zmem(context):
     assert "Archiving alone does not require zmem" in commit
 
 
+@then(
+    "the repository ignore policy keeps active changes hidden and finalized "
+    "archives trackable"
+)
+def step_repository_ignore_policy_distinguishes_archives(context):
+    active = subprocess.run(
+        ["git", "check-ignore", "--no-index", "openspec/changes/example/proposal.md"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    archived = subprocess.run(
+        [
+            "git",
+            "check-ignore",
+            "--no-index",
+            "openspec/changes/archive/2099-01-01-example/proposal.md",
+        ],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert active.returncode == 0
+    assert archived.returncode == 1
+
+
 @given("a consumed related OpenSpec change remains active without an owning stage")
 def step_unowned_related_change(context):
     install_change_lifecycle_policy(context)
