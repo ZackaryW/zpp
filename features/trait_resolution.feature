@@ -5,6 +5,7 @@ Feature: Resolve effective traits as Markdown
   Scenario: Selecting the default profile resolves the platform-neutral base
     Given a clean user home with initialized ZPP state
     And ZPP_PROFILE is "default"
+    And rg, jq, and zmem are unavailable on PATH
     When the user runs zpp resolve for an existing target
     Then resolution succeeds
     And stdout contains exactly these effective trait documents in order:
@@ -26,20 +27,25 @@ Feature: Resolve effective traits as Markdown
     And codespace-claim-guard remains active
     And the same platform-neutral base traits remain active
 
-  Scenario Outline: Optional Python traits remain independently selectable
+  Scenario Outline: Optional platform workflow traits remain independently selectable
     Given a clean user home with initialized ZPP state
     And ZPP_PROFILE is "default"
     And the repository layer additionally activates <trait>
     When the user runs zpp resolve for the repository target
     Then resolution succeeds
     And stdout contains <trait> with only <responsibility> guidance
-    And stdout contains no other optional Python trait
+    And stdout contains no other optional platform workflow trait
 
     Examples:
-      | trait        | responsibility      |
-      | python-bdd   | Behave             |
-      | python-tdd   | pytest             |
-      | python-build | the uv environment |
+      | trait              | responsibility      |
+      | python-bdd         | Behave               |
+      | python-tdd         | pytest               |
+      | python-build       | the uv environment   |
+      | python-django-tdd  | Django testing       |
+      | typescript-bdd     | TypeScript BDD       |
+      | typescript-tdd     | TypeScript TDD       |
+      | flutter-bdd        | Flutter BDD          |
+      | flutter-tdd        | Flutter TDD          |
 
   Scenario: Authored and configured traits remain inactive without a trigger
     Given a clean user home with an initialized global ZPP layer

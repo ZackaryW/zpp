@@ -3,7 +3,7 @@ Feature: Distribute the permanent ZPP workflow skills
   global or repository-local agent scopes without changing authored ZPP layers.
 
   Background:
-    Given the packaged ZPP workflow bundle contains all eight permanent skills
+    Given the packaged ZPP workflow bundle contains all eleven permanent skills
 
   Scenario: Install the bundle locally for explicitly selected agents
     Given the current directory is the root of a Git worktree
@@ -181,6 +181,16 @@ Feature: Distribute the permanent ZPP workflow skills
     And each permanent skill contains only its stage-specific operations and gates
     And hard OpenSpec operation ownership, verification authority, and zmem materiality remain in their owning skills
 
+  Scenario: Generic zmem, lean-audit, and skill-authoring guidance is installed coherently
+    Given the packaged default profile contains executable-guarded tool-use traits
+    When the user installs the managed bundle for every supported agent
+    Then every native projection contains zpp-use-zmem, zpp-lean-audit, and zpp-author-skill
+    And use-zmem looks up zpp-use-zmem and zpp-commit-zmem only when the zmem executable is available
+    And zpp-use-zmem teaches recall, search, detail inspection, links, output interpretation, and current-authority verification
+    And zpp-lean-audit is read-only and substantially attributed to the upstream Ponytail ladder, taxonomy, output, and safety boundaries
+    And zpp-lean-audit preserves ZPP's proportional maturity evaluation for external dependencies
+    And zpp-author-skill keeps context-continuity and explicit-control-flow guidance in focused references rather than runtime traits
+
   Scenario Outline: Claim guidance follows workflow automation without granting authority
     Given a participating layer activates codespace-claim-guard
     And automatic-workflow has effective mode <mode>
@@ -197,10 +207,10 @@ Feature: Distribute the permanent ZPP workflow skills
 
   Scenario: Installed skill bodies remain platform-neutral
     When the user installs the managed bundle for every supported agent
-    Then every native projection contains the same eight permanent workflow skills
+    Then every native projection contains the same eleven permanent workflow skills
     And each skill retains its required packaged resources and scripts
     And no skill body contains platform, framework, test-runner, or agent-specific policy
-    And python-bdd, python-tdd, and python-build remain independent optional traits outside the skill bodies
+    And all Python, Django, TypeScript, and Flutter workflow guidance remains in independent optional traits outside the skill bodies
 
   Scenario: Install explicit codespace worktree reconciliation
     Given a mitigated codespace records its generated project and store branches

@@ -21,8 +21,9 @@ Feature: Bootstrap ZPP and configure agent applications
     And the neutral global trait layer exists
     And the persistent user-owned default profile exists
     And the default profile is provisioned without participating in resolution
-    And the default profile selects exactly automatic-workflow, codespace-claim-guard, zero-assumptions, and ponytail when explicitly used
-    And the default profile contains inactive python-bdd, python-tdd, and python-build traits
+    And the default profile conditionlessly selects exactly automatic-workflow, codespace-claim-guard, zero-assumptions, and ponytail when explicitly used
+    And the default profile guards use-rg, use-jq, and use-zmem by their corresponding executables
+    And the default profile contains all packaged platform workflow traits without activating them
     And the saved and cache roots exist
     And no cache artifact exists
     And the project still has no local ZPP state
@@ -118,7 +119,8 @@ Feature: Bootstrap ZPP and configure agent applications
     And its native hook is trusted and enabled by the agent application
     And its current working directory resolves one effective trait document
     When <lifecycle> invokes the ZPP hook
-    Then ZPP resolves the current working directory
+    Then ZPP resolves the current working directory with <agent> as the invoking agent
+    And only <agent>'s active plugin trait sources are eligible
     And the complete effective trait document is injected exactly once into <agent> context
 
     Examples:
