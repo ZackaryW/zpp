@@ -15,6 +15,7 @@ from zpp.utils.codespace_planning import (
     plan_codespace_edit_projection,
     plan_codespace_projection,
     plan_codespace_unlock,
+    refresh_codespace_snapshot,
 )
 from zpp.utils.git_layers import GitCheckout
 
@@ -192,3 +193,22 @@ def test_edit_projection_plan_uses_current_owner_and_successor_structure(
     assert plan_codespace_edit_projection(
         current.model_copy(update={"projection": None}), successor
     ) is None
+
+
+def test_refresh_codespace_snapshot_records_observed_commits(tmp_path: Path) -> None:
+    claim = _active(_resolved(tmp_path / "project", "project", "key"), "instance")
+
+    refreshed = refresh_codespace_snapshot(
+        claim,
+        {
+            "key": GitCheckout(
+                tmp_path / "project",
+                tmp_path / "project" / ".git",
+                "observed-head",
+                True,
+            )
+        },
+    )
+
+    assert refreshed.members[0].commit == "observed-head"
+    assert refreshed.snapshot_key != claim.snapshot_key

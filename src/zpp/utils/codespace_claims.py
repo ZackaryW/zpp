@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Collection
 from dataclasses import dataclass
+from typing import Literal
 
 from zpp.utils.codespace_members import writable_members
 from zpp.utils.codespace_models import (
@@ -29,16 +30,35 @@ class CodespaceClaimConflictError(ValueError):
 
 def find_matching_codespace_claim(
     index: CodespaceIndex,
-    checkout_keys: Collection[str],
+    members: Collection[tuple[str, Literal["writable", "read_only"]]],
 ) -> CodespaceClaim | None:
-    requested = set(checkout_keys)
+    requested = set(members)
     return next(
         (
             claim
             for claim in index.claims.values()
-            if {member.checkout_key for member in claim.members} == requested
+            if {
+                (member.source_checkout_key, member.access)
+                for member in claim.members
+            }
+            == requested
         ),
         None,
+    )
+
+
+def update_codespace_claim(
+    index: CodespaceIndex,
+    expected: CodespaceClaim,
+    replacement: CodespaceClaim,
+) -> CodespaceIndex:
+    if replacement.instance_id != expected.instance_id:
+        raise ValueError("same-identity update changed the codespace identity")
+    if index.claims.get(expected.instance_id) != expected:
+        raise ValueError("codespace claim changed since planning")
+    return CodespaceIndex(
+        claims={**index.claims, replacement.instance_id: replacement},
+        released=index.released,
     )
 
 

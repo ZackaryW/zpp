@@ -17,7 +17,8 @@ from zpp.utils.codespace_claims import (
     claimed_checkout_owners,
     find_matching_codespace_claim,
     register_codespace_claim,
-    replace_codespace_claim,
+    transition_codespace_claim,
+    update_codespace_claim,
 )
 from zpp.utils.codespace_discovery import discover_codespace
 from zpp.utils.codespace_environment import (
@@ -33,25 +34,25 @@ from zpp.utils.codespace_guard import (
     encode_agent_guard_decision,
     evaluate_codespace_guard,
 )
-from zpp.utils.codespace_identity import (
-    new_codespace_instance_id,
-    projection_name,
-    snapshot_key,
-)
+from zpp.utils.codespace_edits import CodespaceEditOperations
+from zpp.utils.codespace_identity import new_codespace_instance_id, projection_name
+from zpp.utils.codespace_members import writable_members
 from zpp.utils.codespace_models import CodespaceClaim, CodespaceIndex, ReleasedCodespace
 from zpp.utils.codespace_planning import (
-    CodespaceAddPlan,
+    CodespaceEditPlan,
     CodespaceLockPlan,
     CodespaceProjectionPlan,
     CodespaceRequest,
-    plan_codespace_add,
+    plan_codespace_edit,
+    plan_codespace_edit_projection,
     plan_codespace_lock,
     plan_codespace_projection,
     plan_codespace_unlock,
+    refresh_codespace_snapshot,
 )
 from zpp.utils.codespace_projection import orphaned_codespace_projections
 from zpp.utils.codespace_state import load_codespace_index, mutate_codespace_index
-from zpp.utils.codespace_targets import resolve_codespace_members
+from zpp.utils.codespace_targets import CodespaceTarget, resolve_codespace_members
 from zpp.utils.git_layers import (
     GitCheckout,
     create_git_worktree,
@@ -74,6 +75,24 @@ class CodespaceLockResult:
     conflicts: tuple[str, ...]
     dirty_members: tuple[str, ...]
     existing: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class CodespaceEditPreview:
+    plan: CodespaceEditPlan
+    sources: Mapping[str, GitCheckout]
+
+    @property
+    def conflict_names(self) -> tuple[str, ...]:
+        keys = set(self.plan.conflicting_checkout_keys)
+        successor = self.plan.successor
+        if successor is None:
+            return ()
+        return tuple(
+            member.name
+            for member in successor.members
+            if member.source_checkout_key in keys
+        )
 
 
 class CodespaceConflictError(ZppDomainError):
@@ -187,17 +206,19 @@ def _materialize_registry(home: Path, claim: CodespaceClaim) -> None:
 def lock_codespace(
     *,
     home: Path,
-    members: Sequence[OpenSpecMember],
+    targets: Sequence[CodespaceTarget],
     mitigate: bool,
 ) -> CodespaceLockResult:
     _remove_orphaned_projections(home)
-    resolved = resolve_codespace_members(members)
+    resolved = resolve_codespace_members(targets)
     if not resolved:
-        raise ZppDomainError("no writable codespace targets were resolved")
+        raise ZppDomainError("no codespace targets were resolved")
+    if not any(member.access == "writable" for member in resolved):
+        raise ZppDomainError("a codespace requires at least one writable target")
     index = read_codespaces(home)
     matching = find_matching_codespace_claim(
         index,
-        {member.checkout_key for member in resolved},
+        {(member.checkout_key, member.access) for member in resolved},
     )
     if matching is not None:
         return CodespaceLockResult(
@@ -207,10 +228,9 @@ def lock_codespace(
             existing=True,
         )
 
-    snapshot = snapshot_key(tuple(member.checkout for member in resolved))
-    instance = new_codespace_instance_id(snapshot)
+    instance = new_codespace_instance_id()
     plan = plan_codespace_lock(
-        CodespaceRequest(instance, snapshot, resolved),
+        CodespaceRequest(instance, resolved),
         index,
     )
     conflict_names = _conflict_names(plan)
@@ -239,10 +259,11 @@ def lock_codespace(
 
 def find_claim(home: Path, identifier: str | None, cwd: Path) -> CodespaceClaim:
     index = read_codespaces(home)
-    if identifier is not None:
-        claim = index.claims.get(identifier)
+    selected = identifier or os.environ.get("ZPP_CODESPACE_ID")
+    if selected is not None:
+        claim = index.claims.get(selected)
         if claim is None:
-            raise ZppDomainError(f"codespace does not exist: {identifier}")
+            raise ZppDomainError(f"codespace does not exist: {selected}")
         return claim
     active_id = discover_codespace(
         cwd,
@@ -274,80 +295,112 @@ def _projection_claim(
     return claim.model_copy(update={"projection": plan.projection})
 
 
-def add_codespace_paths(
+def preview_codespace_edit(
     *,
     home: Path,
     claim: CodespaceClaim,
-    paths: Sequence[Path],
+    operations: CodespaceEditOperations,
+) -> CodespaceEditPreview:
+    targets = tuple(
+        CodespaceTarget(
+            target.path.name,
+            target.path,
+            "read_only" if target.action == "add_read_only" else "writable",
+        )
+        for target in operations.targets
+        if target.action in {"add", "add_read_only", "promote"}
+    )
+    resolved = resolve_codespace_members(targets)
+    sources = {member.checkout_key: member.checkout for member in resolved}
+    plan = plan_codespace_edit(
+        claim,
+        operations,
+        resolved,
+        read_codespaces(home),
+        successor_id=new_codespace_instance_id(),
+    )
+    successor = plan.successor
+    if successor is not None:
+        inspections = {
+            member.checkout_key: inspect_git_checkout(member.effective_path)
+            for member in successor.members
+            if member.effective_path.exists()
+        }
+        successor = refresh_codespace_snapshot(successor, inspections)
+        plan = CodespaceEditPlan(
+            current=plan.current,
+            successor=successor,
+            conflicting_checkout_keys=plan.conflicting_checkout_keys,
+            dirty_member_names=plan.dirty_member_names,
+            released=plan.released,
+            no_op=plan.no_op,
+        )
+    return CodespaceEditPreview(plan=plan, sources=sources)
+
+
+def apply_codespace_edit(
+    *,
+    home: Path,
+    preview: CodespaceEditPreview,
     mitigate: bool,
 ) -> CodespaceClaim:
     _remove_orphaned_projections(home)
-    additions = resolve_codespace_members(
-        tuple(OpenSpecMember(path.resolve().name, path.resolve()) for path in paths)
-    )
-    plan: CodespaceAddPlan = plan_codespace_add(
-        claim,
-        additions,
-        read_codespaces(home),
-    )
-    conflicts = set(plan.conflicting_checkout_keys)
-    names = tuple(
-        item.name for item in plan.additions if item.checkout_key in conflicts
-    )
-    if names and not mitigate:
+    plan = preview.plan
+    if plan.no_op or plan.successor is None:
+        return plan.current
+    if plan.conflicting_checkout_keys and not mitigate:
         owners = claimed_checkout_owners(
             read_codespaces(home),
             plan.conflicting_checkout_keys,
-            excluding=claim.instance_id,
+            excluding=plan.current.instance_id,
         )
         raise CodespaceConflictError(
-            names,
+            preview.conflict_names,
             tuple(dict.fromkeys(conflict.owner_id for conflict in owners)),
         )
 
-    replacement = plan.replacement
-    existing_keys = {member.checkout_key for member in claim.members}
-    _preflight_worktrees(
-        replacement.model_copy(
-            update={
-                "members": tuple(
-                    member
-                    for member in replacement.members
-                    if member.checkout_key not in existing_keys
-                )
-            }
-        )
+    successor = plan.successor
+    current_keys = {member.checkout_key for member in plan.current.members}
+    new_generated = successor.model_copy(
+        update={
+            "members": tuple(
+                member
+                for member in successor.members
+                if member.checkout_key not in current_keys
+            )
+        }
     )
-    sources = {item.checkout_key: item.checkout for item in plan.additions}
-    projection_plan = (
-        plan_codespace_projection(replacement)
-        if claim.projection is not None
-        else None
-    )
+    _preflight_worktrees(new_generated)
+    projection_plan = plan_codespace_edit_projection(plan.current, successor)
     created_projection: str | None = None
-    if projection_plan is not None and projection_plan.action != "reuse":
-        replacement = _projection_claim(replacement, projection_plan)
+    if projection_plan is not None:
+        successor = _projection_claim(successor, projection_plan)
         created_projection = projection_name(
-            replacement.instance_id,
-            replacement.projection.generation,
+            successor.instance_id,
+            projection_plan.projection.generation,
         )
 
     created: list[tuple[GitCheckout, Path]] = []
     try:
         created = _create_worktrees(
-            replacement,
-            sources,
-            existing_keys=existing_keys,
+            successor,
+            preview.sources,
+            existing_keys=current_keys,
         )
-        _materialize_registry(home, replacement)
+        _materialize_registry(home, successor)
         if created_projection is not None:
             create_openspec_workset(
                 created_projection,
-                _projection_members(replacement),
+                _projection_members(successor),
             )
         mutate_codespace_index(
             codespace_root(home),
-            lambda index: replace_codespace_claim(index, claim, replacement),
+            lambda index: transition_codespace_claim(
+                index,
+                plan.current,
+                successor,
+                plan.released,
+            ),
         )
     except BaseException:
         if created_projection is not None:
@@ -360,7 +413,7 @@ def add_codespace_paths(
 
     if projection_plan is not None and projection_plan.superseded_name is not None:
         remove_openspec_workset(projection_plan.superseded_name)
-    return replacement
+    return successor
 
 
 def unlock_codespace(home: Path, claim: CodespaceClaim, *, force: bool = False) -> None:
@@ -449,7 +502,7 @@ def open_codespace(
         try:
             mutate_codespace_index(
                 codespace_root(home),
-                lambda index: replace_codespace_claim(index, claim, current),
+                lambda index: update_codespace_claim(index, claim, current),
             )
         except BaseException:
             remove_openspec_workset(created_name)
@@ -468,6 +521,9 @@ def inspect_codespace_claim(claim: CodespaceClaim) -> tuple[dict[str, object], .
             {
                 "name": member.name,
                 "path": str(member.effective_path),
+                "access": member.access,
+                "claimed": member.access == "writable",
+                "generated": member.generated_worktree,
                 "starting_commit": member.commit,
                 "current_commit": checkout.head,
                 "dirty": checkout.dirty,
@@ -485,15 +541,21 @@ def guard_codespace_request(
         request = decode_agent_guard_request(agent, payload)
     except UnsupportedGuardTool:
         return {}
-    decision = evaluate_codespace_guard(request, read_codespaces(home))
+    decision = evaluate_codespace_guard(
+        request,
+        read_codespaces(home),
+        associated_codespace=os.environ.get("ZPP_CODESPACE_ID"),
+    )
     return encode_agent_guard_decision(agent, decision)
 
 
 def codespace_environment(home: Path, claim: CodespaceClaim) -> dict[str, str]:
-    return private_openspec_environment(
+    environment = private_openspec_environment(
         codespace_root(home) / claim.instance_id,
         os.environ,
     )
+    environment["ZPP_CODESPACE_ID"] = claim.instance_id
+    return environment
 
 
 def exec_codespace(
@@ -504,12 +566,12 @@ def exec_codespace(
     return execute_codespace_command(
         argv,
         environment=codespace_environment(home, claim),
-        cwd=claim.members[0].effective_path,
+        cwd=(writable_members(claim.members) or claim.members)[0].effective_path,
     )
 
 
 def activate_codespace(home: Path, claim: CodespaceClaim) -> int:
     return activate_codespace_shell(
         environment=codespace_environment(home, claim),
-        cwd=claim.members[0].effective_path,
+        cwd=(writable_members(claim.members) or claim.members)[0].effective_path,
     )

@@ -9,6 +9,7 @@ from zpp.utils.codespace_claims import (
     claimed_checkout_owners,
     find_matching_codespace_claim,
     register_codespace_claim,
+    update_codespace_claim,
 )
 from zpp.utils.codespace_models import CodespaceClaim, CodespaceIndex, CodespaceMember
 
@@ -59,13 +60,59 @@ def test_claim_matching_uses_the_complete_effective_checkout_key_set(
 
     assert find_matching_codespace_claim(
         index,
-        ["key-second", "key-first"],
+        [("key-second", "writable"), ("key-first", "writable")],
     ) == claim
-    assert find_matching_codespace_claim(index, ["key-first"]) is None
+    assert find_matching_codespace_claim(index, [("key-first", "writable")]) is None
     assert find_matching_codespace_claim(
         index,
-        ["key-first", "key-second", "key-third"],
+        [
+            ("key-first", "writable"),
+            ("key-second", "writable"),
+            ("key-third", "writable"),
+        ],
     ) is None
+
+
+def test_claim_matching_distinguishes_access_and_uses_source_identity(
+    tmp_path: Path,
+) -> None:
+    generated = _claim(tmp_path / "source", "current", "effective").members[0].model_copy(
+        update={
+            "source_checkout_key": "source",
+            "generated_worktree": True,
+            "branch": "zpp/current/0",
+        }
+    )
+    reference = _claim(tmp_path / "reference", "reference", "reference").members[0].model_copy(
+        update={"access": "read_only"}
+    )
+    claim = CodespaceClaim(
+        instance_id="current",
+        snapshot_key="snapshot",
+        members=(generated, reference),
+    )
+    index = CodespaceIndex(claims={"current": claim})
+
+    assert find_matching_codespace_claim(
+        index,
+        [("source", "writable"), ("reference", "read_only")],
+    ) == claim
+    assert find_matching_codespace_claim(
+        index,
+        [("source", "writable"), ("reference", "writable")],
+    ) is None
+
+
+def test_same_identity_update_requires_the_expected_claim(tmp_path: Path) -> None:
+    current = _claim(tmp_path / "current", "current", "key")
+    replacement = current.model_copy(update={"snapshot_key": "updated"})
+    index = CodespaceIndex(claims={"current": current})
+
+    assert update_codespace_claim(index, current, replacement).claims == {
+        "current": replacement
+    }
+    with pytest.raises(ValueError, match="changed since planning"):
+        update_codespace_claim(index, replacement, current)
 
 
 def test_competing_processes_cannot_both_register_one_checkout(

@@ -334,6 +334,21 @@ def plan_codespace_edit_projection(
     )
 
 
+def refresh_codespace_snapshot(
+    claim: CodespaceClaim,
+    inspections: Mapping[str, GitCheckout],
+) -> CodespaceClaim:
+    members = tuple(
+        member.model_copy(update={"commit": inspections[member.checkout_key].head})
+        if member.checkout_key in inspections
+        else member
+        for member in claim.members
+    )
+    return claim.model_copy(
+        update={"members": members, "snapshot_key": snapshot_key(members)}
+    )
+
+
 def plan_codespace_unlock(
     claim: CodespaceClaim,
     *,

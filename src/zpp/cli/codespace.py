@@ -11,7 +11,7 @@ from zpp.cli.shared import interactive_terminal_available, run_domain
 from zpp.core.codespaces import (
     CodespaceConflictError,
     activate_codespace,
-    add_codespace_paths,
+    apply_codespace_edit,
     cleanup_codespace,
     discover_codespace_view,
     exec_codespace,
@@ -22,12 +22,14 @@ from zpp.core.codespaces import (
     inspect_codespace_claim,
     lock_codespace,
     open_codespace,
+    preview_codespace_edit,
     read_codespaces,
     record_codespace_disposition,
     unlock_codespace,
 )
 from zpp.utils.codespace_identity import projection_name
-from zpp.utils.codespace_targets import explicit_members
+from zpp.utils.codespace_edits import normalize_codespace_edit
+from zpp.utils.codespace_targets import explicit_codespace_targets
 
 
 codespace_app = typer.Typer(help="Gate concurrent OpenSpec work through explicit codespaces.")
@@ -42,14 +44,16 @@ def _confirm_conflicts(error: CodespaceConflictError, yes: bool) -> bool:
 def lock_command(
     paths: Annotated[list[Path] | None, typer.Argument()] = None,
     workspace: Annotated[Path | None, typer.Option("--workspace")] = None,
+    read_only: Annotated[list[Path] | None, typer.Option("--read-only")] = None,
     yes: Annotated[bool, typer.Option("--yes", "-y")] = False,
 ) -> None:
     def action() -> None:
-        members = explicit_members(
+        targets = explicit_codespace_targets(
             workspace=workspace,
-            paths=tuple(paths or ()),
+            writable_paths=tuple(paths or ()),
+            read_only_paths=tuple(read_only or ()),
         )
-        if members is None:
+        if targets is None:
             active_id = discover_codespace_view(
                 home=Path.home(),
                 current_directory=Path.cwd(),
@@ -62,11 +66,11 @@ def lock_command(
             typer.echo(active_id)
             return
         try:
-            result = lock_codespace(home=Path.home(), members=members, mitigate=False)
+            result = lock_codespace(home=Path.home(), targets=targets, mitigate=False)
         except CodespaceConflictError as error:
             if not _confirm_conflicts(error, yes):
                 raise ValueError("codespace mitigation declined") from error
-            result = lock_codespace(home=Path.home(), members=members, mitigate=True)
+            result = lock_codespace(home=Path.home(), targets=targets, mitigate=True)
         typer.echo(result.claim.instance_id)
         for name in result.dirty_members:
             typer.echo(f"dirty: {name}", err=True)
@@ -77,30 +81,57 @@ def lock_command(
     run_domain(action)
 
 
-@codespace_app.command("add")
-def add_command(
-    paths: Annotated[list[Path], typer.Argument()],
-    codespace: Annotated[str | None, typer.Option("--codespace")] = None,
+@codespace_app.command("edit")
+def edit_command(
+    identifier: Annotated[str | None, typer.Argument()] = None,
+    add: Annotated[list[Path] | None, typer.Option("--add")] = None,
+    add_read_only: Annotated[
+        list[Path] | None, typer.Option("--add-read-only")
+    ] = None,
+    remove: Annotated[list[Path] | None, typer.Option("--remove")] = None,
+    promote: Annotated[list[Path] | None, typer.Option("--promote")] = None,
+    demote: Annotated[list[Path] | None, typer.Option("--demote")] = None,
     yes: Annotated[bool, typer.Option("--yes", "-y")] = False,
 ) -> None:
     def action() -> None:
-        claim = find_claim(Path.home(), codespace, Path.cwd())
-        try:
-            replacement = add_codespace_paths(
-                home=Path.home(),
-                claim=claim,
-                paths=paths,
-                mitigate=False,
+        home = Path.home()
+        claim = find_claim(home, identifier, Path.cwd())
+        operations = normalize_codespace_edit(
+            add=tuple(add or ()),
+            add_read_only=tuple(add_read_only or ()),
+            remove=tuple(remove or ()),
+            promote=tuple(promote or ()),
+            demote=tuple(demote or ()),
+        )
+        preview = preview_codespace_edit(
+            home=home,
+            claim=claim,
+            operations=operations,
+        )
+        if preview.plan.no_op or preview.plan.successor is None:
+            typer.echo(claim.instance_id)
+            return
+        successor = preview.plan.successor
+        typer.echo(f"successor: {successor.instance_id}")
+        for member in successor.members:
+            typer.echo(f"{member.access}\t{member.name}\t{member.effective_path}")
+        if preview.conflict_names:
+            typer.echo(
+                "conflicting writable checkouts will use isolated worktrees: "
+                + ", ".join(preview.conflict_names),
+                err=True,
             )
-        except CodespaceConflictError as error:
-            if not _confirm_conflicts(error, yes):
-                raise ValueError("codespace mitigation declined") from error
-            replacement = add_codespace_paths(
-                home=Path.home(),
-                claim=claim,
-                paths=paths,
-                mitigate=True,
-            )
+        if not yes and not typer.confirm("Apply this complete successor shape?"):
+            raise ValueError("codespace edit declined")
+        if not yes and not typer.confirm(
+            f"Release superseded codespace lock {claim.instance_id}?"
+        ):
+            raise ValueError("codespace edit declined")
+        replacement = apply_codespace_edit(
+            home=home,
+            preview=preview,
+            mitigate=True,
+        )
         typer.echo(replacement.instance_id)
 
     run_domain(action)
@@ -159,7 +190,8 @@ def status_command(
         for member in current:
             typer.echo(
                 f"{member['name']}\t{member['path']}\t"
-                f"{member['current_commit']}\tdirty={str(member['dirty']).lower()}"
+                f"access={member['access']}\t{member['current_commit']}\t"
+                f"dirty={str(member['dirty']).lower()}"
             )
 
     run_domain(action)

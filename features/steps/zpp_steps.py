@@ -3673,7 +3673,9 @@ def step_no_spec_marker_zmem(context):
 # Codespace integration fixtures exercise the public Typer commands while
 # replacing only the external OpenSpec/editor/process boundary in ``invoke``.
 from zpp.utils.codespace_models import CodespaceIndex
+from zpp.utils.codespace_identity import projection_name
 from zpp.utils.codespace_state import load_codespace_index
+from zpp.utils.codespace_targets import CodespaceTarget
 from zpp.utils.openspec_adapter import (
     OpenSpecMember,
     OpenSpecStoreRelation,
@@ -3784,10 +3786,13 @@ def run_lock(
     context,
     paths: tuple[Path, ...],
     *,
+    read_only: tuple[Path, ...] = (),
     yes: bool = False,
     input_text: str | None = "n\n",
 ):
     arguments = ["codespace", "lock", *(str(path) for path in paths)]
+    for path in read_only:
+        arguments.extend(("--read-only", str(path)))
     if yes:
         arguments.append("--yes")
     result = invoke(context, arguments, input_text=input_text)
@@ -3838,6 +3843,26 @@ def ensure_mitigated_claim(context) -> None:
     context.results.clear()
 
 
+def ensure_mixed_claim(context) -> None:
+    setup_claim_codespace(context)
+    candidates = [
+        claim
+        for claim in claim_index(context).claims.values()
+        if any(member.access == "read_only" for member in claim.members)
+    ]
+    if candidates:
+        context.active_instance = candidates[0].instance_id
+        return
+    result = run_lock(
+        context,
+        (context.repos["project-a"],),
+        read_only=(context.repos["reference"],),
+    )
+    assert result.exit_code == 0, result.output
+    context.active_instance = context.last_instance
+    context.results.clear()
+
+
 def commit_change(path: Path, message: str) -> None:
     (path / "tracked.txt").write_text(f"{message}\n", encoding="utf-8")
     subprocess.run(["git", "add", "."], cwd=path, check=True, capture_output=True)
@@ -3861,8 +3886,92 @@ def commit_change(path: Path, message: str) -> None:
 
 def claim_given(context, text: str) -> None:
     setup_claim_codespace(context)
-    scenario = context.scenario.name
-    if text == "the current directory is inside a checkout claimed by one active ZPP codespace":
+    if text == "explicit writable paths and explicit read-only repository paths have committed heads":
+        context.mixed_writable = (context.repos["project-a"],)
+        context.mixed_read_only = (context.repos["reference"],)
+    elif text == "a read-only repository resolves external OpenSpec stores":
+        context.openspec_relations[context.repos["reference"]] = (
+            OpenSpecStoreRelation("store-2", context.repos["store-2"], "governing"),
+        )
+    elif text == "another active codespace already claims one selected read-only repository":
+        owner = run_lock(context, (context.repos["reference"],))
+        assert owner.exit_code == 0, owner.output
+        context.reference_owner = context.last_instance
+    elif text == "the current directory belongs only to a read-only member of one or more codespaces":
+        ensure_mixed_claim(context)
+        context.recorded_index = claim_index(context)
+        os.chdir(context.repos["reference"])
+    elif text == "a selected read-only repository has no first commit":
+        unborn = context.sandbox / "repositories" / "unborn-reference"
+        unborn.mkdir(exist_ok=True)
+        git_init(unborn)
+        context.request_paths = (context.repos["project-a"],)
+        context.request_read_only = (unborn,)
+    elif text == "a prepared codespace with writable and read-only members has no OpenSpec workset projection":
+        ensure_mixed_claim(context)
+        context.prepared_instance = context.active_instance
+        assert claim_index(context).claims[context.prepared_instance].projection is None
+    elif text == "an active codespace contains committed writable and read-only members":
+        ensure_mixed_claim(context)
+        context.original_claim = claim_index(context).claims[context.active_instance]
+    elif text == "an active codespace has a durable mixed-access shape and may have one optional projection":
+        ensure_mixed_claim(context)
+        invoke(context, ["codespace", "open", context.active_instance])
+        context.original_claim = claim_index(context).claims[context.active_instance]
+        context.original_worksets = dict(context.openspec_worksets)
+    elif text in {
+        "a shape-changing edit targets an active codespace without --yes or -y",
+        "a shape-changing edit targets an active codespace",
+    }:
+        ensure_mixed_claim(context)
+        context.original_claim = claim_index(context).claims[context.active_instance]
+    elif text == "instead the user declines either confirmation":
+        context.decline_original = claim_index(context).claims[context.successor_instance]
+        context.result = invoke(
+            context,
+            [
+                "codespace",
+                "edit",
+                context.successor_instance,
+                "--add-read-only",
+                str(context.repos["store-2"]),
+            ],
+            input_text="y\nn\n",
+        )
+    elif text == "an edit contains contradictory operations or cannot complete validation, mitigation, or replacement":
+        ensure_mixed_claim(context)
+        context.original_claim = claim_index(context).claims[context.active_instance]
+    elif text == "an edit produces the existing effective membership, roles, and paths":
+        ensure_mixed_claim(context)
+        context.original_claim = claim_index(context).claims[context.active_instance]
+    elif text == "an active codespace contains retained, removed, and demoted generated writable members":
+        ensure_base_claim(context)
+        owner = run_lock(context, (context.repos["addition"],))
+        assert owner.exit_code == 0, owner.output
+        result = run_lock(
+            context,
+            (
+                context.repos["project-c"],
+                context.repos["project-b"],
+                context.repos["addition"],
+            ),
+            yes=True,
+        )
+        assert result.exit_code == 0, result.output
+        context.active_instance = context.last_instance
+        context.original_claim = claim_index(context).claims[context.active_instance]
+        context.generated_before = {
+            member.name: member
+            for member in context.original_claim.members
+            if member.generated_worktree
+        }
+    elif text == "an active codespace has writable and read-only physical checkout targets and a durable claim":
+        ensure_mixed_claim(context)
+    elif text == "an agent is associated with a codespace containing a read-only repository":
+        ensure_mixed_claim(context)
+        context.env["ZPP_CODESPACE_ID"] = context.active_instance
+        context.guard_target = context.repos["reference"] / "guarded.txt"
+    elif text == "the current directory is inside a checkout claimed by one active ZPP codespace":
         ensure_base_claim(context)
         os.chdir(context.repos["project-a"])
         context.before_claims = len(claim_index(context).claims)
@@ -3905,11 +4014,6 @@ def claim_given(context, text: str) -> None:
             context.repos["project-b"].parent / "project-b-collisionid"
         )
         context.collision_path.mkdir()
-    elif text == "adding paths would require mitigation":
-        ensure_base_claim(context)
-        result = run_lock(context, (context.repos["addition"],))
-        assert result.exit_code == 0, result.output
-        context.addition_owner = context.last_instance
     elif text in {
         "the complete project, store, optional workset, and claim state is recorded",
         "the complete original codespace state is recorded",
@@ -3991,16 +4095,142 @@ def claim_given(context, text: str) -> None:
         )
     ):
         ensure_base_claim(context)
-        if scenario == "Add writable paths by atomically replacing the claim target set":
-            invoke(context, ["codespace", "open", context.active_instance])
-            context.previous_projection = claim_index(context).claims[
-                context.active_instance
-            ].projection
 
 
 def claim_when(context, text: str) -> None:
     setup_claim_codespace(context)
-    if text == "the user runs zpp codespace lock using an explicit workspace descriptor":
+    if text == "the user runs zpp codespace lock with the writable paths and --read-only paths":
+        context.result = run_lock(
+            context,
+            context.mixed_writable,
+            read_only=context.mixed_read_only,
+        )
+        context.mixed_instance = context.last_instance
+    elif text == "the user runs a codespace command without an identity or activated environment":
+        context.result = invoke(context, ["codespace", "status"])
+    elif text.startswith("the user runs zpp codespace edit with --") and text.endswith(
+        "for a committed path and --yes"
+    ):
+        operation = text.split(" with ", 1)[1].split(" for ", 1)[0]
+        target = {
+            "--add": context.repos["addition"],
+            "--add-read-only": context.repos["project-c"],
+            "--remove": context.repos["reference"],
+            "--promote": context.repos["reference"],
+            "--demote": context.repos["project-a"],
+        }[operation]
+        context.edit_operation = operation
+        context.edit_target = target
+        context.result = invoke(
+            context,
+            [
+                "codespace",
+                "edit",
+                context.active_instance,
+                operation,
+                str(target),
+                "--yes",
+            ],
+        )
+        if context.result.exit_code == 0:
+            context.successor_instance = context.result.stdout.strip().splitlines()[-1]
+    elif text == "one valid edit changes several members and access roles":
+        context.result = invoke(
+            context,
+            [
+                "codespace",
+                "edit",
+                context.active_instance,
+                "--add",
+                str(context.repos["addition"]),
+                "--remove",
+                str(context.repos["reference"]),
+                "--demote",
+                str(context.repos["project-a"]),
+                "--yes",
+            ],
+        )
+        if context.result.exit_code == 0:
+            context.successor_instance = context.result.stdout.strip().splitlines()[-1]
+    elif text == "the user accepts the complete successor shape":
+        context.result = invoke(
+            context,
+            [
+                "codespace",
+                "edit",
+                context.active_instance,
+                "--add-read-only",
+                str(context.repos["project-c"]),
+            ],
+            input_text="y\ny\n",
+        )
+        if context.result.exit_code == 0:
+            context.successor_instance = context.result.stdout.strip().splitlines()[-1]
+    elif text == "the user accepts the release confirmation":
+        assert context.result.exit_code == 0
+    elif text == "the user runs zpp codespace edit with --yes or -y":
+        context.result = invoke(
+            context,
+            [
+                "codespace",
+                "edit",
+                context.active_instance,
+                "--add-read-only",
+                str(context.repos["project-c"]),
+                "-y",
+            ],
+        )
+        if context.result.exit_code == 0:
+            context.successor_instance = context.result.stdout.strip().splitlines()[-1]
+    elif text == "the user attempts the edit":
+        context.result = invoke(
+            context,
+            [
+                "codespace",
+                "edit",
+                context.active_instance,
+                "--add",
+                str(context.repos["addition"]),
+                "--remove",
+                str(context.repos["addition"]),
+                "--yes",
+            ],
+        )
+    elif text == "the user runs zpp codespace edit":
+        context.result = invoke(
+            context, ["codespace", "edit", context.active_instance]
+        )
+    elif text == "the user confirms the shape edit":
+        context.result = invoke(
+            context,
+            [
+                "codespace",
+                "edit",
+                context.active_instance,
+                "--remove",
+                str(context.repos["store-1"]),
+                "--demote",
+                str(context.repos["project-b"]),
+                "--yes",
+            ],
+        )
+        if context.result.exit_code == 0:
+            context.successor_instance = context.result.stdout.strip().splitlines()[-1]
+    elif text == "a supported direct edit or write targets that read-only repository":
+        payload = {
+            "cwd": str(context.repos["project-a"]),
+            "tool_name": "apply_patch",
+            "tool_input": {
+                "command": f"*** Update File: {context.guard_target}"
+            },
+        }
+        context.guard_result = invoke(
+            context,
+            ["codespace", "guard", "--agent", "codex"],
+            input_text=json.dumps(payload, ensure_ascii=False),
+        )
+        context.guard_output = json.loads(context.guard_result.stdout)
+    elif text == "the user runs zpp codespace lock using an explicit workspace descriptor":
         context.result = invoke(
             context,
             ["codespace", "lock", "--workspace", str(context.workspace)],
@@ -4023,8 +4253,8 @@ def claim_when(context, text: str) -> None:
             try:
                 result = lock_codespace(
                     home=context.home,
-                    members=tuple(
-                        OpenSpecMember(path.name, path) for path in paths
+                    targets=tuple(
+                        CodespaceTarget(path.name, path, "writable") for path in paths
                     ),
                     mitigate=False,
                 )
@@ -4063,7 +4293,12 @@ def claim_when(context, text: str) -> None:
             "request_paths",
             (context.repos["project-c"], context.repos["project-b"]),
         )
-        context.result = run_lock(context, tuple(paths), input_text="n\n")
+        context.result = run_lock(
+            context,
+            tuple(paths),
+            read_only=tuple(getattr(context, "request_read_only", ())),
+            input_text="n\n",
+        )
     elif text == "the user declines the grouped mitigation offer":
         context.result = run_lock(
             context,
@@ -4094,35 +4329,16 @@ def claim_when(context, text: str) -> None:
             context,
             [
                 "codespace",
-                "add",
-                str(context.repos["addition"]),
-                "--codespace",
+                "edit",
                 context.prepared_instance,
-            ],
-        )
-    elif text == "the user runs zpp codespace add for those paths":
-        context.result = invoke(
-            context,
-            [
-                "codespace",
-                "add",
+                "--add",
                 str(context.repos["addition"]),
-                "--codespace",
-                context.active_instance,
+                "--yes",
             ],
         )
-    elif text == "the user declines mitigation or replacement creation fails":
-        context.result = invoke(
-            context,
-            [
-                "codespace",
-                "add",
-                str(context.repos["addition"]),
-                "--codespace",
-                context.active_instance,
-            ],
-            input_text="n\n",
-        )
+        if context.result.exit_code == 0:
+            context.superseded_projection_instance = context.prepared_instance
+            context.prepared_instance = context.result.stdout.strip().splitlines()[-1]
     elif text == "the user runs zpp codespace activate for that codespace":
         context.result = invoke(
             context, ["codespace", "activate", context.mitigated_instance]
@@ -4196,19 +4412,21 @@ def claim_when(context, text: str) -> None:
     elif text == "those released codespaces are finalized":
         for identifier in context.history_ids:
             context.result = invoke(context, ["codespace", "finalize", identifier])
-    elif text == "the user locks, adds, opens, unlocks, cleans, recovers, or finalizes that codespace":
+    elif text == "the user locks, edits, opens, unlocks, cleans, recovers, or finalizes that codespace":
         identifier = context.lifecycle_instance
         invoke(context, ["codespace", "open", identifier])
-        invoke(
+        edited = invoke(
             context,
             [
                 "codespace",
-                "add",
-                str(context.repos["addition"]),
-                "--codespace",
+                "edit",
                 identifier,
+                "--add",
+                str(context.repos["addition"]),
+                "--yes",
             ],
         )
+        identifier = edited.stdout.strip().splitlines()[-1]
         invoke(context, ["codespace", "unlock", identifier])
         invoke(context, ["codespace", "cleanup", identifier])
         released = claim_index(context).released[identifier]
@@ -4280,7 +4498,177 @@ def claim_when(context, text: str) -> None:
 def claim_then(context, text: str) -> None:
     index = claim_index(context)
     result = getattr(context, "result", None)
-    if text == "one durable codespace claim owns every complete project checkout exactly once":
+    if text == "one codespace view records the writable and read-only repositories with their access roles":
+        claim = index.claims[context.mixed_instance]
+        assert {member.name: member.access for member in claim.members} == {
+            "project-a": "writable",
+            "reference": "read_only",
+        }
+    elif text == "only the complete writable OpenSpec closure is exclusively claimed":
+        claim = index.claims[context.mixed_instance]
+        assert {member.name for member in claim.members if member.access == "writable"} == {
+            "project-a"
+        }
+    elif text == "no read-only repository is treated as a conflict or receives an isolated worktree":
+        reference = next(
+            member
+            for member in index.claims[context.mixed_instance].members
+            if member.name == "reference"
+        )
+        assert reference.access == "read_only" and not reference.generated_worktree
+    elif text == "related stores of a read-only repository are omitted unless independently selected":
+        assert all(
+            member.store_id != "store-2"
+            for member in index.claims[context.mixed_instance].members
+        )
+    elif text == "the same read-only repository can remain in both codespaces":
+        assert context.reference_owner in index.claims
+        assert context.mixed_instance in index.claims
+    elif text == "ZPP requires explicit codespace selection":
+        assert result.exit_code != 0
+        assert "current directory is not inside an active codespace" in result.stderr
+    elif text == "no claim or codespace view is changed":
+        assert index == context.recorded_index
+    elif text == "the projection contains the complete writable and read-only view":
+        claim = index.claims[context.prepared_instance]
+        name = projection_name(claim.instance_id, claim.projection.generation)
+        assert {member.path for member in context.openspec_worksets[name].members} == {
+            member.effective_path for member in claim.members
+        }
+    elif text.startswith("ZPP applies ") and text.endswith(
+        " to the complete successor shape"
+    ):
+        assert result.exit_code == 0, result.output
+        claim = index.claims[context.successor_instance]
+        members = {member.name: member for member in claim.members}
+        if context.edit_operation == "--add":
+            assert members["addition"].access == "writable"
+        elif context.edit_operation == "--add-read-only":
+            assert members["project-c"].access == "read_only"
+        elif context.edit_operation == "--remove":
+            assert "reference" not in members
+        elif context.edit_operation == "--promote":
+            assert members["reference"].access == "writable"
+        else:
+            assert members["project-a"].access == "read_only"
+    elif text == "the narrower zpp codespace add command is unavailable":
+        unavailable = invoke(context, ["codespace", "add", "--help"])
+        assert unavailable.exit_code != 0
+    elif text == "one successor identity and snapshot are calculated from the resulting roles, paths, and current full commits":
+        successor = index.claims[context.successor_instance]
+        assert successor.instance_id != context.original_claim.instance_id
+        assert successor.snapshot_key != context.original_claim.snapshot_key
+        assert all(len(member.commit) == 40 for member in successor.members)
+    elif text == "the successor atomically replaces the superseded active identity and writable claim":
+        assert context.original_claim.instance_id not in index.claims
+        assert context.successor_instance in index.claims
+    elif text == "no unlocked interval or partial successor shape is observable":
+        successor = index.claims[context.successor_instance]
+        assert {member.name for member in successor.members} >= {
+            "addition",
+            "store-2",
+            "project-a",
+        }
+    elif text == "the superseded projection is removed or replaced with the successor projection":
+        successor = index.claims[context.successor_instance]
+        assert successor.projection is not None
+        old_name = projection_name(
+            context.original_claim.instance_id,
+            context.original_claim.projection.generation,
+        )
+        new_name = projection_name(
+            successor.instance_id,
+            successor.projection.generation,
+        )
+        assert old_name in context.removed_worksets and new_name in context.openspec_worksets
+    elif text == "later file changes and commits do not automatically recalculate the successor identity":
+        before = index.claims[context.successor_instance]
+        commit_change(context.repos["addition"], "after-edit")
+        status = invoke(context, ["codespace", "status", context.successor_instance])
+        assert status.exit_code == 0
+        assert claim_index(context).claims[context.successor_instance] == before
+    elif text == "ZPP separately asks to release the superseded lock":
+        assert "Apply this complete successor shape?" in result.output
+        assert "Release superseded codespace lock" in result.output
+    elif text in {
+        "ZPP performs the atomic successor replacement",
+        "ZPP performs the same atomic successor replacement",
+    }:
+        assert result.exit_code == 0
+        assert context.successor_instance in index.claims
+        assert context.active_instance not in index.claims
+    elif text == "the original identity, claim, shape, and optional projection remain unchanged":
+        assert result.exit_code != 0
+        expected = getattr(context, "decline_original", context.original_claim)
+        assert index.claims[expected.instance_id] == expected
+    elif text == "both replacement confirmations are preauthorized":
+        assert result.exit_code == 0
+        assert "Apply this complete successor shape?" not in result.output
+        assert "Release superseded codespace lock" not in result.output
+    elif text == "the edit is rejected before any partial successor becomes active":
+        assert result.exit_code != 0
+        assert "contradictory edit operations" in result.stderr
+    elif text == "the existing identity and snapshot remain unchanged":
+        assert index.claims[context.active_instance] == context.original_claim
+    elif text == "ZPP requests no replacement confirmation":
+        assert "Apply this complete successor shape?" not in result.output
+        assert "Release superseded codespace lock" not in result.output
+    elif text == "retained generated members transfer to the successor identity":
+        successor = index.claims[context.successor_instance]
+        retained = {member.name: member for member in successor.members}
+        for name in ("addition", "store-2"):
+            assert retained[name].effective_path == context.generated_before[name].effective_path
+    elif text == "removed generated worktrees and branches remain reconciliation debt under the superseded identity":
+        released = index.released[context.original_claim.instance_id]
+        debt_paths = {debt.effective_path for debt in released.debts}
+        assert context.generated_before["store-1"].effective_path in debt_paths
+    elif text == "a demoted member references its canonical checkout read-only in the successor":
+        member = next(
+            item
+            for item in index.claims[context.successor_instance].members
+            if item.name == "project-b"
+        )
+        assert member.access == "read_only"
+        assert member.effective_path == context.repos["project-b"]
+    elif text == "its generated worktree and branch remain superseded reconciliation debt":
+        released = index.released[context.original_claim.instance_id]
+        assert any(
+            debt.effective_path == context.generated_before["project-b"].effective_path
+            and debt.branch == context.generated_before["project-b"].branch
+            for debt in released.debts
+        )
+    elif text == "no generated content is deleted":
+        assert all(member.effective_path.exists() for member in context.generated_before.values())
+    elif text == "the active codespace and every writable and read-only member are inspectable with their access roles":
+        assert context.list_result.exit_code == context.status_result.exit_code == 0
+        payload = json.loads(context.status_result.stdout)
+        assert {item["access"] for item in payload["current"]} == {
+            "writable",
+            "read_only",
+        }
+    elif text == "no read-only member is reported as claimed, generated, or pending reconciliation merely for joining the view":
+        payload = json.loads(context.status_result.stdout)
+        read_only = next(item for item in payload["current"] if item["access"] == "read_only")
+        assert read_only["claimed"] is False and read_only["generated"] is False
+    elif text == "the installed agent guard rejects the mutation as read-only in the associated codespace":
+        assert context.guard_result.exit_code == 0
+        output = context.guard_output["hookSpecificOutput"]
+        assert output["permissionDecision"] == "deny"
+        assert "read-only" in output["permissionDecisionReason"]
+    elif text == "unsupported tools, arbitrary shell effects, manual editor actions, and cross-machine writes remain outside the guarantee":
+        unsupported = invoke(
+            context,
+            ["codespace", "guard", "--agent", "codex"],
+            input_text=json.dumps(
+                {
+                    "cwd": str(context.repos["project-a"]),
+                    "tool_name": "Read",
+                    "tool_input": {},
+                }
+            ),
+        )
+        assert unsupported.exit_code == 0 and json.loads(unsupported.stdout) == {}
+    elif text == "one durable codespace claim owns every complete project checkout exactly once":
         assert result.exit_code == 0, result.output
         claim = index.claims[context.last_instance]
         projects = [member for member in claim.members if member.kind == "project"]
@@ -4292,7 +4680,7 @@ def claim_then(context, text: str) -> None:
     elif text == "the claim also owns the external writable store checkout exactly once":
         claim = index.claims[context.last_instance]
         stores = [member for member in claim.members if member.store_id == "store-1"]
-        assert len(stores) == 1 and stores[0].role == "governing"
+        assert len(stores) == 1 and stores[0].access == "writable"
     elif text == "the repo-local OpenSpec root is covered by its containing project checkout":
         claim = index.claims[context.last_instance]
         assert sum(
@@ -4448,35 +4836,12 @@ def claim_then(context, text: str) -> None:
         current = index.claims[context.prepared_instance].projection
         assert current.generation == context.projection_before_add.generation + 1
     elif text == "the superseded ZPP-owned projection is removed":
-        previous = f"zpp-{context.prepared_instance}-g{context.projection_before_add.generation}"
+        previous = f"zpp-{context.superseded_projection_instance}-g{context.projection_before_add.generation}"
         assert previous in context.removed_worksets
         assert previous not in context.openspec_worksets
     elif text == "mitigation is rejected without reusing or overwriting the existing path or branch":
         assert result.exit_code != 0
         assert context.collision_path.exists()
-        assert index == context.recorded_index
-    elif text == "the same codespace atomically owns the complete replacement target set":
-        assert result.exit_code == 0
-        claim = index.claims[context.active_instance]
-        assert claim.instance_id == context.active_instance
-        assert {member.name for member in claim.members} >= {"addition", "store-2"}
-    elif text == "no old or new target is left partially claimed":
-        keys = [
-            member.checkout_key
-            for claim in index.claims.values()
-            for member in claim.members
-        ]
-        assert len(keys) == len(set(keys))
-    elif text == "no projection is created when the codespace had none":
-        claim = index.claims[context.active_instance]
-        assert claim.projection is not None or context.previous_projection is not None
-    elif text == "an existing projection is replaced only for the changed effective paths":
-        claim = index.claims[context.active_instance]
-        assert claim.projection.generation == context.previous_projection.generation + 1
-    elif text == "the original claim and optional projection remain active and unchanged":
-        assert result.exit_code != 0
-        assert index.claims[context.active_instance] == context.recorded_index.claims[context.active_instance]
-    elif text == "no replacement target set is partially registered":
         assert index == context.recorded_index
     elif text == "the resulting shell uses the codespace's private OpenSpec registry":
         assert result.exit_code == 0 and context.activated_environments
@@ -4598,12 +4963,8 @@ CLAIM_GIVENS = (
     "the requested codespace begins from the same starting commits as the active codespace",
     "a prepared codespace has no OpenSpec workset projection",
     "mitigation would use a sibling path or branch that already exists",
-    "an active codespace has a durable claim and may have one optional projection",
-    "additional committed paths and their external writable stores introduce no unresolved conflict",
-    "adding paths would require mitigation",
     "the complete original codespace state is recorded",
     "a mitigated codespace maps original logical store ids to isolated store checkouts",
-    "an active codespace has physical checkout targets and a durable claim",
     "an unrelated user-owned OpenSpec workset exists",
     "a released codespace has a clean generated worktree and a dirty generated worktree",
     "a durable codespace claim was abandoned without being unlocked",
@@ -4633,8 +4994,6 @@ CLAIM_WHENS = (
     "the user declines the offer to open it",
     "the user later runs zpp codespace open for the prepared codespace",
     "the codespace membership or effective paths later change",
-    "the user runs zpp codespace add for those paths",
-    "the user declines mitigation or replacement creation fails",
     "the user runs zpp codespace activate for that codespace",
     "the user runs zpp codespace exec for that codespace with an OpenSpec command",
     "the user runs zpp codespace list and zpp codespace status",
@@ -4645,7 +5004,6 @@ CLAIM_WHENS = (
     "the user explicitly confirms forced recovery",
     "the user runs any mutating zpp codespace command",
     "those released codespaces are finalized",
-    "the user locks, adds, opens, unlocks, cleans, recovers, or finalizes that codespace",
 )
 
 CLAIM_THENS = (
@@ -4692,12 +5050,6 @@ CLAIM_THENS = (
     "opening replaces the projection with the next structural generation",
     "the superseded ZPP-owned projection is removed",
     "mitigation is rejected without reusing or overwriting the existing path or branch",
-    "the same codespace atomically owns the complete replacement target set",
-    "no old or new target is left partially claimed",
-    "no projection is created when the codespace had none",
-    "an existing projection is replaced only for the changed effective paths",
-    "the original claim and optional projection remain active and unchanged",
-    "no replacement target set is partially registered",
     "the resulting shell uses the codespace's private OpenSpec registry",
     "that command uses the same private OpenSpec registry",
     "both paths preserve the original logical store ids",
@@ -4727,6 +5079,85 @@ CLAIM_THENS = (
     "the installed ZPP guard verifies that codespace and current checkout association",
     "it does not claim to infer every path the arbitrary shell command may mutate",
     "manual editor actions, unrelated processes, and unsupported tool paths remain outside its guarantee",
+)
+
+CLAIM_GIVENS += (
+    "explicit writable paths and explicit read-only repository paths have committed heads",
+    "a read-only repository resolves external OpenSpec stores",
+    "another active codespace already claims one selected read-only repository",
+    "the current directory belongs only to a read-only member of one or more codespaces",
+    "a selected read-only repository has no first commit",
+    "a prepared codespace with writable and read-only members has no OpenSpec workset projection",
+    "an active codespace contains committed writable and read-only members",
+    "an active codespace has a durable mixed-access shape and may have one optional projection",
+    "a shape-changing edit targets an active codespace without --yes or -y",
+    "instead the user declines either confirmation",
+    "a shape-changing edit targets an active codespace",
+    "an edit contains contradictory operations or cannot complete validation, mitigation, or replacement",
+    "an edit produces the existing effective membership, roles, and paths",
+    "an active codespace contains retained, removed, and demoted generated writable members",
+    "an active codespace has writable and read-only physical checkout targets and a durable claim",
+    "an agent is associated with a codespace containing a read-only repository",
+)
+
+CLAIM_WHENS += (
+    "the user runs zpp codespace lock with the writable paths and --read-only paths",
+    "the user runs a codespace command without an identity or activated environment",
+    "the user runs zpp codespace edit with --add for a committed path and --yes",
+    "the user runs zpp codespace edit with --add-read-only for a committed path and --yes",
+    "the user runs zpp codespace edit with --remove for a committed path and --yes",
+    "the user runs zpp codespace edit with --promote for a committed path and --yes",
+    "the user runs zpp codespace edit with --demote for a committed path and --yes",
+    "one valid edit changes several members and access roles",
+    "the user accepts the complete successor shape",
+    "the user accepts the release confirmation",
+    "the user runs zpp codespace edit with --yes or -y",
+    "the user attempts the edit",
+    "the user runs zpp codespace edit",
+    "the user confirms the shape edit",
+    "the user locks, edits, opens, unlocks, cleans, recovers, or finalizes that codespace",
+    "a supported direct edit or write targets that read-only repository",
+)
+
+CLAIM_THENS += (
+    "one codespace view records the writable and read-only repositories with their access roles",
+    "only the complete writable OpenSpec closure is exclusively claimed",
+    "no read-only repository is treated as a conflict or receives an isolated worktree",
+    "related stores of a read-only repository are omitted unless independently selected",
+    "the same read-only repository can remain in both codespaces",
+    "ZPP requires explicit codespace selection",
+    "no claim or codespace view is changed",
+    "the projection contains the complete writable and read-only view",
+    "opening replaces the projection with the next structural generation",
+    "the superseded ZPP-owned projection is removed",
+    "ZPP applies a new exclusively claimed writable member to the complete successor shape",
+    "ZPP applies a new non-owning read-only member to the complete successor shape",
+    "ZPP applies removal of the selected member to the complete successor shape",
+    "ZPP applies promotion from read-only to writable to the complete successor shape",
+    "ZPP applies demotion from writable to read-only to the complete successor shape",
+    "the narrower zpp codespace add command is unavailable",
+    "one successor identity and snapshot are calculated from the resulting roles, paths, and current full commits",
+    "the successor atomically replaces the superseded active identity and writable claim",
+    "no unlocked interval or partial successor shape is observable",
+    "the superseded projection is removed or replaced with the successor projection",
+    "later file changes and commits do not automatically recalculate the successor identity",
+    "ZPP separately asks to release the superseded lock",
+    "ZPP performs the atomic successor replacement",
+    "the original identity, claim, shape, and optional projection remain unchanged",
+    "both replacement confirmations are preauthorized",
+    "ZPP performs the same atomic successor replacement",
+    "the edit is rejected before any partial successor becomes active",
+    "the existing identity and snapshot remain unchanged",
+    "ZPP requests no replacement confirmation",
+    "retained generated members transfer to the successor identity",
+    "removed generated worktrees and branches remain reconciliation debt under the superseded identity",
+    "a demoted member references its canonical checkout read-only in the successor",
+    "its generated worktree and branch remain superseded reconciliation debt",
+    "no generated content is deleted",
+    "the active codespace and every writable and read-only member are inspectable with their access roles",
+    "no read-only member is reported as claimed, generated, or pending reconciliation merely for joining the view",
+    "the installed agent guard rejects the mutation as read-only in the associated codespace",
+    "unsupported tools, arbitrary shell effects, manual editor actions, and cross-machine writes remain outside the guarantee",
 )
 
 def bind_claim_step(handler, text: str):
