@@ -187,6 +187,7 @@ Feature: Distribute the permanent ZPP workflow skills
     When a write-capable ZPP workflow is about to mutate a physical checkout
     Then the claim guard directs <claim behavior>
     And the trait does not treat an OpenSpec workset as ownership
+    And the trait rejects supported direct writes into associated read-only members
     And the trait cannot override a conflicting claim or grant mutation authority
 
     Examples:
