@@ -4,9 +4,23 @@
 # .cc-history: the VSCode chat-archiving extension's store, not project content
 .cc-history/
 
+# Active OpenSpec changes are mutable working state; finalized archives are history.
+openspec/changes/*
+!openspec/changes/archive/
+!openspec/changes/archive/**
+
+# Local workflow skills are ignored development projections of packaged artifacts.
+.codex/skills/
+
 __pycache__/
 *.egg-info/
 .venv/
 .pytest_cache/
 dist/
+
+# ZPP compiled project traits are disposable runtime state.
+**/.zpp/cached/
+
+# Local home used only for self-hosted release verification.
+.verification-home/
 /.pytest-tmp

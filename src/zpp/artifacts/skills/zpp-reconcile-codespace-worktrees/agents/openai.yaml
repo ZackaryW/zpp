@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reconcile Codespace Worktrees"
+  short_description: "Explicitly reconcile isolated codespace branches"
+  default_prompt: "Use recorded ZPP codespace branch metadata to plan and perform an explicitly requested reconciliation."

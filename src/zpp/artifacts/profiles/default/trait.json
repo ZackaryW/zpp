@@ -1,0 +1,26 @@
+[
+  {
+    "trait": "automatic-workflow"
+  },
+  {
+    "trait": "codespace-claim-guard"
+  },
+  {
+    "trait": "zero-assumptions"
+  },
+  {
+    "trait": "ponytail"
+  },
+  {
+    "trait": "use-rg",
+    "which": "rg"
+  },
+  {
+    "trait": "use-jq",
+    "which": "jq"
+  },
+  {
+    "trait": "use-zmem",
+    "which": "zmem"
+  }
+]

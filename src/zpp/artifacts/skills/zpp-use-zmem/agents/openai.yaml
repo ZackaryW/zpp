@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use zmem"
+  short_description: "Read and verify temporal decision history"
+  default_prompt: "Use -use-zmem to investigate the decision history relevant to this change."

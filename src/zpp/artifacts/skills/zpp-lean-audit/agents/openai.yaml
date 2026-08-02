@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lean Audit"
+  short_description: "Audit code with the Ponytail ladder"
+  default_prompt: "Use -lean-audit to perform a read-only lean audit of this implementation."
