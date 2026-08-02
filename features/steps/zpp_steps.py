@@ -17,6 +17,7 @@ from behave import given, then, use_step_matcher, when
 from zpp.cli import app
 from zpp.utils.models import CancelledAgentSelection, ConfirmedAgentSelection
 from zpp.utils.openspec_adapter import OpenSpecWorkset
+from zpp.utils.skill_bundles import SkillFile, fingerprint_skill_files
 
 
 REPO_ROOT = Path(__file__).parents[2]
@@ -2220,6 +2221,8 @@ def step_compatible_global_codex(context):
     git_init(context.project)
     result = invoke(context, ["workflow", "install", "--global", "--agent", "codex"])
     assert result.exit_code == 0, result.output
+    context.codex_global_root = workflow_skill_root(context, "codex", scope="global")
+    context.codex_global_before = snapshot(context.codex_global_root)
     context.results.clear()
 
 
@@ -2436,6 +2439,93 @@ def step_claude_scopes_unchanged(context):
 @then("the differing Codex scope versions are reported")
 def step_codex_difference_reported(context):
     assert "versions differ for codex" in context.result.stdout.lower()
+
+
+@given("Codex has a historical managed global workflow bundle that predates one permanent skill")
+def step_historical_global_codex_bundle(context):
+    git_init(context.project)
+    result = invoke(context, ["workflow", "install", "--global", "--agent", "codex"])
+    assert result.exit_code == 0, result.output
+    root = workflow_skill_root(context, "codex", scope="global")
+    manifest_path = root / ".zpp-workflow-skills.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    omitted = "zpp-reconcile-codespace-worktrees"
+    shutil.rmtree(root / omitted)
+    manifest["files"] = {
+        path: digest
+        for path, digest in manifest["files"].items()
+        if not path.startswith(f"{omitted}/")
+    }
+    files = tuple(
+        SkillFile(path, (root / Path(path)).read_bytes())
+        for path in sorted(manifest["files"])
+    )
+    manifest["bundle_version"] = "0.8.0"
+    manifest["fingerprint"] = fingerprint_skill_files(files)
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    context.codex_global_root = root
+    context.historical_owned_paths = frozenset(manifest["files"])
+    context.results.clear()
+
+
+@given("unrelated skills surround the historical managed projection")
+def step_unrelated_historical_global_skills(context):
+    unrelated = context.codex_global_root / "third-party" / "SKILL.md"
+    unrelated.parent.mkdir()
+    unrelated.write_text("keep historical neighbor π\n", encoding="utf-8")
+    context.unrelated_global_bytes = {unrelated: unrelated.read_bytes()}
+
+
+@then("the Codex global projection contains the complete current workflow bundle")
+def step_historical_global_updated(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert_workflow_projection(context, context.codex_global_root)
+
+
+@then("only paths owned by the historical manifest were replaced")
+def step_only_historical_owned_paths_replaced(context):
+    current = json.loads(
+        (context.codex_global_root / ".zpp-workflow-skills.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert context.historical_owned_paths < frozenset(current["files"])
+    assert any(
+        path.startswith("zpp-reconcile-codespace-worktrees/")
+        for path in current["files"]
+    )
+
+
+@then("the unrelated global skills are byte-for-byte unchanged")
+def step_unrelated_global_skills_unchanged(context):
+    assert all(
+        path.read_bytes() == content
+        for path, content in context.unrelated_global_bytes.items()
+    )
+
+
+@when("the user runs zpp workflow update with agent Codex")
+def step_update_local_codex(context):
+    invoke(context, ["workflow", "update", "--agent", "codex"])
+
+
+@then("update reports that the local projection is not installed")
+def step_update_reports_local_absent(context):
+    assert context.result.exit_code == 1, context.result.output
+    assert "not installed" in context.result.stderr.lower(), context.result.stderr
+
+
+@then("it does not describe absent local state as unmanaged content")
+def step_absent_is_not_unmanaged(context):
+    assert "unmanaged" not in context.result.stderr.lower()
+
+
+@then("the compatible global bundle remains unchanged")
+def step_compatible_global_bundle_unchanged(context):
+    assert snapshot(context.codex_global_root) == context.codex_global_before
 
 
 @given("Claude Code has an unmanaged global skill directory matching a permanent skill name")
