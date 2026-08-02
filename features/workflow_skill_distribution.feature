@@ -230,6 +230,14 @@ Feature: Distribute the permanent ZPP workflow skills
     And the unrelated active change is left untouched
     And completion requires a final audit of the related change set
 
+  Scenario: Finalized OpenSpec archives become tracked history
+    Given a mature product change has formed and checkpointed canonical specifications
+    And its active OpenSpec proposal and capability deltas remain uncommitted
+    When the owning OpenSpec finalizer archives the product change
+    Then the exact finalized archive is handed to zpp-commit-zmem as material repository history
+    And the archive checkpoint excludes unrelated active changes and disposable utility plans
+    And archiving alone does not require a zmem annotation
+
   Scenario: An unowned related change blocks workflow completion
     Given a consumed related OpenSpec change remains active without an owning stage
     When the workflow evaluates its completion gate

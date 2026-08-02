@@ -3581,6 +3581,48 @@ def step_final_related_change_audit(context):
     assert "Close or assign each related change before completion" in trait
 
 
+@given("a mature product change has formed and checkpointed canonical specifications")
+def step_mature_change_has_formed_specs(context):
+    install_change_lifecycle_policy(context)
+
+
+@given("its active OpenSpec proposal and capability deltas remain uncommitted")
+def step_active_openspec_remains_uncommitted(context):
+    context.active_openspec_uncommitted = True
+
+
+@when("the owning OpenSpec finalizer archives the product change")
+def step_openspec_finalizer_archives(context):
+    assert context.active_openspec_uncommitted
+
+
+@then(
+    "the exact finalized archive is handed to zpp-commit-zmem as material "
+    "repository history"
+)
+def step_archive_becomes_repository_history(context):
+    form = context.lifecycle_skills["zpp-form-specs"]
+    commit = context.lifecycle_skills["zpp-commit-zmem"]
+    assert "exact finalized archive" in form
+    assert "durable repository history" in commit
+    assert "newly created finalized archive files" in commit
+
+
+@then("the archive checkpoint excludes unrelated active changes and disposable utility plans")
+def step_archive_checkpoint_is_scoped(context):
+    form = context.lifecycle_skills["zpp-form-specs"]
+    commit = context.lifecycle_skills["zpp-commit-zmem"]
+    assert "exclude unrelated active changes and disposable utility plans" in form
+    assert "Disposable utility plans" in commit
+    assert "unrelated active OpenSpec changes" in commit
+
+
+@then("archiving alone does not require a zmem annotation")
+def step_archive_does_not_force_zmem(context):
+    commit = context.lifecycle_skills["zpp-commit-zmem"]
+    assert "Archiving alone does not require zmem" in commit
+
+
 @given("a consumed related OpenSpec change remains active without an owning stage")
 def step_unowned_related_change(context):
     install_change_lifecycle_policy(context)
