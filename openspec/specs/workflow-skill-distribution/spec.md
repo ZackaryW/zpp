@@ -102,8 +102,12 @@ Permanent workflow skills SHALL own the lifecycle operations appropriate to
 their stages. Clarification SHALL establish the session-local related set.
 Utility planning SHALL register its companion as disposable, and utility
 maturity SHALL discard it and verify its absence before wiring. Specification
-formation SHALL hand the product change to the owning OpenSpec finalizer and
-then audit the related set.
+formation SHALL hand the product change to the owning OpenSpec finalizer, hand
+the exact finalized archive to `zpp-commit-zmem` for a distinct repository-history
+checkpoint, and then audit the related set. Active product-change artifacts
+SHALL remain uncommitted mutable working state before finalization. A finalized
+product archive SHALL be tracked as durable history, while unrelated active
+changes and disposable utility plans SHALL be excluded from its checkpoint.
 
 A consumed internal anchor whose consumer condition is satisfied SHALL be
 discarded. Genuinely unfinished related work MAY remain active only under an
@@ -113,6 +117,10 @@ the workflow completion claim.
 #### Scenario: Apply stage-owned terminal dispositions
 - **WHEN** a mature workflow disposes its utility scaffolding and finalizes its product change
 - **THEN** the owning skills verify those dispositions and reject completion if any consumed related change remains unowned
+
+#### Scenario: Checkpoint a finalized product archive
+- **WHEN** the owning OpenSpec finalizer returns the exact archive path after canonical specification formation
+- **THEN** the workflow commits that archive as durable repository history without sweeping unrelated active changes or requiring zmem merely for finalization
 
 ### Requirement: Authority-aware workflow reconciliation
 Clarification SHALL compare relevant temporal zmem history with the current
@@ -144,7 +152,7 @@ ZPP one-file restriction.
 - **THEN** the workflow forms current authority from mature accepted behavior without treating historical directions as current truth
 
 ### Requirement: Explicit temporal-memory checkpoints
-Every material workflow gate SHALL produce its required logical commit, but SHALL add zmem only when that commit contains a meaningful decision change, reversal, fallback, surprise, or lesson worthy of durable temporal recall. Verification, stage completion, or specification adoption alone SHALL NOT require or repeat a zmem annotation.
+Every material workflow gate SHALL produce its required logical commit, including a distinct checkpoint for an exact finalized product archive, but SHALL add zmem only when that commit contains a meaningful decision change, reversal, fallback, surprise, or lesson worthy of durable temporal recall. Verification, stage completion, specification adoption, or archiving alone SHALL NOT require or repeat a zmem annotation.
 
 The bundled commit-message validators SHALL accept valid conventional commits with zero zmem annotations in normal mode and SHALL require at least one canonical annotation when memory-bearing validation is explicitly requested.
 
