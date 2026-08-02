@@ -13,7 +13,17 @@ BASE_TRAITS = (
     "zero-assumptions",
     "ponytail",
 )
-PYTHON_TRAITS = ("python-bdd", "python-tdd", "python-build")
+TOOL_TRAITS = ("use-rg", "use-jq", "use-zmem")
+PLATFORM_TRAITS = (
+    "python-bdd",
+    "python-tdd",
+    "python-build",
+    "python-django-tdd",
+    "typescript-bdd",
+    "typescript-tdd",
+    "flutter-bdd",
+    "flutter-tdd",
+)
 
 
 def test_load_packaged_default_profile_uses_validated_resource_snapshot(
@@ -31,10 +41,19 @@ def test_load_packaged_default_profile_uses_validated_resource_snapshot(
     (profile / "trait.json").write_text(
         "["
         + ",".join(f'{{"trait":"{name}"}}' for name in BASE_TRAITS)
+        + ","
+        + ",".join(
+            f'{{"trait":"{name}","which":"{executable}"}}'
+            for name, executable in zip(
+                TOOL_TRAITS,
+                ("rg", "jq", "zmem"),
+                strict=True,
+            )
+        )
         + "]\n",
         encoding="utf-8",
     )
-    for name in BASE_TRAITS + PYTHON_TRAITS:
+    for name in BASE_TRAITS + TOOL_TRAITS + PLATFORM_TRAITS:
         (traits / f"{name}.md").write_text(
             f"---\nname: {name}\ndescription: {name}\n---\n{name}\n",
             encoding="utf-8",
@@ -49,7 +68,7 @@ def test_load_packaged_default_profile_uses_validated_resource_snapshot(
     assert {item.relative_path.as_posix() for item in snapshot.files} == {
         "config.json",
         "trait.json",
-        *(f"traits/{name}.md" for name in BASE_TRAITS + PYTHON_TRAITS),
+        *(f"traits/{name}.md" for name in BASE_TRAITS + TOOL_TRAITS + PLATFORM_TRAITS),
     }
     trigger_source = next(
         item.content
@@ -57,8 +76,15 @@ def test_load_packaged_default_profile_uses_validated_resource_snapshot(
         if item.relative_path.as_posix() == "trait.json"
     )
     assert json.loads(trigger_source) == [
-        {"trait": name}
-        for name in BASE_TRAITS
+        *({"trait": name} for name in BASE_TRAITS),
+        *(
+            {"trait": name, "which": executable}
+            for name, executable in zip(
+                TOOL_TRAITS,
+                ("rg", "jq", "zmem"),
+                strict=True,
+            )
+        ),
     ]
 
 

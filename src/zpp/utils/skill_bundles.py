@@ -14,13 +14,16 @@ from zpp.utils.models import ManagedStateError
 
 
 WORKFLOW_SKILL_NAMES = (
+    "zpp-author-skill",
     "zpp-clarify-change",
     "zpp-commit-zmem",
     "zpp-form-specs",
+    "zpp-lean-audit",
     "zpp-mature-utilities",
     "zpp-plan-utilities",
     "zpp-reconcile-codespace-worktrees",
     "zpp-shape-feature",
+    "zpp-use-zmem",
     "zpp-wire-feature",
 )
 SKILL_MANIFEST_NAME = ".zpp-workflow-skills.json"

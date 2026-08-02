@@ -10,5 +10,17 @@
   },
   {
     "trait": "ponytail"
+  },
+  {
+    "trait": "use-rg",
+    "which": "rg"
+  },
+  {
+    "trait": "use-jq",
+    "which": "jq"
+  },
+  {
+    "trait": "use-zmem",
+    "which": "zmem"
   }
 ]

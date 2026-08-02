@@ -21,6 +21,7 @@ from zpp.utils.skill_bundles import SkillFile, fingerprint_skill_files
 
 
 REPO_ROOT = Path(__file__).parents[2]
+REAL_WHICH = shutil.which
 
 
 def invoke(context, arguments: list[str], *, input_text: str | None = None):
@@ -41,6 +42,25 @@ def invoke(context, arguments: list[str], *, input_text: str | None = None):
             return_value=context.interactive,
         ))
         stack.enter_context(patch("zpp.cli.workflow.select_agents", side_effect=select))
+        stack.enter_context(
+            patch(
+                "zpp.core.resolution.discover_active_plugins",
+                side_effect=lambda agent, **_: tuple(
+                    getattr(context, "active_plugins_by_agent", {}).get(agent, ())
+                ),
+            )
+        )
+        if hasattr(context, "unavailable_executables"):
+            stack.enter_context(
+                patch(
+                    "zpp.utils.triggers.shutil.which",
+                    side_effect=lambda name: (
+                        None
+                        if name in context.unavailable_executables
+                        else REAL_WHICH(name, path=context.env.get("PATH"))
+                    ),
+                )
+            )
         stack.enter_context(patch(
             "zpp.cli.codespace.interactive_terminal_available",
             return_value=context.interactive,
@@ -308,6 +328,11 @@ def step_clean_project(context):
 @given("no interactive terminal is available")
 def step_noninteractive(context):
     context.interactive = False
+
+
+@given("rg, jq, and zmem are unavailable on PATH")
+def step_tool_traits_unavailable(context):
+    context.unavailable_executables = {"rg", "jq", "zmem"}
 
 
 @given("an interactive terminal is available")
@@ -701,7 +726,10 @@ use_step_matcher("re")
 @when("the native ZPP hook is invoked")
 def step_invoke_hook(context):
     context.results.clear()
-    result = invoke(context, ["resolve", str(context.project)])
+    result = invoke(
+        context,
+        ["resolve", str(context.project), "--agent", context.agent],
+    )
     context.injected = [result.stdout] if result.exit_code == 0 and result.stdout else []
 
 
@@ -709,8 +737,23 @@ use_step_matcher("parse")
 
 
 @then("ZPP resolves the current working directory")
-def step_hook_cwd(context):
+@then("ZPP resolves the current working directory with {agent} as the invoking agent")
+def step_hook_cwd(context, agent=None):
     assert context.result.exit_code == 0
+    if agent is not None:
+        assert agent_name(agent) == context.agent
+
+
+@then("only {agent}'s active plugin trait sources are eligible")
+def step_hook_agent_plugins(context, agent):
+    assert agent_name(agent) == context.agent
+    source = agent_path(context, context.agent).read_text(encoding="utf-8")
+    expected = (
+        f'"--agent", "{context.agent}"'
+        if context.agent == "pi"
+        else f"--agent {context.agent}"
+    )
+    assert expected in source
 
 
 @then("the complete effective trait document is injected exactly once into {agent} context")
@@ -1955,15 +1998,19 @@ def assert_workflow_projection(context, root: Path) -> None:
 
 @given("the packaged ZPP workflow bundle contains all seven permanent skills")
 @given("the packaged ZPP workflow bundle contains all eight permanent skills")
+@given("the packaged ZPP workflow bundle contains all eleven permanent skills")
 def step_packaged_workflow_bundle(context):
     context.workflow_skill_names = (
+        "zpp-author-skill",
         "zpp-clarify-change",
         "zpp-commit-zmem",
         "zpp-form-specs",
+        "zpp-lean-audit",
         "zpp-mature-utilities",
         "zpp-plan-utilities",
         "zpp-reconcile-codespace-worktrees",
         "zpp-shape-feature",
+        "zpp-use-zmem",
         "zpp-wire-feature",
     )
 
@@ -2652,8 +2699,81 @@ def step_install_bundle_for_every_agent(context):
     )
 
 
+@given("the packaged default profile contains executable-guarded tool-use traits")
+def step_packaged_tool_traits(context):
+    root = REPO_ROOT / "src" / "zpp" / "artifacts" / "profiles" / "default"
+    triggers = json.loads((root / "trait.json").read_text(encoding="utf-8"))
+    assert triggers[-3:] == [
+        {"trait": "use-rg", "which": "rg"},
+        {"trait": "use-jq", "which": "jq"},
+        {"trait": "use-zmem", "which": "zmem"},
+    ]
+
+
+@then("every native projection contains zpp-use-zmem, zpp-lean-audit, and zpp-author-skill")
+def step_projection_contains_generic_skills(context):
+    for root in context.installed_workflow_roots:
+        for name in ("zpp-use-zmem", "zpp-lean-audit", "zpp-author-skill"):
+            assert (root / name / "SKILL.md").is_file()
+
+
+@then("use-zmem looks up zpp-use-zmem and zpp-commit-zmem only when the zmem executable is available")
+def step_use_zmem_guard(context):
+    root = REPO_ROOT / "src" / "zpp" / "artifacts" / "profiles" / "default"
+    triggers = json.loads((root / "trait.json").read_text(encoding="utf-8"))
+    assert {"trait": "use-zmem", "which": "zmem"} in triggers
+    source = (root / "traits" / "use-zmem.md").read_text(encoding="utf-8")
+    metadata = yaml.safe_load(source.split("---", 2)[1])
+    assert metadata["skill_lookup"] == ["zpp-use-zmem", "zpp-commit-zmem"]
+
+
+@then("zpp-use-zmem teaches recall, search, detail inspection, links, output interpretation, and current-authority verification")
+def step_zmem_skill_complete(context):
+    source = (
+        context.installed_workflow_roots[0] / "zpp-use-zmem" / "SKILL.md"
+    ).read_text(encoding="utf-8").lower()
+    assert all(term in source for term in (
+        "zmem recall", "zmem search", "zmem show", "zmem links",
+        "json", "--human", "canonical openspec", "current code",
+    ))
+
+
+@then("zpp-lean-audit is read-only and substantially attributed to the upstream Ponytail ladder, taxonomy, output, and safety boundaries")
+def step_lean_skill_contract(context):
+    source = (
+        context.installed_workflow_roots[0] / "zpp-lean-audit" / "SKILL.md"
+    ).read_text(encoding="utf-8").lower()
+    assert "dietrichgebert/ponytail" in source and "remain read-only" in source
+    assert all(tag in source for tag in ("delete:", "stdlib:", "native:", "yagni:", "shrink:"))
+    assert all(term in source for term in ("rank", "output", "security", "accessibility"))
+
+
+@then("zpp-lean-audit preserves ZPP's proportional maturity evaluation for external dependencies")
+def step_lean_dependency_fit(context):
+    source = (
+        context.installed_workflow_roots[0] / "zpp-lean-audit" / "SKILL.md"
+    ).read_text(encoding="utf-8").lower()
+    assert all(term in source for term in (
+        "package maturity", "integration cost", "proportion", "universal percentage",
+    ))
+
+
+@then("zpp-author-skill keeps context-continuity and explicit-control-flow guidance in focused references rather than runtime traits")
+def step_author_skill_references(context):
+    skill = context.installed_workflow_roots[0] / "zpp-author-skill"
+    body = (skill / "SKILL.md").read_text(encoding="utf-8")
+    assert "references/context-continuity.md" in body
+    assert "references/explicit-control-flow.md" in body
+    assert (skill / "references" / "context-continuity.md").is_file()
+    assert (skill / "references" / "explicit-control-flow.md").is_file()
+    trait_root = REPO_ROOT / "src" / "zpp" / "artifacts" / "profiles" / "default" / "traits"
+    assert not (trait_root / "context-continuity.md").exists()
+    assert not (trait_root / "explicit-control-flow.md").exists()
+
+
 @then("every native projection contains the same seven permanent workflow skills")
 @then("every native projection contains the same eight permanent workflow skills")
+@then("every native projection contains the same eleven permanent workflow skills")
 def step_every_projection_same_bundle(context):
     for root in context.installed_workflow_roots:
         assert_workflow_projection(context, root)
@@ -2743,6 +2863,18 @@ def step_skill_bodies_neutral(context):
             assert not any(term in source for term in forbidden), (name, source)
 
 
+@then("all Python, Django, TypeScript, and Flutter workflow guidance remains in independent optional traits outside the skill bodies")
+def step_platform_guidance_in_optional_traits(context):
+    root = REPO_ROOT / "src" / "zpp" / "artifacts" / "profiles" / "default"
+    names = {
+        "python-bdd", "python-tdd", "python-build", "python-django-tdd",
+        "typescript-bdd", "typescript-tdd", "flutter-bdd", "flutter-tdd",
+    }
+    triggers = {item["trait"] for item in json.loads((root / "trait.json").read_text(encoding="utf-8"))}
+    assert triggers.isdisjoint(names)
+    assert all((root / "traits" / f"{name}.md").is_file() for name in names)
+
+
 @then("platform-specific installation behavior remains outside the skill bodies")
 def step_installation_policy_outside_bodies(context):
     assert workflow_skill_root(context, "codex", scope="local") == (
@@ -2787,13 +2919,28 @@ def step_default_profile_inactive(context):
     "the default profile selects exactly automatic-workflow, codespace-claim-guard, "
     "zero-assumptions, and ponytail when explicitly used"
 )
+@then(
+    "the default profile conditionlessly selects exactly automatic-workflow, "
+    "codespace-claim-guard, zero-assumptions, and ponytail when explicitly used"
+)
 def step_default_profile_triggers(context):
     source = context.home / ".zpp" / "profiles" / "default" / "trait.json"
-    assert json.loads(source.read_text(encoding="utf-8")) == [
+    triggers = json.loads(source.read_text(encoding="utf-8"))
+    assert triggers[:4] == [
         {"trait": "automatic-workflow"},
         {"trait": "codespace-claim-guard"},
         {"trait": "zero-assumptions"},
         {"trait": "ponytail"},
+    ]
+
+
+@then("the default profile guards use-rg, use-jq, and use-zmem by their corresponding executables")
+def step_default_tool_guards(context):
+    source = context.home / ".zpp" / "profiles" / "default" / "trait.json"
+    assert json.loads(source.read_text(encoding="utf-8"))[4:] == [
+        {"trait": "use-rg", "which": "rg"},
+        {"trait": "use-jq", "which": "jq"},
+        {"trait": "use-zmem", "which": "zmem"},
     ]
 
 
@@ -2808,6 +2955,27 @@ def step_default_optional_python_traits(context):
         for item in json.loads((root / "trait.json").read_text(encoding="utf-8"))
     }
     optional = {"python-bdd", "python-tdd", "python-build"}
+    assert all((root / "traits" / f"{name}.md").is_file() for name in optional)
+    assert triggers.isdisjoint(optional)
+
+
+@then("the default profile contains all packaged platform workflow traits without activating them")
+def step_default_optional_platform_traits(context):
+    root = context.home / ".zpp" / "profiles" / "default"
+    triggers = {
+        item["trait"]
+        for item in json.loads((root / "trait.json").read_text(encoding="utf-8"))
+    }
+    optional = {
+        "python-bdd",
+        "python-tdd",
+        "python-build",
+        "python-django-tdd",
+        "typescript-bdd",
+        "typescript-tdd",
+        "flutter-bdd",
+        "flutter-tdd",
+    }
     assert all((root / "traits" / f"{name}.md").is_file() for name in optional)
     assert triggers.isdisjoint(optional)
 
@@ -2998,12 +3166,11 @@ def step_resolve_without_profile(context):
 @then("the platform-neutral base traits resolve from global")
 def step_base_traits_from_global(context):
     assert context.result.exit_code == 0, context.result.output
-    assert [meta["name"] for meta, _ in parse_documents(context.result.stdout)] == [
-        "automatic-workflow",
-        "codespace-claim-guard",
-        "zero-assumptions",
-        "ponytail",
+    names = [meta["name"] for meta, _ in parse_documents(context.result.stdout)]
+    assert names[:4] == [
+        "automatic-workflow", "codespace-claim-guard", "zero-assumptions", "ponytail"
     ]
+    assert set(names[4:]).issubset({"use-rg", "use-jq", "use-zmem"})
 
 
 @given('profiles "work" and "default" exist')
@@ -3070,12 +3237,11 @@ def step_manual_mode_active(context):
 
 @then("the same platform-neutral base traits remain active")
 def step_same_base_traits(context):
-    assert [meta["name"] for meta, _ in parse_documents(context.result.stdout)] == [
-        "automatic-workflow",
-        "codespace-claim-guard",
-        "zero-assumptions",
-        "ponytail",
+    names = [meta["name"] for meta, _ in parse_documents(context.result.stdout)]
+    assert names[:4] == [
+        "automatic-workflow", "codespace-claim-guard", "zero-assumptions", "ponytail"
     ]
+    assert set(names[4:]).issubset({"use-rg", "use-jq", "use-zmem"})
 
 
 @then("codespace-claim-guard remains active")
@@ -3087,7 +3253,10 @@ def step_claim_guard_remains_active(context):
 use_step_matcher("re")
 
 
-@given(r"the repository layer additionally activates (?P<trait>python-(?:bdd|tdd|build))")
+@given(
+    r"the repository layer additionally activates "
+    r"(?P<trait>python-(?:bdd|tdd|build|django-tdd)|typescript-(?:bdd|tdd)|flutter-(?:bdd|tdd))"
+)
 def step_activate_optional_python_trait(context, trait):
     git_init(context.project)
     context.target = context.project
@@ -3095,8 +3264,9 @@ def step_activate_optional_python_trait(context, trait):
 
 
 @then(
-    r"stdout contains (?P<trait>python-(?:bdd|tdd|build)) "
-    r"with only (?P<responsibility>Behave|pytest|the uv environment) guidance"
+    r"stdout contains "
+    r"(?P<trait>python-(?:bdd|tdd|build|django-tdd)|typescript-(?:bdd|tdd)|flutter-(?:bdd|tdd)) "
+    r"with only (?P<responsibility>Behave|pytest|the uv environment|Django testing|TypeScript BDD|TypeScript TDD|Flutter BDD|Flutter TDD) guidance"
 )
 def step_optional_python_guidance(context, trait, responsibility):
     documents = parse_documents(context.result.stdout)
@@ -3105,6 +3275,11 @@ def step_optional_python_guidance(context, trait, responsibility):
         "Behave": "Behave",
         "pytest": "pytest",
         "the uv environment": "uv",
+        "Django testing": "Django",
+        "TypeScript BDD": "TypeScript",
+        "TypeScript TDD": "TypeScript",
+        "Flutter BDD": "Flutter",
+        "Flutter TDD": "Flutter",
     }[responsibility]
     assert expected in body
 
@@ -3113,11 +3288,12 @@ use_step_matcher("parse")
 
 
 @then("stdout contains no other optional Python trait")
+@then("stdout contains no other optional platform workflow trait")
 def step_no_other_python_trait(context):
     names = {
         meta["name"]
         for meta, _ in parse_documents(context.result.stdout)
-        if meta["name"].startswith("python-")
+        if meta["name"].startswith(("python-", "typescript-", "flutter-"))
     }
     assert len(names) == 1
 

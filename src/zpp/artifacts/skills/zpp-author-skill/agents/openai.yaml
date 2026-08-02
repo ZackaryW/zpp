@@ -1,0 +1,4 @@
+interface:
+  display_name: "Author ZPP Skill"
+  short_description: "Create focused durable workflow skills"
+  default_prompt: "Use -author-skill to create or revise this ZPP workflow skill."

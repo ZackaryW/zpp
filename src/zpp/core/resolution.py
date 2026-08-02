@@ -15,6 +15,7 @@ from zpp.utils.models import (
     LayerRef,
     ManagedStateError,
     CanonicalDirectory,
+    AgentName,
     TraitIndex,
     TriggerRule,
     ValidationIssue,
@@ -24,6 +25,13 @@ from zpp.utils.paths import (
     canonicalize_existing_directory,
     closest_saved_binding,
     ordered_saved_bindings,
+)
+from zpp.utils.plugin_discovery import discover_active_plugins
+from zpp.utils.plugin_trait_sources import (
+    inspect_plugin_trait_source,
+    load_plugin_trait_index,
+    merge_plugin_trait_indexes,
+    read_plugin_trigger_rules,
 )
 from zpp.utils.trait_composition import (
     apply_trait_config_overlays,
@@ -35,7 +43,12 @@ from zpp.utils.trait_index_loading import load_trait_index
 from zpp.utils.triggers import activated_trait_names, compose_trigger_rules
 
 
-def resolve_traits(home: Path, target_path: Path) -> str:
+def resolve_traits(
+    home: Path,
+    target_path: Path,
+    *,
+    agent: AgentName | None = None,
+) -> str:
     target = canonicalize_existing_directory(target_path)
     user_root = require_initialized_user_state(home)
     layers = _participating_layers(user_root, target)
@@ -43,6 +56,37 @@ def resolve_traits(home: Path, target_path: Path) -> str:
     controls: list[LayerControls] = []
     configurations: list[LayerConfig] = []
     indexes: list[TraitIndex] = []
+    if agent is not None:
+        sources = tuple(
+            sorted(
+                (
+                    source
+                    for plugin in discover_active_plugins(
+                        agent,
+                        home=home,
+                        target=target.resolved,
+                    )
+                    if (source := inspect_plugin_trait_source(plugin)) is not None
+                ),
+                key=lambda source: source.plugin.identity,
+            )
+        )
+        if sources:
+            plugin_indexes = tuple(
+                load_plugin_trait_index(source, user_root=user_root)
+                for source in sources
+            )
+            controls.append(
+                LayerControls(
+                    triggers=tuple(
+                        rule
+                        for source in sources
+                        for rule in read_plugin_trigger_rules(source)
+                    )
+                )
+            )
+            indexes.append(merge_plugin_trait_indexes(sources, plugin_indexes))
+
     for layer in layers:
         config, trigger_rules = _read_layer_controls(layer.root)
         controls.append(
