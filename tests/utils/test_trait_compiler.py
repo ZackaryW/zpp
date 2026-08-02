@@ -1,3 +1,4 @@
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -10,21 +11,23 @@ def test_compile_trait_index_returns_deterministic_normalized_records(
     tmp_path: Path,
 ) -> None:
     beta = tmp_path / "beta.md"
-    beta.write_text(
-        "---\nname: beta\ndescription: 第二\norder: 20\n---\n\nBeta body.\n",
-        encoding="utf-8",
+    beta.write_bytes(
+        "---\nname: beta\ndescription: 第二\norder: 20\n---\n\nBeta body.\n".encode(
+            "utf-8"
+        )
     )
     alpha = tmp_path / "alpha.md"
-    alpha.write_text(
-        "---\nname: alpha\ndescription: First\nconfig:\n  enabled: true\n"
-        "skill_lookup:\n  - helper\n---\n\n  Alpha body.  \n",
-        encoding="utf-8",
+    alpha.write_bytes(
+        (
+            "---\nname: alpha\ndescription: First\nconfig:\n  enabled: true\n"
+            "skill_lookup:\n  - helper\n---\n\n  Alpha body.  \n"
+        ).encode("utf-8")
     )
 
     index = compile_trait_index([beta, alpha])
 
     assert index == {
-        "schema_version": 1,
+        "schema_version": 2,
         "traits": {
             "alpha": {
                 "description": "First",
@@ -32,6 +35,7 @@ def test_compile_trait_index_returns_deterministic_normalized_records(
                 "config": {"enabled": True},
                 "skill_lookup": ["helper"],
                 "body": "\n  Alpha body.  \n",
+                "source_sha256": sha256(alpha.read_bytes()).hexdigest(),
             },
             "beta": {
                 "description": "第二",
@@ -39,6 +43,7 @@ def test_compile_trait_index_returns_deterministic_normalized_records(
                 "config": {},
                 "skill_lookup": [],
                 "body": "\nBeta body.\n",
+                "source_sha256": sha256(beta.read_bytes()).hexdigest(),
             },
         },
     }

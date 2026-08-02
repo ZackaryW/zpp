@@ -3,7 +3,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 function resolveTraits(cwd: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile("zpp", ["resolve"], { cwd, encoding: "utf8" }, (error, stdout) => {
+    execFile("zpp", ["resolve", "--agent", "pi"], { cwd, encoding: "utf8" }, (error, stdout) => {
       if (error) {
         reject(error);
         return;

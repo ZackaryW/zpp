@@ -57,10 +57,11 @@ class TraitRecord(TypedDict):
     config: dict[str, Any]
     skill_lookup: list[str]
     body: str
+    source_sha256: str
 
 
 class TraitIndex(TypedDict):
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     traits: dict[str, TraitRecord]
 
 

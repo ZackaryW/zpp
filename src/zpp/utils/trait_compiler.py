@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from hashlib import sha256
 from pathlib import Path
 
 from zpp.utils.models import (
@@ -18,8 +19,9 @@ def compile_trait_index(sources: Iterable[Path]) -> TraitIndex:
     issues: list[ValidationIssue] = []
     for source in sources:
         try:
+            source_bytes = source.read_bytes()
             document = parse_trait_document(
-                source.read_text(encoding="utf-8"),
+                source_bytes.decode("utf-8"),
                 expected_name=source.stem,
             )
         except ZppValidationError as error:
@@ -57,6 +59,7 @@ def compile_trait_index(sources: Iterable[Path]) -> TraitIndex:
             "config": document.config,
             "skill_lookup": list(document.skill_lookup),
             "body": document.body,
+            "source_sha256": sha256(source_bytes).hexdigest(),
         }
         record_sources[document.name] = source
 
@@ -64,6 +67,6 @@ def compile_trait_index(sources: Iterable[Path]) -> TraitIndex:
         raise ZppValidationError(tuple(issues))
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "traits": {name: records[name] for name in sorted(records)},
     }

@@ -54,7 +54,7 @@ def test_packaged_pi_extension_resolves_fresh_traits_on_each_agent_start(
 
     assert destination.read_text(encoding="utf-8") == artifact.source
     assert 'pi.on("before_agent_start"' in artifact.source
-    assert 'execFile("zpp", ["resolve"]' in artifact.source
+    assert 'execFile("zpp", ["resolve", "--agent", "pi"]' in artifact.source
     assert "resolveTraits(event.systemPromptOptions.cwd)" in artifact.source
     assert "{ cwd, encoding:" in artifact.source
     assert "event.systemPrompt" in artifact.source

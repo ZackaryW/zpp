@@ -31,6 +31,18 @@ def test_native_hook_reconciliation_is_exact_idempotent_and_non_mutating() -> No
     assert codex_source == codex_original and claude_source == claude_original
 
 
+def test_native_session_hooks_pass_their_own_agent_identity() -> None:
+    codex = codex_session_start_hook()
+    claude = claude_session_start_hook()
+
+    assert codex["hooks"] == [
+        {"type": "command", "command": "zpp resolve --agent codex"}
+    ]
+    assert claude["hooks"] == [
+        {"type": "command", "command": "zpp resolve --agent claude"}
+    ]
+
+
 def test_native_hook_reconciliation_rejects_a_competing_zpp_command() -> None:
     conflicting = {
         "hooks": {

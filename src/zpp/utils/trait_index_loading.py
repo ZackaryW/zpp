@@ -19,12 +19,13 @@ class _TraitRecord(BaseModel):
     config: dict[str, JsonValue]
     skill_lookup: list[str]
     body: str
+    source_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
 class _TraitIndex(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     traits: dict[str, _TraitRecord]
 
 

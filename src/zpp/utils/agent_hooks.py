@@ -14,14 +14,14 @@ ClaudeHookRecord = dict[str, Any]
 def codex_session_start_hook() -> CodexHookRecord:
     return {
         "matcher": "startup|resume|clear|compact",
-        "hooks": [{"type": "command", "command": "zpp resolve"}],
+        "hooks": [{"type": "command", "command": "zpp resolve --agent codex"}],
     }
 
 
 def claude_session_start_hook() -> ClaudeHookRecord:
     return {
         "matcher": "startup|resume|clear|compact|fork",
-        "hooks": [{"type": "command", "command": "zpp resolve"}],
+        "hooks": [{"type": "command", "command": "zpp resolve --agent claude"}],
     }
 
 
@@ -73,9 +73,8 @@ def _reconcile(
         raise ManagedStateError("native hooks value is not an object")
 
     expected_command = _managed_command(expected)
-    expected_event = (
-        "SessionStart" if expected_command == "zpp resolve" else "PreToolUse"
-    )
+    expected_kind = _managed_command_kind(expected_command)
+    expected_event = "SessionStart" if expected_kind == "resolve" else "PreToolUse"
     claims: list[tuple[str, dict[str, Any]]] = []
     for event, groups in hooks.items():
         if not isinstance(event, str) or not isinstance(groups, list):
@@ -86,7 +85,11 @@ def _reconcile(
             for handler in group["hooks"]:
                 if not isinstance(handler, dict):
                     raise ManagedStateError("native hook handler is malformed")
-                if handler.get("command") == expected_command:
+                command = handler.get("command")
+                if (
+                    isinstance(command, str)
+                    and _managed_command_kind(command) == expected_kind
+                ):
                     claims.append((event, group))
 
     if claims:
@@ -111,3 +114,11 @@ def _managed_command(expected: dict[str, Any]) -> str:
     if not isinstance(handler, dict) or not isinstance(handler.get("command"), str):
         raise ManagedStateError("managed native hook command is malformed")
     return handler["command"]
+
+
+def _managed_command_kind(command: str) -> str:
+    if command == "zpp resolve" or command.startswith("zpp resolve --agent "):
+        return "resolve"
+    if command.startswith("zpp codespace guard"):
+        return "guard"
+    return command
