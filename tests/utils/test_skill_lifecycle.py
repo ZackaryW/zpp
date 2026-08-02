@@ -152,6 +152,31 @@ def test_update_and_remove_plan_only_managed_selected_scopes(tmp_path: Path) -> 
             )
 
 
+@pytest.mark.parametrize(
+    ("operation", "planner"),
+    (("update", plan_skill_update), ("remove", plan_skill_remove)),
+)
+def test_managed_lifecycle_reports_an_absent_projection_as_not_installed(
+    tmp_path: Path,
+    operation: str,
+    planner,
+) -> None:
+    selected = (
+        _inspection(
+            tmp_path / "absent",
+            "absent",
+            scope="local",
+            agents=("codex",),
+        ),
+    )
+
+    with pytest.raises(ManagedStateError, match=f"cannot {operation}.*not installed"):
+        if operation == "update":
+            planner(_bundle(), selected)
+        else:
+            planner(selected)
+
+
 def test_differing_versions_report_without_scope_precedence(tmp_path: Path) -> None:
     inspections = (
         _inspection(

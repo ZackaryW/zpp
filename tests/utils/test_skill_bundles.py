@@ -6,6 +6,8 @@ import pytest
 from zpp.utils.skill_bundles import (
     SKILL_MANIFEST_NAME,
     WORKFLOW_SKILL_NAMES,
+    SkillBundle,
+    SkillFile,
     collect_skill_bundle,
     fingerprint_skill_files,
     inspect_skill_projection,
@@ -98,6 +100,26 @@ def _write_projection(root: Path, source: Path, version: str) -> None:
     )
 
 
+def _write_historical_projection(root: Path) -> None:
+    files = tuple(
+        SkillFile(
+            f"{name}/SKILL.md",
+            f"---\nname: {name}\n---\n\nHistorical guidance.\n".encode(),
+        )
+        for name in WORKFLOW_SKILL_NAMES[:-1]
+    )
+    bundle = SkillBundle("0.8.0", files, fingerprint_skill_files(files))
+    for file in files:
+        destination = root / Path(file.relative_path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(file.content)
+    manifest = manifest_for_bundle(bundle)
+    (root / SKILL_MANIFEST_NAME).write_text(
+        json.dumps(manifest.model_dump(mode="json"), ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
 def test_inspect_skill_projection_distinguishes_managed_versions(
     tmp_path: Path,
 ) -> None:
@@ -122,6 +144,44 @@ def test_inspect_skill_projection_distinguishes_managed_versions(
     compatible = inspect_skill_projection(destination, expected)
     assert compatible.state == "compatible"
     assert compatible.version == "0.9.0"
+
+
+def test_inspect_skill_projection_accepts_an_intact_historical_inventory(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    _valid_bundle_tree(source)
+    expected = collect_skill_bundle(source, "0.9.0")
+    historical = tmp_path / "historical"
+    historical.mkdir()
+    _write_historical_projection(historical)
+
+    inspection = inspect_skill_projection(historical, expected)
+
+    assert inspection.state == "outdated"
+    assert inspection.version == "0.8.0"
+
+
+def test_inspect_historical_projection_rejects_unowned_content_in_owned_skill(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    _valid_bundle_tree(source)
+    expected = collect_skill_bundle(source, "0.9.0")
+    historical = tmp_path / "historical"
+    historical.mkdir()
+    _write_historical_projection(historical)
+    (historical / WORKFLOW_SKILL_NAMES[0] / "extra.md").write_text(
+        "not declared",
+        encoding="utf-8",
+    )
+
+    inspection = inspect_skill_projection(historical, expected)
+
+    assert inspection.state == "conflict"
+    assert inspection.reason == "managed skill file set differs from its manifest"
 
 
 def test_inspect_skill_projection_rejects_unmanaged_and_tampered_content(
@@ -170,3 +230,29 @@ def test_manifest_loading_is_strict_and_rejects_escaping_paths(tmp_path: Path) -
     )
     with pytest.raises(ManagedStateError, match="manifest"):
         load_skill_manifest(escaping)
+
+
+@pytest.mark.parametrize(
+    "owned_path",
+    ("custom-skill/SKILL.md", "zpp-historical/reference.md"),
+)
+def test_manifest_loading_requires_zpp_skill_documents(
+    tmp_path: Path,
+    owned_path: str,
+) -> None:
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "bundle_version": "0.8.0",
+                "fingerprint": "0" * 64,
+                "files": {owned_path: "0" * 64},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ManagedStateError, match="manifest"):
+        load_skill_manifest(manifest)

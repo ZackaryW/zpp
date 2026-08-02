@@ -59,7 +59,7 @@ class SkillBundleManifest(BaseModel):
                 or path != relative.as_posix()
                 or ".." in relative.parts
                 or len(relative.parts) < 2
-                or relative.parts[0] not in WORKFLOW_SKILL_NAMES
+                or not relative.parts[0].startswith("zpp-")
                 or len(digest) != 64
                 or any(character not in "0123456789abcdef" for character in digest)
             ):
@@ -68,10 +68,16 @@ class SkillBundleManifest(BaseModel):
 
     @model_validator(mode="after")
     def require_skill_documents(self) -> SkillBundleManifest:
-        required = {f"{name}/SKILL.md" for name in WORKFLOW_SKILL_NAMES}
+        required = {f"{name}/SKILL.md" for name in self.skill_names}
+        if not required:
+            raise ValueError("manifest owns no workflow skills")
         if not required.issubset(self.files):
-            raise ValueError("manifest does not own every permanent SKILL.md")
+            raise ValueError("manifest does not own every declared skill document")
         return self
+
+    @property
+    def skill_names(self) -> tuple[str, ...]:
+        return tuple(sorted({path.split("/", 1)[0] for path in self.files}))
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,7 +170,7 @@ def inspect_skill_projection(
         manifest = load_skill_manifest(manifest_path)
         if manifest is None:
             raise ManagedStateError(f"managed skill manifest disappeared: {manifest_path}")
-        actual = _read_projection_files(root)
+        actual = _read_projection_files(root, manifest)
     except (ManagedStateError, OSError, UnicodeError, ValueError) as error:
         return SkillProjectionInspection(root, "conflict", reason=str(error))
 
@@ -229,11 +235,14 @@ def _is_symlink(node: Traversable) -> bool:
     return isinstance(node, Path) and node.is_symlink()
 
 
-def _read_projection_files(root: Path) -> dict[str, SkillFile]:
+def _read_projection_files(
+    root: Path,
+    manifest: SkillBundleManifest,
+) -> dict[str, SkillFile]:
     if root.is_symlink() or not root.is_dir():
         raise ManagedStateError(f"managed skill root is not a regular directory: {root}")
     result: dict[str, SkillFile] = {}
-    for name in WORKFLOW_SKILL_NAMES:
+    for name in manifest.skill_names:
         skill = root / name
         if skill.is_symlink() or not skill.is_dir():
             raise ManagedStateError(f"managed skill directory is invalid: {skill}")

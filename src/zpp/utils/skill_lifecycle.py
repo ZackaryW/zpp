@@ -222,6 +222,11 @@ def _require_managed(
         item for item in inspections if item.state not in {"compatible", "outdated"}
     )
     if invalid:
+        if invalid[0].state == "absent":
+            raise ManagedStateError(
+                f"cannot {operation}; workflow skill projection is not installed: "
+                f"{invalid[0].root}"
+            )
         raise ManagedStateError(
             f"cannot {operation} unmanaged skill projection: {invalid[0].root}"
         )
