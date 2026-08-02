@@ -1,21 +1,25 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Mapping, Sequence
 
+from zpp.utils.codespace_edits import CodespaceEditOperations
 from zpp.utils.codespace_identity import (
     checkout_path_claim_key,
     projection_name,
     projection_structure_key,
     sibling_worktree_path,
+    snapshot_key,
 )
+from zpp.utils.codespace_members import writable_members
 from zpp.utils.codespace_models import (
     CodespaceClaim,
     CodespaceIndex,
     CodespaceMember,
     CodespaceProjection,
     ReleasedCheckoutDebt,
+    ReleasedCodespace,
 )
 from zpp.utils.git_layers import GitCheckout
 
@@ -26,14 +30,13 @@ class ResolvedMember:
     checkout: GitCheckout
     checkout_key: str
     kind: Literal["project", "store"]
-    role: Literal["governing", "reference"] = "governing"
+    access: Literal["writable", "read_only"] = "writable"
     store_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class CodespaceRequest:
     instance_id: str
-    snapshot_key: str
     members: tuple[ResolvedMember, ...]
 
 
@@ -45,11 +48,13 @@ class CodespaceLockPlan:
 
 
 @dataclass(frozen=True, slots=True)
-class CodespaceAddPlan:
+class CodespaceEditPlan:
     current: CodespaceClaim
-    replacement: CodespaceClaim
-    additions: tuple[ResolvedMember, ...]
+    successor: CodespaceClaim | None
     conflicting_checkout_keys: tuple[str, ...]
+    dirty_member_names: tuple[str, ...]
+    released: ReleasedCodespace | None
+    no_op: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,11 +83,11 @@ def _claimed_keys(index: CodespaceIndex, *, excluding: str | None = None) -> set
         member.checkout_key
         for claim in index.claims.values()
         if claim.instance_id != excluding
-        for member in claim.members
+        for member in writable_members(claim.members)
     }
 
 
-def _writable_members(
+def _deduplicate_resolved(
     members: Sequence[ResolvedMember],
 ) -> tuple[ResolvedMember, ...]:
     ordered: list[ResolvedMember] = []
@@ -93,125 +98,199 @@ def _writable_members(
             positions[candidate.checkout_key] = len(ordered)
             ordered.append(candidate)
             continue
-        existing = ordered[position]
-        if existing.role == "reference" and candidate.role == "governing":
-            ordered[position] = replace(
-                candidate,
-                name=existing.name,
-            )
-    return tuple(member for member in ordered if member.role == "governing")
+        if ordered[position].access == "read_only" and candidate.access == "writable":
+            ordered[position] = candidate
+    return tuple(ordered)
+
+
+def _planned_member(
+    member: ResolvedMember,
+    *,
+    instance_id: str,
+    position: int,
+    conflict: bool,
+) -> CodespaceMember:
+    generated = conflict and member.access == "writable"
+    effective_path = (
+        sibling_worktree_path(member.checkout, instance_id)
+        if generated
+        else member.checkout.root
+    )
+    return CodespaceMember(
+        name=member.name,
+        original_path=member.checkout.root,
+        effective_path=effective_path,
+        checkout_key=(
+            checkout_path_claim_key(effective_path)
+            if generated
+            else member.checkout_key
+        ),
+        source_checkout_key=member.checkout_key,
+        commit=member.checkout.head,
+        kind=member.kind,
+        store_id=member.store_id,
+        access=member.access,
+        generated_worktree=generated,
+        branch=(f"zpp/{instance_id}/{position}" if generated else None),
+    )
+
+
+def _claim(
+    *,
+    instance_id: str,
+    members: Sequence[CodespaceMember],
+    projection: CodespaceProjection | None = None,
+) -> CodespaceClaim:
+    finalized = tuple(members)
+    return CodespaceClaim(
+        instance_id=instance_id,
+        snapshot_key=snapshot_key(finalized),
+        members=finalized,
+        projection=projection,
+    )
 
 
 def plan_codespace_lock(
     request: CodespaceRequest,
     active: CodespaceIndex,
 ) -> CodespaceLockPlan:
-    writable = _writable_members(request.members)
+    members = _deduplicate_resolved(request.members)
     claimed = _claimed_keys(active)
     conflicts = tuple(
-        member.checkout_key for member in writable if member.checkout_key in claimed
+        member.checkout_key
+        for member in members
+        if member.access == "writable" and member.checkout_key in claimed
     )
     conflict_set = set(conflicts)
-    claim_members: list[CodespaceMember] = []
-    dirty: list[str] = []
-    for position, member in enumerate(writable):
-        is_conflict = member.checkout_key in conflict_set
-        if member.checkout.dirty:
-            dirty.append(member.name)
-        claim_members.append(
-            CodespaceMember(
-                name=member.name,
-                original_path=member.checkout.root,
-                effective_path=(
-                    sibling_worktree_path(member.checkout, request.instance_id)
-                    if is_conflict
-                    else member.checkout.root
-                ),
-                checkout_key=(
-                    checkout_path_claim_key(
-                        sibling_worktree_path(member.checkout, request.instance_id)
-                    )
-                    if is_conflict
-                    else member.checkout_key
-                ),
-                source_checkout_key=member.checkout_key,
-                commit=member.checkout.head,
-                kind=member.kind,
-                store_id=member.store_id,
-                role="governing",
-                generated_worktree=is_conflict,
-                branch=(
-                    f"zpp/{request.instance_id}/{position}" if is_conflict else None
-                ),
-            )
-        )
-    return CodespaceLockPlan(
-        claim=CodespaceClaim(
+    planned = tuple(
+        _planned_member(
+            member,
             instance_id=request.instance_id,
-            snapshot_key=request.snapshot_key,
-            members=tuple(claim_members),
-        ),
-        conflicting_checkout_keys=conflicts,
-        dirty_member_names=tuple(dirty),
-    )
-
-
-def plan_codespace_add(
-    current: CodespaceClaim,
-    additions: Sequence[ResolvedMember],
-    active: CodespaceIndex,
-) -> CodespaceAddPlan:
-    claimed = _claimed_keys(active, excluding=current.instance_id)
-    existing_keys = {member.source_checkout_key for member in current.members}
-    writable = tuple(
-        member
-        for member in _writable_members(additions)
-        if member.checkout_key not in existing_keys
-    )
-    conflicts = tuple(
-        member.checkout_key for member in writable if member.checkout_key in claimed
-    )
-    conflict_set = set(conflicts)
-    replacement_members = list(current.members)
-    for offset, member in enumerate(writable, start=len(replacement_members)):
-        is_conflict = member.checkout_key in conflict_set
-        effective_path = (
-            sibling_worktree_path(member.checkout, current.instance_id)
-            if is_conflict
-            else member.checkout.root
+            position=position,
+            conflict=member.checkout_key in conflict_set,
         )
-        replacement_members.append(
+        for position, member in enumerate(members)
+    )
+    return CodespaceLockPlan(
+        claim=_claim(instance_id=request.instance_id, members=planned),
+        conflicting_checkout_keys=conflicts,
+        dirty_member_names=tuple(
+            member.name for member in members if member.checkout.dirty
+        ),
+    )
+
+
+def released_edit_debt(
+    current: CodespaceClaim,
+    successor: CodespaceClaim,
+) -> ReleasedCodespace | None:
+    retained = {member.checkout_key for member in successor.members}
+    debts = tuple(
+        ReleasedCheckoutDebt(
+            original_path=member.original_path,
+            effective_path=member.effective_path,
+            checkout_key=member.checkout_key,
+            branch=member.branch or "",
+        )
+        for member in current.members
+        if member.generated_worktree and member.checkout_key not in retained
+    )
+    if not debts:
+        return None
+    return ReleasedCodespace(instance_id=current.instance_id, debts=debts)
+
+
+def plan_codespace_edit(
+    current: CodespaceClaim,
+    operations: CodespaceEditOperations,
+    resolved: Sequence[ResolvedMember],
+    active: CodespaceIndex,
+    *,
+    successor_id: str,
+) -> CodespaceEditPlan:
+    if not operations.targets:
+        return CodespaceEditPlan(current, None, (), (), None, True)
+
+    remove_keys = operations.keys("remove")
+    promote_keys = operations.keys("promote")
+    demote_keys = operations.keys("demote")
+    current_by_source = {member.source_checkout_key: member for member in current.members}
+    for key in remove_keys | promote_keys | demote_keys:
+        if key not in current_by_source:
+            raise ValueError("edit target is not a current codespace member")
+    if any(current_by_source[key].access != "read_only" for key in promote_keys):
+        raise ValueError("only a read-only member can be promoted")
+    if any(current_by_source[key].access != "writable" for key in demote_keys):
+        raise ValueError("only a writable member can be demoted")
+
+    replaced_keys = remove_keys | promote_keys | demote_keys
+    members = [
+        member for member in current.members if member.source_checkout_key not in replaced_keys
+    ]
+    targets_by_key = {target.checkout_key: target for target in operations.targets}
+    for key in demote_keys:
+        existing = current_by_source[key]
+        checkout = targets_by_key[key].checkout
+        members.append(
             CodespaceMember(
-                name=member.name,
-                original_path=member.checkout.root,
-                effective_path=effective_path,
-                checkout_key=(
-                    checkout_path_claim_key(effective_path)
-                    if is_conflict
-                    else member.checkout_key
-                ),
-                source_checkout_key=member.checkout_key,
-                commit=member.checkout.head,
-                kind=member.kind,
-                store_id=member.store_id,
-                role="governing",
-                generated_worktree=is_conflict,
-                branch=(
-                    f"zpp/{current.instance_id}/{offset}" if is_conflict else None
-                ),
+                name=existing.name,
+                original_path=checkout.root,
+                effective_path=checkout.root,
+                checkout_key=key,
+                source_checkout_key=key,
+                commit=checkout.head,
+                kind=existing.kind,
+                store_id=existing.store_id,
+                access="read_only",
             )
         )
-    replacement = CodespaceClaim(
-        instance_id=current.instance_id,
-        snapshot_key=current.snapshot_key,
-        members=tuple(replacement_members),
+
+    existing_sources = {member.source_checkout_key for member in members}
+    candidates = tuple(
+        member
+        for member in _deduplicate_resolved(resolved)
+        if member.checkout_key not in existing_sources
+    )
+    claimed = _claimed_keys(active, excluding=current.instance_id)
+    conflicts = tuple(
+        member.checkout_key
+        for member in candidates
+        if member.access == "writable" and member.checkout_key in claimed
+    )
+    conflict_set = set(conflicts)
+    for offset, member in enumerate(candidates, start=len(members)):
+        members.append(
+            _planned_member(
+                member,
+                instance_id=successor_id,
+                position=offset,
+                conflict=member.checkout_key in conflict_set,
+            )
+        )
+
+    logical_current = tuple(
+        (member.source_checkout_key, member.access) for member in current.members
+    )
+    logical_successor = tuple(
+        (member.source_checkout_key, member.access) for member in members
+    )
+    if logical_successor == logical_current:
+        return CodespaceEditPlan(current, None, (), (), None, True)
+
+    successor = _claim(
+        instance_id=successor_id,
+        members=members,
         projection=current.projection,
     )
-    return CodespaceAddPlan(
+    return CodespaceEditPlan(
         current=current,
-        replacement=replacement,
-        additions=writable,
+        successor=successor,
         conflicting_checkout_keys=conflicts,
+        dirty_member_names=tuple(
+            member.name for member in candidates if member.checkout.dirty
+        ),
+        released=released_edit_debt(current, successor),
+        no_op=False,
     )
 
 

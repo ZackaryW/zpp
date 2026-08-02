@@ -15,9 +15,22 @@ def _digest(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
-def snapshot_key(checkouts: Sequence[GitCheckout]) -> str:
-    commits = [checkout.head for checkout in checkouts]
-    return _digest(json.dumps(commits, ensure_ascii=False, separators=(",", ":")))
+def snapshot_key(members: Sequence[CodespaceMember]) -> str:
+    snapshot = [
+        (
+            member.name,
+            member.kind,
+            member.store_id,
+            member.access,
+            os.path.normcase(str(member.original_path.resolve())),
+            os.path.normcase(str(member.effective_path.resolve())),
+            member.checkout_key,
+            member.source_checkout_key,
+            member.commit,
+        )
+        for member in members
+    ]
+    return _digest(json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")))
 
 
 def checkout_claim_key(checkout: GitCheckout) -> str:
@@ -29,9 +42,9 @@ def checkout_path_claim_key(path: Path) -> str:
     return _digest(canonical_root)
 
 
-def new_codespace_instance_id(snapshot: str, *, token: str | None = None) -> str:
+def new_codespace_instance_id(*, token: str | None = None) -> str:
     entropy = secrets.token_hex(16) if token is None else token
-    return _digest(f"{snapshot}\0{entropy}")[:12]
+    return _digest(entropy)[:12]
 
 
 def projection_structure_key(members: Sequence[CodespaceMember]) -> str:
@@ -40,6 +53,7 @@ def projection_structure_key(members: Sequence[CodespaceMember]) -> str:
             member.name,
             member.kind,
             member.store_id,
+            member.access,
             os.path.normcase(str(member.effective_path.resolve())),
         )
         for member in members

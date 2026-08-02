@@ -17,7 +17,7 @@ class CodespaceMember(BaseModel):
     commit: str = Field(min_length=1)
     kind: Literal["project", "store"]
     store_id: str | None = None
-    role: Literal["governing", "reference"] = "governing"
+    access: Literal["writable", "read_only"] = "writable"
     generated_worktree: bool = False
     branch: str | None = None
 
@@ -80,7 +80,7 @@ class ReleasedCodespace(BaseModel):
 class CodespaceIndex(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[2] = 2
+    schema_version: Literal[3] = 3
     claims: dict[str, CodespaceClaim] = Field(default_factory=dict)
     released: dict[str, ReleasedCodespace] = Field(default_factory=dict)
 
@@ -97,6 +97,7 @@ class CodespaceIndex(BaseModel):
             member.checkout_key
             for claim in self.claims.values()
             for member in claim.members
+            if member.access == "writable"
         ]
         if len(checkout_keys) != len(set(checkout_keys)):
             raise ValueError("physical checkout belongs to multiple claims")

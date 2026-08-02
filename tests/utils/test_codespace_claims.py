@@ -9,7 +9,6 @@ from zpp.utils.codespace_claims import (
     claimed_checkout_owners,
     find_matching_codespace_claim,
     register_codespace_claim,
-    replace_codespace_claim,
 )
 from zpp.utils.codespace_models import CodespaceClaim, CodespaceIndex, CodespaceMember
 
@@ -44,23 +43,6 @@ def test_claim_registration_reports_owner_and_never_partially_registers(
 
     assert caught.value.conflicts[0].checkout_key == "shared"
     assert index == CodespaceIndex(claims={"owner": owner})
-
-
-def test_claim_replacement_rejects_a_stale_expected_claim(tmp_path: Path) -> None:
-    original = _claim(tmp_path / "original", "current", "original")
-    advanced = original.model_copy(update={"snapshot_key": "advanced"})
-    replacement = original.model_copy(
-        update={
-            "members": original.members
-            + (_claim(tmp_path / "added", "added", "added").members[0],)
-        }
-    )
-    index = CodespaceIndex(claims={"current": advanced})
-
-    with pytest.raises(ValueError, match="changed since planning"):
-        replace_codespace_claim(index, original, replacement)
-
-    assert index.claims["current"] == advanced
 
 
 def test_claim_matching_uses_the_complete_effective_checkout_key_set(

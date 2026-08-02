@@ -5,6 +5,7 @@ import subprocess
 from typing import Mapping, Sequence
 
 from zpp.utils.codespace_models import CodespaceClaim
+from zpp.utils.codespace_members import writable_members
 from zpp.utils.openspec_adapter import register_private_store
 
 
@@ -24,7 +25,7 @@ def materialize_private_registry(
     *,
     environment: Mapping[str, str],
 ) -> None:
-    for member in claim.members:
+    for member in writable_members(claim.members):
         if member.kind == "store" and member.store_id is not None:
             register_private_store(
                 member.store_id,

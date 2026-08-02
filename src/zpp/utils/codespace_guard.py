@@ -8,6 +8,7 @@ from typing import Literal, Mapping
 from pydantic import BaseModel, ConfigDict
 
 from zpp.utils.codespace_models import CodespaceIndex
+from zpp.utils.codespace_members import read_only_members, writable_members
 
 
 AgentName = Literal["pi", "codex", "claude"]
@@ -44,11 +45,14 @@ def _contains(root: Path, target: Path) -> bool:
         return False
 
 
-def _owner(index: CodespaceIndex, target: Path) -> str | None:
+def _writable_owner(index: CodespaceIndex, target: Path) -> str | None:
     owners = {
         claim.instance_id
         for claim in index.claims.values()
-        if any(_contains(member.effective_path, target) for member in claim.members)
+        if any(
+            _contains(member.effective_path, target)
+            for member in writable_members(claim.members)
+        )
     }
     if len(owners) > 1:
         raise ValueError("target belongs to multiple active codespace claims")
@@ -58,13 +62,26 @@ def _owner(index: CodespaceIndex, target: Path) -> str | None:
 def evaluate_codespace_guard(
     request: GuardRequest,
     index: CodespaceIndex,
+    *,
+    associated_codespace: str | None = None,
 ) -> GuardDecision:
-    current = _owner(index, request.cwd)
+    current = associated_codespace or _writable_owner(index, request.cwd)
+    if current is not None and current not in index.claims:
+        raise ValueError(f"associated codespace does not exist: {current}")
     if request.kind == "shell":
         return GuardDecision(allowed=True, associated_codespace=current)
 
     for target in request.target_paths:
-        owner = _owner(index, target)
+        if current is not None and any(
+            _contains(member.effective_path, target)
+            for member in read_only_members(index.claims[current].members)
+        ):
+            return GuardDecision(
+                allowed=False,
+                associated_codespace=current,
+                reason=f"target is read-only in codespace {current}: {target}",
+            )
+        owner = _writable_owner(index, target)
         if owner is not None and owner != current:
             return GuardDecision(
                 allowed=False,

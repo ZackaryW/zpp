@@ -3,12 +3,16 @@ from pathlib import Path
 
 import pytest
 
-from zpp.utils.codespace_targets import explicit_members, resolve_codespace_members
+from zpp.utils.codespace_targets import (
+    CodespaceTarget,
+    explicit_codespace_targets,
+    resolve_codespace_members,
+)
 from zpp.utils.git_layers import GitCheckout
 from zpp.utils.openspec_adapter import OpenSpecMember, OpenSpecStoreRelation
 
 
-def test_explicit_members_accepts_workspace_or_paths_but_never_both(
+def test_explicit_targets_accept_workspace_or_writable_paths_but_never_both(
     tmp_path: Path,
 ) -> None:
     project = tmp_path / "项目"
@@ -19,11 +23,21 @@ def test_explicit_members_accepts_workspace_or_paths_but_never_both(
         encoding="utf-8",
     )
 
-    assert explicit_members(workspace=workspace, paths=())[0].path == project.resolve()
-    assert explicit_members(workspace=None, paths=(project,))[0].path == project.resolve()
-    assert explicit_members(workspace=None, paths=()) is None
+    assert explicit_codespace_targets(
+        workspace=workspace, writable_paths=(), read_only_paths=()
+    )[0].path == project.resolve()
+    assert explicit_codespace_targets(
+        workspace=None, writable_paths=(project,), read_only_paths=()
+    )[0].path == project.resolve()
+    assert explicit_codespace_targets(
+        workspace=None, writable_paths=(), read_only_paths=()
+    ) is None
     with pytest.raises(ValueError, match="workspace or paths"):
-        explicit_members(workspace=workspace, paths=(project,))
+        explicit_codespace_targets(
+            workspace=workspace,
+            writable_paths=(project,),
+            read_only_paths=(),
+        )
 
 
 def test_resolve_codespace_members_deduplicates_writable_physical_checkouts(
@@ -53,7 +67,10 @@ def test_resolve_codespace_members_deduplicates_writable_physical_checkouts(
     )
 
     resolved = resolve_codespace_members(
-        (OpenSpecMember("project", project), OpenSpecMember("duplicate", project))
+        (
+            CodespaceTarget("project", project, "writable"),
+            CodespaceTarget("duplicate", project, "writable"),
+        )
     )
 
     assert [(item.kind, item.name) for item in resolved] == [

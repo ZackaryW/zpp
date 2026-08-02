@@ -49,8 +49,36 @@ def load_codespace_index(root: Path) -> CodespaceIndex:
 
 def migrate_codespace_index(payload: Mapping[str, object]) -> CodespaceIndex:
     version = payload.get("schema_version", 1)
-    if version == 2:
+    if version == 3:
         return CodespaceIndex.model_validate(payload)
+    if version == 2:
+        migrated = dict(payload)
+        raw_claims = payload.get("claims", {})
+        if not isinstance(raw_claims, dict):
+            raise ValueError("legacy codespace claims are invalid")
+        claims: dict[str, object] = {}
+        for key, raw_claim in raw_claims.items():
+            if not isinstance(key, str) or not isinstance(raw_claim, dict):
+                raise ValueError("legacy codespace claim is invalid")
+            claim = dict(raw_claim)
+            raw_members = claim.get("members", [])
+            if not isinstance(raw_members, list):
+                raise ValueError("legacy codespace members are invalid")
+            members: list[dict[str, object]] = []
+            for raw_member in raw_members:
+                if not isinstance(raw_member, dict):
+                    raise ValueError("legacy codespace member is invalid")
+                member = dict(raw_member)
+                role = member.pop("role", "governing")
+                if role != "governing":
+                    raise ValueError("legacy codespace member access is ambiguous")
+                member["access"] = "writable"
+                members.append(member)
+            claim["members"] = members
+            claims[key] = claim
+        migrated["schema_version"] = 3
+        migrated["claims"] = claims
+        return CodespaceIndex.model_validate(migrated)
     if version != 1:
         raise ValueError(f"unsupported codespace index schema: {version}")
 

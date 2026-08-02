@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Literal, Sequence
 
 from zpp.utils.codespace_identity import checkout_claim_key
 from zpp.utils.codespace_planning import ResolvedMember
@@ -10,57 +11,80 @@ from zpp.utils.openspec_adapter import OpenSpecMember, resolve_openspec_relation
 from zpp.utils.workspace_descriptors import load_code_workspace
 
 
-def explicit_members(
+@dataclass(frozen=True, slots=True)
+class CodespaceTarget:
+    name: str
+    path: Path
+    access: Literal["writable", "read_only"]
+
+
+def explicit_codespace_targets(
     *,
     workspace: Path | None,
-    paths: Sequence[Path],
-) -> tuple[OpenSpecMember, ...] | None:
-    if workspace is not None and paths:
+    writable_paths: Sequence[Path],
+    read_only_paths: Sequence[Path],
+) -> tuple[CodespaceTarget, ...] | None:
+    if workspace is not None and writable_paths:
         raise ValueError("choose either a workspace or paths")
+    writable: tuple[OpenSpecMember, ...]
     if workspace is not None:
-        return load_code_workspace(workspace)
-    if paths:
-        return tuple(
+        writable = load_code_workspace(workspace)
+    else:
+        writable = tuple(
             OpenSpecMember(path.resolve().name, path.resolve())
-            for path in paths
+            for path in writable_paths
         )
-    return None
+    targets = tuple(
+        CodespaceTarget(member.name, member.path, "writable")
+        for member in writable
+    ) + tuple(
+        CodespaceTarget(path.resolve().name, path.resolve(), "read_only")
+        for path in read_only_paths
+    )
+    return targets or None
 
 
 def resolve_codespace_members(
-    members: Sequence[OpenSpecMember],
+    targets: Sequence[CodespaceTarget],
 ) -> tuple[ResolvedMember, ...]:
     resolved: list[ResolvedMember] = []
-    seen: set[str] = set()
-    for member in members:
-        checkout = inspect_git_checkout(member.path)
+    positions: dict[str, int] = {}
+
+    def include(candidate: ResolvedMember) -> None:
+        position = positions.get(candidate.checkout_key)
+        if position is None:
+            positions[candidate.checkout_key] = len(resolved)
+            resolved.append(candidate)
+            return
+        existing = resolved[position]
+        if existing.access == "read_only" and candidate.access == "writable":
+            resolved[position] = candidate
+
+    for target in targets:
+        checkout = inspect_git_checkout(target.path)
         project_key = checkout_claim_key(checkout)
-        if project_key in seen:
-            continue
-        seen.add(project_key)
-        resolved.append(
+        include(
             ResolvedMember(
-                name=member.name,
+                name=target.name,
                 checkout=checkout,
                 checkout_key=project_key,
                 kind="project",
+                access=target.access,
             )
         )
+        if target.access == "read_only":
+            continue
         for relation in resolve_openspec_relations(checkout.root):
             if relation.role == "reference":
                 continue
             store_checkout = inspect_git_checkout(relation.root)
-            store_key = checkout_claim_key(store_checkout)
-            if store_key in seen:
-                continue
-            seen.add(store_key)
-            resolved.append(
+            include(
                 ResolvedMember(
                     name=relation.store_id,
                     checkout=store_checkout,
-                    checkout_key=store_key,
+                    checkout_key=checkout_claim_key(store_checkout),
                     kind="store",
-                    role="governing",
+                    access="writable",
                     store_id=relation.store_id,
                 )
             )

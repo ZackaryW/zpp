@@ -59,7 +59,7 @@ def test_codespace_index_is_validated_utf8_atomic_state(tmp_path: Path) -> None:
     assert load_codespace_index(root) == updated
     assert "\\u" not in (root / "index.json").read_text(encoding="utf-8")
 
-    (root / "index.json").write_text('{"schema_version":3}', encoding="utf-8")
+    (root / "index.json").write_text('{"schema_version":4}', encoding="utf-8")
     with pytest.raises(ValueError, match="invalid codespace index"):
         load_codespace_index(root)
 
@@ -190,7 +190,7 @@ def test_version_one_index_migrates_claim_projection_and_generated_debt(
 
     migrated = load_codespace_index(root)
 
-    assert migrated.schema_version == 2
+    assert migrated.schema_version == 3
     assert migrated.claims["active"].projection == CodespaceProjection(
         generation=1,
         structure_key=migrated.claims["active"].projection.structure_key,

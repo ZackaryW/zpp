@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 from zpp.utils.codespace_models import CodespaceClaim
+from zpp.utils.codespace_members import writable_members
 
 
 def _contains(root: Path, target: Path) -> bool:
@@ -24,7 +25,10 @@ def discover_codespace(
     active = [
         claim.instance_id
         for claim in claims
-        if any(_contains(member.effective_path, target) for member in claim.members)
+        if any(
+            _contains(member.effective_path, target)
+            for member in writable_members(claim.members)
+        )
     ]
     if len(active) > 1:
         raise ValueError("target belongs to multiple active codespace claims")
