@@ -1,7 +1,7 @@
 Feature: Gate concurrent writes through explicit ZPP codespaces
   ZPP users can claim complete physical checkouts on one machine, isolate real
-  conflicts, and open optional multi-folder views without treating those views
-  as write ownership.
+  conflicts, retain explicit read-only context, and open optional multi-folder
+  views without treating those views as write ownership.
 
   Scenario Outline: Lock an uncontested explicit target set and its writable OpenSpec authority
     Given <input source> names committed project checkouts
@@ -23,6 +23,17 @@ Feature: Gate concurrent writes through explicit ZPP codespaces
       | an explicit workspace descriptor |
       | an explicit path list            |
 
+  Scenario: Lock explicit read-only context without claiming it
+    Given explicit writable paths and explicit read-only repository paths have committed heads
+    And a read-only repository resolves external OpenSpec stores
+    And another active codespace already claims one selected read-only repository
+    When the user runs zpp codespace lock with the writable paths and --read-only paths
+    Then one codespace view records the writable and read-only repositories with their access roles
+    And only the complete writable OpenSpec closure is exclusively claimed
+    And no read-only repository is treated as a conflict or receives an isolated worktree
+    And related stores of a read-only repository are omitted unless independently selected
+    And the same read-only repository can remain in both codespaces
+
   Scenario: Resolve a path-free lock without using worksets as authority
     Given the current directory is inside a checkout claimed by one active ZPP codespace
     When the user runs zpp codespace lock without paths
@@ -34,6 +45,12 @@ Feature: Gate concurrent writes through explicit ZPP codespaces
     And locking does not guess the folders open in an editor
     When the user repeats locking with an explicit workspace descriptor or path list
     Then ZPP resolves the explicitly requested writable targets
+
+  Scenario: Do not infer a codespace from shared read-only context
+    Given the current directory belongs only to a read-only member of one or more codespaces
+    When the user runs a codespace command without an identity or activated environment
+    Then ZPP requires explicit codespace selection
+    And no claim or codespace view is changed
 
   Scenario: Competing processes cannot acquire the same checkout
     Given two ZPP processes on the same machine request claims containing the same physical checkout
@@ -61,6 +78,7 @@ Feature: Gate concurrent writes through explicit ZPP codespaces
     Examples:
       | unresolved target                                             |
       | a requested repository has no first commit                    |
+      | a selected read-only repository has no first commit           |
       | an associated store is neither writable nor reference-only    |
 
   Scenario: Report the complete overlapping checkout set before mitigation
@@ -96,12 +114,13 @@ Feature: Gate concurrent writes through explicit ZPP codespaces
     And ZPP offers to open the prepared codespace without changing the existing workspace
 
   Scenario: Opening maintains one optional projection per active codespace
-    Given a prepared codespace has no OpenSpec workset projection
+    Given a prepared codespace with writable and read-only members has no OpenSpec workset projection
     When the user declines the offer to open it
     Then the prepared codespace and its claim remain available without a projection
     And the current editor or agent remains unchanged
     When the user later runs zpp codespace open for the prepared codespace
     Then ZPP creates and opens one owned projection named `zpp-<instance>-g<generation>`
+    And the projection contains the complete writable and read-only view
     And repeated opening reuses that projection while its effective paths are unchanged
     When the codespace membership or effective paths later change
     Then opening replaces the projection with the next structural generation
@@ -114,22 +133,66 @@ Feature: Gate concurrent writes through explicit ZPP codespaces
     Then mitigation is rejected without reusing or overwriting the existing path or branch
     And the complete recorded state is unchanged
 
-  Scenario: Add writable paths by atomically replacing the claim target set
-    Given an active codespace has a durable claim and may have one optional projection
-    And additional committed paths and their external writable stores introduce no unresolved conflict
-    When the user runs zpp codespace add for those paths
-    Then the same codespace atomically owns the complete replacement target set
-    And no old or new target is left partially claimed
-    And no projection is created when the codespace had none
-    And an existing projection is replaced only for the changed effective paths
+  Scenario Outline: Edit every supported codespace membership transition
+    Given an active codespace contains committed writable and read-only members
+    When the user runs zpp codespace edit with <operation> for a committed path and --yes
+    Then ZPP applies <effect> to the complete successor shape
+    And the narrower zpp codespace add command is unavailable
 
-  Scenario: Preserve the original codespace when adding cannot complete
-    Given an active codespace has a durable claim and may have one optional projection
-    And adding paths would require mitigation
+    Examples:
+      | operation       | effect                                      |
+      | --add           | a new exclusively claimed writable member  |
+      | --add-read-only | a new non-owning read-only member           |
+      | --remove        | removal of the selected member              |
+      | --promote       | promotion from read-only to writable        |
+      | --demote        | demotion from writable to read-only         |
+
+  Scenario: Replace an edited codespace identity atomically
+    Given an active codespace has a durable mixed-access shape and may have one optional projection
     And the complete original codespace state is recorded
-    When the user declines mitigation or replacement creation fails
-    Then the original claim and optional projection remain active and unchanged
-    And no replacement target set is partially registered
+    When one valid edit changes several members and access roles
+    Then one successor identity and snapshot are calculated from the resulting roles, paths, and current full commits
+    And the successor atomically replaces the superseded active identity and writable claim
+    And no unlocked interval or partial successor shape is observable
+    And the superseded projection is removed or replaced with the successor projection
+    And later file changes and commits do not automatically recalculate the successor identity
+
+  Scenario: Confirm an interactive edit before replacing its existing lock
+    Given a shape-changing edit targets an active codespace without --yes or -y
+    When the user accepts the complete successor shape
+    Then ZPP separately asks to release the superseded lock
+    When the user accepts the release confirmation
+    Then ZPP performs the atomic successor replacement
+    Given instead the user declines either confirmation
+    Then the original identity, claim, shape, and optional projection remain unchanged
+
+  Scenario: Explicit yes authority covers both edit confirmations
+    Given a shape-changing edit targets an active codespace
+    When the user runs zpp codespace edit with --yes or -y
+    Then both replacement confirmations are preauthorized
+    And ZPP performs the same atomic successor replacement
+
+  Scenario: Reject an invalid or failed edit without changing the codespace
+    Given an edit contains contradictory operations or cannot complete validation, mitigation, or replacement
+    And the complete original codespace state is recorded
+    When the user attempts the edit
+    Then the edit is rejected before any partial successor becomes active
+    And the original identity, claim, shape, and optional projection remain unchanged
+
+  Scenario: Leave an unchanged edit as a no-op
+    Given an edit produces the existing effective membership, roles, and paths
+    When the user runs zpp codespace edit
+    Then the existing identity and snapshot remain unchanged
+    And ZPP requests no replacement confirmation
+
+  Scenario: Preserve generated work across a shape edit
+    Given an active codespace contains retained, removed, and demoted generated writable members
+    When the user confirms the shape edit
+    Then retained generated members transfer to the successor identity
+    And removed generated worktrees and branches remain reconciliation debt under the superseded identity
+    And a demoted member references its canonical checkout read-only in the successor
+    And its generated worktree and branch remain superseded reconciliation debt
+    And no generated content is deleted
 
   Scenario: Activate or execute within a mitigated private store registry
     Given a mitigated codespace maps original logical store ids to isolated store checkouts
@@ -141,10 +204,11 @@ Feature: Gate concurrent writes through explicit ZPP codespaces
     And neither path changes shared global OpenSpec registration
 
   Scenario: Inspect and release a codespace without deleting work
-    Given an active codespace has physical checkout targets and a durable claim
+    Given an active codespace has writable and read-only physical checkout targets and a durable claim
     And an unrelated user-owned OpenSpec workset exists
     When the user runs zpp codespace list and zpp codespace status
-    Then the active codespace and every claimed physical checkout are inspectable
+    Then the active codespace and every writable and read-only member are inspectable with their access roles
+    And no read-only member is reported as claimed, generated, or pending reconciliation merely for joining the view
     When the user runs zpp codespace unlock for the active codespace
     Then its write ownership and optional ZPP-owned projection are removed
     And every project and store worktree is preserved
@@ -187,6 +251,12 @@ Feature: Gate concurrent writes through explicit ZPP codespaces
 
   Scenario: Codespace lifecycle never merges isolated work
     Given a mitigated codespace records every generated project and store branch
-    When the user locks, adds, opens, unlocks, cleans, recovers, or finalizes that codespace
+    When the user locks, edits, opens, unlocks, cleans, recovers, or finalizes that codespace
     Then ZPP performs no automatic branch merge
     And the recorded branch metadata remains available until the explicit reconciliation workflow gives it a disposition
+
+  Scenario: Agent guards reject writes to associated read-only context
+    Given an agent is associated with a codespace containing a read-only repository
+    When a supported direct edit or write targets that read-only repository
+    Then the installed agent guard rejects the mutation as read-only in the associated codespace
+    And unsupported tools, arbitrary shell effects, manual editor actions, and cross-machine writes remain outside the guarantee
