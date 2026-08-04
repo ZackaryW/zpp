@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from importlib.resources.abc import Traversable
 from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING
 
 from zpp.utils.control_documents import validate_layer_config, validate_trigger_config
 from zpp.utils.models import (
@@ -14,6 +14,9 @@ from zpp.utils.models import (
     ZppValidationError,
 )
 from zpp.utils.trait_documents import parse_trait_document
+
+if TYPE_CHECKING:
+    from importlib.resources.abc import Traversable
 
 
 def collect_authored_layer(root: Traversable) -> AuthoredLayerSnapshot:

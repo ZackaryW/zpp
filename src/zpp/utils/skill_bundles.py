@@ -4,13 +4,15 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from hashlib import sha256
 from importlib.resources import files
-from importlib.resources.abc import Traversable
 from pathlib import Path, PurePosixPath
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from zpp.utils.models import ManagedStateError
+
+if TYPE_CHECKING:
+    from importlib.resources.abc import Traversable
 
 
 WORKFLOW_SKILL_NAMES = (
