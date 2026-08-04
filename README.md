@@ -11,7 +11,7 @@ uv tool install git+https://github.com/ZackaryW/zpp.git
 zpp --version
 ```
 
-ZPP requires Python 3.14 or newer. The installed command is independent from
+ZPP requires Python 3.10 or newer. The installed command is independent from
 the optional governance plugins an agent application may load.
 
 ## Initialize ZPP and agent hooks

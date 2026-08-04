@@ -5,6 +5,7 @@ import os
 from pathlib import Path, PurePosixPath
 import shutil
 
+from zpp.utils.globs import glob_full_match
 from zpp.utils.models import LayerControls, TriggerRule
 
 
@@ -38,7 +39,7 @@ def workspace_contains_any(target: Path, patterns: Sequence[str]) -> bool:
         ]
         for name in files:
             relative = PurePosixPath((root / name).relative_to(target).as_posix())
-            if any(relative.full_match(pattern) for pattern in patterns):
+            if any(glob_full_match(str(relative), pattern) for pattern in patterns):
                 return True
     return False
 
