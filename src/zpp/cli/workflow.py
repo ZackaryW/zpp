@@ -27,8 +27,22 @@ def workflow_install(
         bool,
         typer.Option("--force", help="Install locally despite a compatible global bundle."),
     ] = False,
+    with_openspec: Annotated[
+        bool,
+        typer.Option(
+            "--with-openspec",
+            help="Also bootstrap repository-local OpenSpec operation skills.",
+        ),
+    ] = False,
 ) -> None:
-    _run_workflow_command("install", target, global_, agent, force=force)
+    _run_workflow_command(
+        "install",
+        target,
+        global_,
+        agent,
+        force=force,
+        bootstrap_openspec=with_openspec,
+    )
 
 
 @workflow_app.command("update")
@@ -68,11 +82,19 @@ def _run_workflow_command(
     agent: list[AgentOption] | None,
     *,
     force: bool = False,
+    bootstrap_openspec: bool = False,
 ) -> None:
     selected = _workflow_agents(agent)
     if not selected:
         return
-    _execute_workflow_command(operation, target, global_, selected, force=force)
+    _execute_workflow_command(
+        operation,
+        target,
+        global_,
+        selected,
+        force=force,
+        bootstrap_openspec=bootstrap_openspec,
+    )
 
 
 def _execute_workflow_command(
@@ -82,6 +104,7 @@ def _execute_workflow_command(
     selected: tuple[str, ...],
     *,
     force: bool = False,
+    bootstrap_openspec: bool = False,
 ) -> None:
     if global_ and target is not None:
         raise typer.BadParameter("--global does not accept a local target")
@@ -95,6 +118,7 @@ def _execute_workflow_command(
             agents=as_agent_names(selected),
             operation=operation,  # type: ignore[arg-type]
             force=force,
+            bootstrap_openspec=bootstrap_openspec,
         )
         _emit_workflow_report(report)
 

@@ -41,18 +41,31 @@ def plan_agent_integrations(
     artifact = load_packaged_pi_extension() if "pi" in agents else None
     plans: list[FilesystemMutationPlan] = []
     for agent in agents:
-        if agent == "pi":
-            assert artifact is not None
-            plans.append(_plan_pi(home, artifact))
-        elif agent == "codex":
-            destination = home / ".codex" / "hooks.json"
-            current, reconciled = _prepare_codex(destination)
-            plans.append(_plan_json(destination, current, reconciled))
-        else:
-            destination = home / ".claude" / "settings.json"
-            current, reconciled = _prepare_claude_code(destination)
-            plans.append(_plan_json(destination, current, reconciled))
+        try:
+            if agent == "pi":
+                assert artifact is not None
+                plans.append(_plan_pi(home, artifact))
+            elif agent == "codex":
+                destination = home / ".codex" / "hooks.json"
+                current, reconciled = _prepare_codex(destination)
+                plans.append(_plan_json(destination, current, reconciled))
+            else:
+                destination = home / ".claude" / "settings.json"
+                current, reconciled = _prepare_claude_code(destination)
+                plans.append(_plan_json(destination, current, reconciled))
+        except ManagedStateError as error:
+            raise ManagedStateError(
+                f"{_agent_destination(home, agent)}: {error}"
+            ) from error
     return merge_mutation_plans(plans)
+
+
+def _agent_destination(home: Path, agent: AgentName) -> Path:
+    if agent == "pi":
+        return home / ".pi" / "agent" / "extensions" / "zpp" / "index.ts"
+    if agent == "codex":
+        return home / ".codex" / "hooks.json"
+    return home / ".claude" / "settings.json"
 
 
 def inspect_pi_extension(

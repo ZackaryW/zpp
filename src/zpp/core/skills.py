@@ -8,7 +8,18 @@ from typing import Literal
 from zpp import __version__
 from zpp.core.errors import ZppDomainError
 from zpp.utils.git_layers import git_worktree_root
-from zpp.utils.models import AgentName
+from zpp.utils.agent_bootstrap import plan_agent_integrations
+from zpp.utils.filesystem_mutation import apply_mutation_plan, merge_mutation_plans
+from zpp.utils.models import AgentName, ManagedStateError
+from zpp.utils.openspec_projections import (
+    OpenSpecProjectionInspection,
+    inspect_openspec_projection,
+    plan_openspec_projection,
+)
+from zpp.utils.openspec_skills import (
+    detect_openspec_version,
+    generate_openspec_skill_bundles,
+)
 from zpp.utils.paths import canonicalize_existing_directory
 from zpp.utils.skill_bundles import SkillProjectionInspection, load_packaged_skill_bundle
 from zpp.utils.skill_lifecycle import (
@@ -19,8 +30,14 @@ from zpp.utils.skill_lifecycle import (
     plan_skill_install,
     plan_skill_remove,
     plan_skill_update,
+    mutation_plan_for_skill_lifecycle,
 )
-from zpp.utils.skill_projections import inspect_skill_scopes, skill_projection_roots
+from zpp.utils.skill_projections import (
+    SkillProjection,
+    inspect_skill_scopes,
+    openspec_projection_roots,
+    skill_projection_roots,
+)
 
 
 SkillOperation = Literal["install", "update", "remove"]
@@ -43,6 +60,7 @@ def manage_workflow_skills(
     agents: Iterable[AgentName],
     operation: SkillOperation,
     force: bool = False,
+    bootstrap_openspec: bool = False,
 ) -> SkillLifecycleReport:
     bundle = load_packaged_skill_bundle(__version__)
     selected_agents = tuple(dict.fromkeys(agents))
@@ -88,13 +106,94 @@ def manage_workflow_skills(
         plan = plan_skill_update(bundle, selected)
     else:
         plan = plan_skill_remove(selected)
-    apply_skill_lifecycle(bundle, plan)
+
+    skill_mutation = mutation_plan_for_skill_lifecycle(bundle, plan)
+    if operation == "remove":
+        apply_mutation_plan(skill_mutation)
+    else:
+        mutations = [skill_mutation, plan_agent_integrations(home, selected_agents)]
+        mutations.extend(
+            _plan_openspec_mutations(
+                home=home,
+                target=local_target,
+                scope=scope,
+                agents=selected_agents,
+                operation=operation,
+                bootstrap_openspec=bootstrap_openspec,
+            )
+        )
+        apply_mutation_plan(merge_mutation_plans(mutations))
 
     current = inspect_skill_scopes(comparison_projections, bundle)
     return SkillLifecycleReport(
         tuple(action.kind for action in plan.actions),
         differing_managed_versions(current),
         _coexisting_agents(current),
+    )
+
+
+def _plan_openspec_mutations(
+    *,
+    home: Path,
+    target: Path | None,
+    scope: SkillScope,
+    agents: tuple[AgentName, ...],
+    operation: Literal["install", "update"],
+    bootstrap_openspec: bool,
+):
+    if scope == "local" and operation == "install" and not bootstrap_openspec:
+        return ()
+
+    projections = openspec_projection_roots(
+        home=home,
+        target=target,
+        scope=scope,
+        agents=agents,
+    )
+    detected_version = detect_openspec_version()
+    inspected: list[tuple[SkillProjection, OpenSpecProjectionInspection]] = []
+    for projection in projections:
+        agent = projection.agents[0]
+        inspection = inspect_openspec_projection(
+            projection.root,
+            agent,
+            detected_version,
+        )
+        if inspection.state == "conflict":
+            raise ManagedStateError(
+                f"conflicting OpenSpec skill projection: {projection.root}"
+            )
+        inspected.append((projection, inspection))
+
+    needed = tuple(
+        projection.agents[0]
+        for projection, inspection in inspected
+        if inspection.state == "outdated"
+        or (inspection.state == "absent" and scope == "global")
+        or (
+            inspection.state == "absent"
+            and scope == "local"
+            and operation == "install"
+            and bootstrap_openspec
+        )
+    )
+    if not needed:
+        return ()
+    generated = {
+        bundle.agent: bundle
+        for bundle in generate_openspec_skill_bundles(
+            needed,
+            detected_version=detected_version,
+        )
+    }
+    return tuple(
+        plan_openspec_projection(
+            projection.root,
+            generated[projection.agents[0]],
+            inspection,
+        )
+        for projection, inspection in inspected
+        if projection.agents[0] in generated
     )
 
 

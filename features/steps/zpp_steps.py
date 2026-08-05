@@ -15,8 +15,16 @@ import yaml
 from behave import given, then, use_step_matcher, when
 
 from zpp.cli import app
-from zpp.utils.models import CancelledAgentSelection, ConfirmedAgentSelection
+from zpp.utils.models import (
+    CancelledAgentSelection,
+    ConfirmedAgentSelection,
+    ManagedStateError,
+)
 from zpp.utils.openspec_adapter import OpenSpecWorkset
+from zpp.utils.openspec_skills import (
+    GeneratedOpenSpecBundle,
+    OPENSPEC_CORE_SKILL_NAMES,
+)
 from zpp.utils.skill_bundles import SkillFile, fingerprint_skill_files
 
 
@@ -32,6 +40,48 @@ def invoke(context, arguments: list[str], *, input_text: str | None = None):
         return ConfirmedAgentSelection(tuple(context.selector_answer))
 
     with ExitStack() as stack:
+        def generate_openspec(agents, *, detected_version, **_kwargs):
+            error = getattr(context, "openspec_generation_error", None)
+            if error is not None:
+                raise error
+            selected = tuple(agents)
+            context.openspec_generation_calls = getattr(
+                context, "openspec_generation_calls", []
+            )
+            context.openspec_generation_calls.append(
+                (selected, detected_version)
+            )
+            bundles = []
+            for agent in selected:
+                files = tuple(
+                    SkillFile(
+                        f"{name}/SKILL.md",
+                        f"{agent}:{detected_version}:{name}\n".encode("utf-8"),
+                    )
+                    for name in OPENSPEC_CORE_SKILL_NAMES
+                )
+                bundles.append(
+                    GeneratedOpenSpecBundle(
+                        agent,
+                        detected_version,
+                        files,
+                        fingerprint_skill_files(files),
+                    )
+                )
+            return tuple(bundles)
+
+        stack.enter_context(
+            patch(
+                "zpp.core.skills.detect_openspec_version",
+                return_value=getattr(context, "openspec_version", "1.7.0"),
+            )
+        )
+        stack.enter_context(
+            patch(
+                "zpp.core.skills.generate_openspec_skill_bundles",
+                side_effect=generate_openspec,
+            )
+        )
         stack.enter_context(patch(
             "zpp.cli.initialization.interactive_terminal_available",
             return_value=context.interactive,
@@ -381,9 +431,84 @@ def step_missing_user_entries(context):
 
 
 @given("Pi, Codex, and Claude Code have no ZPP integration")
+@given("Codex, Pi, and Claude Code have no ZPP integration")
 def step_no_agent_integrations(context):
     context.agents_before = snapshot(context.home)
     assert not any(agent_path(context, name).exists() for name in ("pi", "codex", "claude"))
+
+
+@given("Claude Code has the exact historical ZPP-managed SessionStart hook invoking zpp resolve")
+def step_exact_historical_claude_hook(context):
+    destination = agent_path(context, "claude")
+    destination.parent.mkdir()
+    document = {
+        "theme": "dark",
+        "hooks": {
+            "SessionStart": [
+                {
+                    "matcher": "startup|resume|clear|compact|fork",
+                    "hooks": [{"type": "command", "command": "zpp resolve"}],
+                }
+            ]
+        },
+    }
+    destination.write_text(
+        json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    context.unrelated_claude_setting = document["theme"]
+
+
+@given("every other Claude Code destination required by workflow installation can be updated safely")
+def step_other_claude_destinations_safe(context):
+    assert not workflow_skill_root(context, "claude", scope="global").exists()
+    assert not openspec_skill_root(context, "claude", scope="global").exists()
+
+
+@then("the historical hook is replaced by the current agent-qualified ZPP lifecycle integration")
+def step_historical_hook_upgraded(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert_current_agent_integration(context, "claude")
+    source = agent_path(context, "claude").read_text(encoding="utf-8")
+    assert '"command": "zpp resolve"' not in source
+
+
+@then("the current Claude Code codespace guards are installed")
+def step_current_claude_guard_installed(context):
+    assert_current_agent_integration(context, "claude")
+
+
+@then("unrelated Claude Code settings are byte-for-byte unchanged")
+def step_unrelated_claude_settings_preserved(context):
+    document = json.loads(agent_path(context, "claude").read_text(encoding="utf-8"))
+    assert document["theme"] == context.unrelated_claude_setting
+
+
+@given("Claude Code has a user-authored SessionStart hook resembling the historical ZPP hook")
+def step_ambiguous_historical_claude_hook(context):
+    destination = agent_path(context, "claude")
+    destination.parent.mkdir()
+    document = {
+        "hooks": {
+            "SessionStart": [
+                {
+                    "matcher": "startup",
+                    "hooks": [{"type": "command", "command": "zpp resolve"}],
+                }
+            ]
+        }
+    }
+    destination.write_text(json.dumps(document), encoding="utf-8")
+
+
+@given("every Claude Code integration destination is recorded")
+def step_record_claude_integration_destinations(context):
+    context.claude_integration_before = snapshot(context.home / ".claude")
+
+
+@then("every Claude Code integration destination is byte-for-byte unchanged")
+def step_claude_integration_destinations_unchanged(context):
+    assert snapshot(context.home / ".claude") == context.claude_integration_before
 
 
 @when("the user requests the ZPP version")
@@ -1971,7 +2096,28 @@ def workflow_skill_root(
     target: Path | None = None,
 ) -> Path:
     base = context.home if scope == "global" else (target or context.project)
-    return base / (".claude/skills" if agent == "claude" else ".agents/skills")
+    if agent == "codex":
+        return base / ".agents" / "skills"
+    if agent == "pi":
+        relative = ".pi/agent/skills" if scope == "global" else ".pi/skills"
+        return base / relative
+    return base / ".claude" / "skills"
+
+
+def openspec_skill_root(
+    context,
+    agent: str,
+    *,
+    scope: str,
+    target: Path | None = None,
+) -> Path:
+    base = context.home if scope == "global" else (target or context.project)
+    if agent == "codex":
+        return base / ".codex" / "skills"
+    if agent == "pi":
+        relative = ".pi/agent/skills" if scope == "global" else ".pi/skills"
+        return base / relative
+    return base / ".claude" / "skills"
 
 
 def workflow_skill_snapshot(context) -> tuple[dict, dict]:
@@ -1994,6 +2140,43 @@ def assert_workflow_projection(context, root: Path) -> None:
         context.workflow_skill_names
     )
     assert all((root / name / "SKILL.md").is_file() for name in context.workflow_skill_names)
+
+
+def assert_openspec_projection(
+    root: Path,
+    *,
+    agent: str,
+    version: str | None,
+) -> None:
+    manifest_path = root / ".zpp-openspec-skills.json"
+    assert manifest_path.is_file()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["agent"] == agent
+    assert manifest["openspec_version"] == version
+    assert set(path.split("/", 1)[0] for path in manifest["files"]) == set(
+        OPENSPEC_CORE_SKILL_NAMES
+    )
+    assert all((root / name / "SKILL.md").is_file() for name in OPENSPEC_CORE_SKILL_NAMES)
+
+
+def assert_current_agent_integration(context, agent: str) -> None:
+    destination = agent_path(context, agent)
+    assert destination.is_file()
+    if agent == "pi":
+        source = destination.read_text(encoding="utf-8")
+        assert '"resolve", "--agent", "pi"' in source
+        assert '"codespace", "guard", "--agent", "pi"' in source
+        return
+    document = json.loads(destination.read_text(encoding="utf-8"))
+    expected = f"zpp resolve --agent {agent}"
+    commands = tuple(
+        handler["command"]
+        for groups in document["hooks"].values()
+        for group in groups
+        for handler in group["hooks"]
+    )
+    assert expected in commands
+    assert f"zpp codespace guard --agent {agent}" in commands
 
 
 @given("the packaged ZPP workflow bundle contains all seven permanent skills")
@@ -2025,12 +2208,14 @@ def step_skill_git_root(context):
 def step_no_local_workflow_skills(context):
     git_init(context.project)
     assert not workflow_skill_root(context, "codex", scope="local").exists()
+    assert not workflow_skill_root(context, "pi", scope="local").exists()
     assert not workflow_skill_root(context, "claude", scope="local").exists()
 
 
 @given("Codex, Pi, and Claude Code have no global ZPP workflow skills")
 def step_no_global_workflow_skills(context):
     assert not workflow_skill_root(context, "codex", scope="global").exists()
+    assert not workflow_skill_root(context, "pi", scope="global").exists()
     assert not workflow_skill_root(context, "claude", scope="global").exists()
 
 
@@ -2087,6 +2272,31 @@ def step_local_claude_bundle(context):
     )
 
 
+@when("the user runs zpp workflow install --global with agent Claude Code")
+def step_install_global_claude(context):
+    invoke(context, ["workflow", "install", "--global", "--agent", "claude"])
+
+
+@when("the user runs zpp workflow install --global with agent Codex")
+def step_install_global_codex(context):
+    invoke(context, ["workflow", "install", "--global", "--agent", "codex"])
+
+
+@then("one managed bundle is installed in the repository-local Codex skill scope")
+def step_local_codex_bundle(context):
+    assert_workflow_projection(
+        context,
+        workflow_skill_root(context, "codex", scope="local"),
+    )
+
+
+@then("one managed bundle is installed in the repository-local Pi skill scope under .pi")
+def step_local_pi_bundle(context):
+    root = workflow_skill_root(context, "pi", scope="local")
+    assert root == context.project / ".pi" / "skills"
+    assert_workflow_projection(context, root)
+
+
 @then("one managed bundle is installed in the user-global shared Codex and Pi skill scope")
 def step_global_shared_bundle(context):
     assert_workflow_projection(
@@ -2100,6 +2310,151 @@ def step_global_claude_bundle(context):
     assert_workflow_projection(
         context,
         workflow_skill_root(context, "claude", scope="global"),
+    )
+
+
+@then("one managed bundle is installed in the user-global Codex skill scope")
+def step_global_codex_bundle(context):
+    assert_workflow_projection(
+        context,
+        workflow_skill_root(context, "codex", scope="global"),
+    )
+
+
+@then("one managed bundle is installed in the user-global Pi skill scope under .pi")
+def step_global_pi_bundle(context):
+    root = workflow_skill_root(context, "pi", scope="global")
+    assert root == context.home / ".pi" / "agent" / "skills"
+    assert_workflow_projection(context, root)
+
+
+@given("Codex, Pi, and Claude Code have no global OpenSpec operation skills")
+def step_no_global_openspec_skills(context):
+    assert all(
+        not openspec_skill_root(context, agent, scope="global").exists()
+        for agent in ("codex", "pi", "claude")
+    )
+
+
+@given("Codex, Pi, and Claude Code have no local workflow skills")
+def step_no_local_workflow_integration(context):
+    step_no_local_workflow_skills(context)
+    assert all(
+        not openspec_skill_root(context, agent, scope="local").exists()
+        for agent in ("codex", "pi", "claude")
+    )
+
+
+@when("the user requests local OpenSpec bootstrap during workflow installation for Codex, Pi, and Claude Code")
+def step_install_all_agents_local_with_openspec(context):
+    invoke(
+        context,
+        [
+            "workflow",
+            "install",
+            "--with-openspec",
+            "--agent",
+            "codex",
+            "--agent",
+            "pi",
+            "--agent",
+            "claude",
+        ],
+    )
+
+
+@then("every selected agent has the managed ZPP workflow bundle in its native local skill scope")
+def step_all_local_zpp_bundles(context):
+    assert context.result.exit_code == 0, context.result.output
+    for agent in ("codex", "pi", "claude"):
+        assert_workflow_projection(
+            context,
+            workflow_skill_root(context, agent, scope="local"),
+        )
+
+
+@then("Codex has generated OpenSpec core operation skills under .codex")
+def step_local_codex_openspec(context):
+    assert_openspec_projection(
+        openspec_skill_root(context, "codex", scope="local"),
+        agent="codex",
+        version=context.openspec_version if hasattr(context, "openspec_version") else "1.7.0",
+    )
+
+
+@then("Pi has generated OpenSpec core operation skills under .pi")
+def step_local_pi_openspec(context):
+    assert_openspec_projection(
+        openspec_skill_root(context, "pi", scope="local"),
+        agent="pi",
+        version=context.openspec_version if hasattr(context, "openspec_version") else "1.7.0",
+    )
+
+
+@then("Claude Code has generated OpenSpec core operation skills under .claude")
+def step_local_claude_openspec(context):
+    assert_openspec_projection(
+        openspec_skill_root(context, "claude", scope="local"),
+        agent="claude",
+        version=context.openspec_version if hasattr(context, "openspec_version") else "1.7.0",
+    )
+
+
+@then("every selected agent has its generated OpenSpec core operation skills")
+def step_all_global_openspec_bundles(context):
+    for agent in ("codex", "pi", "claude"):
+        assert_openspec_projection(
+            openspec_skill_root(context, agent, scope="global"),
+            agent=agent,
+            version=getattr(context, "openspec_version", "1.7.0"),
+        )
+
+
+@then("every selected agent has the current ZPP-managed native lifecycle hooks")
+def step_all_current_native_hooks(context):
+    for agent in ("codex", "pi", "claude"):
+        assert_current_agent_integration(context, agent)
+
+
+@then("both selected agents have the current ZPP-managed native lifecycle hooks")
+def step_selected_current_native_hooks(context):
+    for agent in ("pi", "claude"):
+        assert_current_agent_integration(context, agent)
+
+
+@then("no repository-local OpenSpec operation skills are installed")
+def step_no_local_openspec_installed(context):
+    for agent in ("codex", "pi", "claude"):
+        root = openspec_skill_root(context, agent, scope="local")
+        assert not (root / ".zpp-openspec-skills.json").exists()
+        assert all(not (root / name).exists() for name in OPENSPEC_CORE_SKILL_NAMES)
+
+
+@then("the detected OpenSpec version is recorded for every generated projection")
+def step_global_openspec_versions_recorded(context):
+    for agent in ("codex", "pi", "claude"):
+        manifest = json.loads(
+            (
+                openspec_skill_root(context, agent, scope="global")
+                / ".zpp-openspec-skills.json"
+            ).read_text(encoding="utf-8")
+        )
+        assert manifest["openspec_version"] == "1.7.0"
+
+
+@then("OpenSpec generation used an isolated project beneath the platform temporary directory")
+def step_openspec_generation_boundary_used(context):
+    assert context.openspec_generation_calls == [
+        (("codex", "pi", "claude"), "1.7.0")
+    ]
+
+
+@then("the temporary project is removed")
+@then("the isolated temporary project is removed")
+def step_no_generation_temporary_project(context):
+    assert not any(
+        path.name.startswith("zpp-openspec-")
+        for path in context.sandbox.rglob("*")
     )
 
 
@@ -2121,8 +2476,8 @@ def step_no_authored_layer_after_skills(context):
 
 @then("no repository-local skill scope is changed")
 def step_no_local_skill_scope(context):
-    assert not workflow_skill_root(context, "codex", scope="local").exists()
-    assert not workflow_skill_root(context, "claude", scope="local").exists()
+    for agent in ("codex", "pi", "claude"):
+        assert not workflow_skill_root(context, agent, scope="local").exists()
 
 
 @given('"C:\\work\\repo\\nested" is an existing directory inside a Git worktree')
@@ -2231,6 +2586,18 @@ def step_codex_shared_only(context):
         scope="local",
     )
     assert not (context.project / ".codex" / "skills").exists()
+
+
+@then("Pi uses its .pi local skill scope")
+def step_pi_uses_local_pi_scope(context):
+    root = workflow_skill_root(context, "pi", scope="local")
+    assert root == context.project / ".pi" / "skills"
+    assert_workflow_projection(context, root)
+
+
+@then("Codex receives no workflow projection")
+def step_codex_receives_no_projection(context):
+    assert not workflow_skill_root(context, "codex", scope="local").exists()
 
 
 @when("the user submits zpp workflow install with no checked agent")
@@ -2400,6 +2767,124 @@ def step_unrelated_skills_unchanged(context):
     assert all(path.read_bytes() == source for path, source in context.unrelated_skill_bytes.items())
 
 
+@given("Pi has a compatible managed global ZPP workflow bundle under .pi")
+def step_complete_global_pi_bundle(context):
+    result = invoke(context, ["workflow", "install", "--global", "--agent", "pi"])
+    assert result.exit_code == 0, result.output
+    context.pi_skill_root = workflow_skill_root(context, "pi", scope="global")
+    assert context.pi_skill_root == context.home / ".pi" / "agent" / "skills"
+    context.results.clear()
+    context.openspec_generation_calls.clear()
+
+
+@given("Pi has generated OpenSpec core operation skills for the detected recorded version")
+def step_pi_has_compatible_generated_skills(context):
+    assert_openspec_projection(
+        openspec_skill_root(context, "pi", scope="global"),
+        agent="pi",
+        version="1.7.0",
+    )
+
+
+@given("Pi has the current ZPP-managed native lifecycle hooks")
+def step_pi_has_current_hooks(context):
+    assert_current_agent_integration(context, "pi")
+
+
+@given("unrelated files surround every managed projection")
+def step_unrelated_files_surround_complete_pi(context):
+    skill_neighbor = context.pi_skill_root / "third-party" / "SKILL.md"
+    skill_neighbor.parent.mkdir()
+    skill_neighbor.write_text("keep skill", encoding="utf-8")
+    hook_neighbor = context.home / ".pi" / "agent" / "extensions" / "keep.ts"
+    hook_neighbor.write_text("keep hook", encoding="utf-8")
+    context.unrelated_skill_bytes = {
+        skill_neighbor: skill_neighbor.read_bytes(),
+        hook_neighbor: hook_neighbor.read_bytes(),
+    }
+    context.complete_pi_before = snapshot(context.home / ".pi")
+
+
+@when("the user runs zpp workflow install --global with agent Pi twice")
+def step_install_complete_pi_twice(context):
+    invoke(context, ["workflow", "install", "--global", "--agent", "pi"])
+    invoke(context, ["workflow", "install", "--global", "--agent", "pi"])
+
+
+@then("every managed projection is byte-for-byte unchanged")
+def step_complete_pi_unchanged(context):
+    assert snapshot(context.home / ".pi") == context.complete_pi_before
+
+
+@then("OpenSpec skills are not regenerated")
+def step_openspec_not_regenerated(context):
+    assert context.openspec_generation_calls == []
+
+
+@given("Pi has no global ZPP integration")
+def step_pi_no_global_integration(context):
+    context.pi_global_before = snapshot(context.home / ".pi")
+
+
+@given("Claude Code has an unmanaged global conflict at a required OpenSpec skill destination")
+def step_claude_unmanaged_openspec_conflict(context):
+    root = openspec_skill_root(context, "claude", scope="global")
+    context.skill_conflict = root / OPENSPEC_CORE_SKILL_NAMES[0] / "SKILL.md"
+    context.skill_conflict.parent.mkdir(parents=True)
+    context.skill_conflict.write_text("user-owned", encoding="utf-8")
+    context.skill_conflict_before = context.skill_conflict.read_bytes()
+
+
+@when("the user runs zpp workflow install --global with agents Pi and Claude Code")
+def step_install_global_pi_claude(context):
+    invoke(
+        context,
+        [
+            "workflow",
+            "install",
+            "--global",
+            "--agent",
+            "pi",
+            "--agent",
+            "claude",
+        ],
+    )
+
+
+@then("Pi's workflow skills, OpenSpec skills, and native hooks remain unchanged")
+def step_pi_global_integration_unchanged(context):
+    assert snapshot(context.home / ".pi") == context.pi_global_before
+
+
+@given("every selected agent integration is recorded")
+def step_record_selected_integrations(context):
+    context.failure_agents = ("codex", "pi")
+    context.selected_integration_before = snapshot(context.home)
+
+
+@given("OpenSpec cannot generate one selected agent's core operation skills")
+def step_openspec_generation_fails(context):
+    context.openspec_generation_error = ManagedStateError("generation failed")
+
+
+@when("the user runs zpp workflow install --global for those agents")
+def step_install_global_failure_agents(context):
+    arguments = ["workflow", "install", "--global"]
+    for agent in context.failure_agents:
+        arguments.extend(("--agent", agent))
+    invoke(context, arguments)
+
+
+@then("installation fails before committing any selected-agent change")
+def step_generation_failure_rejected(context):
+    assert context.result.exit_code == 1, context.result.output
+
+
+@then("every selected agent integration is byte-for-byte unchanged")
+def step_selected_integrations_unchanged(context):
+    assert snapshot(context.home) == context.selected_integration_before
+
+
 def create_unmanaged_local_skill_conflict(context, agent: str) -> None:
     git_init(context.project)
     root = workflow_skill_root(context, agent, scope="local")
@@ -2486,6 +2971,124 @@ def step_claude_scopes_unchanged(context):
 @then("the differing Codex scope versions are reported")
 def step_codex_difference_reported(context):
     assert "versions differ for codex" in context.result.stdout.lower()
+
+
+@given("Codex has a managed global workflow integration")
+def step_codex_complete_global_integration(context):
+    result = invoke(context, ["workflow", "install", "--global", "--agent", "codex"])
+    assert result.exit_code == 0, result.output
+    context.codex_global_root = workflow_skill_root(context, "codex", scope="global")
+    context.codex_openspec_root = openspec_skill_root(context, "codex", scope="global")
+    context.results.clear()
+    context.openspec_generation_calls.clear()
+
+
+@given("its OpenSpec projection records the currently detected OpenSpec version")
+def step_projection_records_current_version(context):
+    manifest = json.loads(
+        (context.codex_openspec_root / ".zpp-openspec-skills.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert manifest["openspec_version"] == "1.7.0"
+
+
+@given("the generated OpenSpec skills have distinguishable compatible content")
+def step_record_compatible_openspec_content(context):
+    context.codex_openspec_before = snapshot(context.codex_openspec_root)
+
+
+@then("the ZPP workflow bundle is updated when needed")
+def step_zpp_bundle_update_succeeds(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert_workflow_projection(context, context.codex_global_root)
+
+
+@then("the generated OpenSpec skills are byte-for-byte unchanged")
+def step_codex_openspec_unchanged(context):
+    assert snapshot(context.codex_openspec_root) == context.codex_openspec_before
+    assert context.openspec_generation_calls == []
+
+
+@given("Claude Code has a managed global workflow integration")
+def step_claude_complete_global_integration(context):
+    result = invoke(context, ["workflow", "install", "--global", "--agent", "claude"])
+    assert result.exit_code == 0, result.output
+    context.claude_global_root = workflow_skill_root(context, "claude", scope="global")
+    context.claude_openspec_root = openspec_skill_root(context, "claude", scope="global")
+    unrelated = context.claude_openspec_root / "third-party" / "SKILL.md"
+    unrelated.parent.mkdir()
+    unrelated.write_text("keep", encoding="utf-8")
+    context.unrelated_claude_bytes = {unrelated: unrelated.read_bytes()}
+    context.results.clear()
+    context.openspec_generation_calls.clear()
+
+
+@given("its OpenSpec projection records a different version from the detected OpenSpec version")
+def step_claude_projection_version_changes(context):
+    manifest = json.loads(
+        (context.claude_openspec_root / ".zpp-openspec-skills.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert manifest["openspec_version"] == "1.7.0"
+    context.openspec_version = "1.8.0"
+
+
+@then("the OpenSpec core operation skills are regenerated for Claude Code")
+def step_claude_openspec_regenerated(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert context.openspec_generation_calls == [(("claude",), "1.8.0")]
+    content = (
+        context.claude_openspec_root
+        / OPENSPEC_CORE_SKILL_NAMES[0]
+        / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    assert "1.8.0" in content
+
+
+@then("the newly detected OpenSpec version is recorded")
+def step_claude_new_version_recorded(context):
+    manifest = json.loads(
+        (context.claude_openspec_root / ".zpp-openspec-skills.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert manifest["openspec_version"] == "1.8.0"
+
+
+@then("unrelated Claude Code content is byte-for-byte unchanged")
+def step_unrelated_claude_content_unchanged(context):
+    assert all(
+        path.read_bytes() == content
+        for path, content in context.unrelated_claude_bytes.items()
+    )
+
+
+@given("OpenSpec can generate its core operation skills but cannot report its version")
+def step_openspec_version_unknown(context):
+    context.openspec_version = None
+
+
+@then("the generated OpenSpec projection records an unknown version")
+def step_unknown_version_recorded(context):
+    manifest = json.loads(
+        (
+            openspec_skill_root(context, "codex", scope="global")
+            / ".zpp-openspec-skills.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert manifest["openspec_version"] is None
+
+
+@then("installation otherwise completes normally")
+def step_install_otherwise_normal(context):
+    assert context.result.exit_code == 0, context.result.output
+    assert_workflow_projection(
+        context,
+        workflow_skill_root(context, "codex", scope="global"),
+    )
+    assert_current_agent_integration(context, "codex")
 
 
 @given("Codex has a historical managed global workflow bundle that predates one permanent skill")
@@ -2611,6 +3214,34 @@ def step_managed_local_claude(context):
     context.results.clear()
 
 
+@given("Pi has generated local OpenSpec operation skills")
+def step_pi_generated_local_openspec(context):
+    result = invoke(
+        context,
+        ["workflow", "install", "--with-openspec", "--agent", "pi"],
+    )
+    assert result.exit_code == 0, result.output
+    context.pi_openspec_root = openspec_skill_root(context, "pi", scope="local")
+    manifest_path = context.pi_openspec_root / ".zpp-openspec-skills.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    context.pi_openspec_before = {
+        manifest_path: manifest_path.read_bytes(),
+        **{
+            context.pi_openspec_root / Path(relative): (
+                context.pi_openspec_root / Path(relative)
+            ).read_bytes()
+            for relative in manifest["files"]
+        },
+    }
+    context.results.clear()
+
+
+@given("Pi has current ZPP-managed native lifecycle hooks")
+def step_record_pi_current_hooks(context):
+    assert_current_agent_integration(context, "pi")
+    context.pi_hook_before = agent_path(context, "pi").read_bytes()
+
+
 @when("the user runs zpp workflow remove with agent Pi and declines confirmation")
 def step_decline_skill_remove(context):
     context.skill_state_before = workflow_skill_snapshot(context)
@@ -2623,10 +3254,24 @@ def step_confirm_skill_remove(context):
 
 
 @then("only the managed shared Codex and Pi projection is removed")
+@then("only the managed Pi ZPP workflow projection is removed")
 def step_shared_projection_removed(context):
     assert context.result.exit_code == 0, context.result.output
     assert not (context.pi_skill_root / ".zpp-workflow-skills.json").exists()
     assert all(not (context.pi_skill_root / name).exists() for name in context.workflow_skill_names)
+
+
+@then("Pi's generated OpenSpec operation skills are unchanged")
+def step_pi_openspec_preserved_on_remove(context):
+    assert all(
+        path.read_bytes() == content
+        for path, content in context.pi_openspec_before.items()
+    )
+
+
+@then("Pi's native lifecycle hooks are unchanged")
+def step_pi_hooks_preserved_on_remove(context):
+    assert agent_path(context, "pi").read_bytes() == context.pi_hook_before
 
 
 @then("the Claude Code projection is unchanged")
