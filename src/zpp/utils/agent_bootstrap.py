@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable
 from contextlib import suppress
+from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
 from typing import Any, Literal
@@ -31,6 +32,74 @@ from zpp.utils.state_mutation import apply_creation_plan
 
 
 ManagedArtifactState = Literal["missing", "identical", "conflict"]
+AgentIntegrationStatus = Literal["absent", "current", "refreshable", "conflict"]
+
+
+@dataclass(frozen=True, slots=True)
+class AgentIntegrationInspection:
+    agent: AgentName
+    destination: Path
+    status: AgentIntegrationStatus
+    reason: str | None = None
+
+
+def inspect_agent_integrations(
+    home: Path,
+    agents: Iterable[AgentName],
+) -> tuple[AgentIntegrationInspection, ...]:
+    inspections: list[AgentIntegrationInspection] = []
+    for agent in dict.fromkeys(agents):
+        destination = _agent_destination(home, agent)
+        if not destination.exists() and not destination.is_symlink():
+            inspections.append(AgentIntegrationInspection(agent, destination, "absent"))
+            continue
+        if agent == "pi":
+            state = inspect_pi_extension(destination, load_packaged_pi_extension())
+            inspections.append(
+                AgentIntegrationInspection(
+                    agent,
+                    destination,
+                    "current" if state == "identical" else "conflict",
+                    None if state == "identical" else "unmanaged Pi extension",
+                )
+            )
+            continue
+        try:
+            current, reconciled = (
+                _prepare_codex(destination)
+                if agent == "codex"
+                else _prepare_claude_code(destination)
+            )
+        except ManagedStateError as error:
+            inspections.append(
+                AgentIntegrationInspection(agent, destination, "conflict", str(error))
+            )
+            continue
+        status: AgentIntegrationStatus = (
+            "current"
+            if current == reconciled
+            else "refreshable"
+            if current is not None and _has_managed_agent_command(current)
+            else "absent"
+        )
+        inspections.append(AgentIntegrationInspection(agent, destination, status))
+    return tuple(inspections)
+
+
+def _has_managed_agent_command(document: dict[str, Any]) -> bool:
+    hooks = document.get("hooks", {})
+    return any(
+        isinstance(command, str)
+        and (
+            command == "zpp resolve"
+            or command.startswith("zpp resolve --agent ")
+            or command.startswith("zpp codespace guard")
+        )
+        for groups in hooks.values()
+        for group in groups
+        for handler in group["hooks"]
+        for command in (handler.get("command"),)
+    )
 
 
 def plan_agent_integrations(

@@ -1,16 +1,54 @@
 from __future__ import annotations
 
 import json
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
+from zpp.utils.authored_layers import authored_layer_creation_plan, collect_authored_layer
 from zpp.utils.control_documents import validate_layer_config, validate_trigger_config
+from zpp.utils.filesystem_mutation import FilesystemMutationPlan
 from zpp.utils.models import (
     AuthoredLayerFile,
     AuthoredLayerSnapshot,
+    CreationEntry,
+    CreationPlan,
     ManagedStateError,
     ZppValidationError,
 )
 from zpp.utils.trait_documents import parse_trait_document
+
+
+def plan_persistent_default_upgrade_mutation(
+    root: Path,
+    packaged: AuthoredLayerSnapshot,
+) -> FilesystemMutationPlan | None:
+    exists = root.exists() or root.is_symlink()
+    try:
+        existing = collect_authored_layer(root) if exists else None
+    except (OSError, UnicodeError, ValueError) as error:
+        raise ManagedStateError(
+            f"invalid persistent default profile at {root}: {error}"
+        ) from error
+
+    planned = plan_default_profile_upgrade(existing, packaged)
+    if planned is None:
+        return None
+    authored = authored_layer_creation_plan(planned, root)
+    if exists:
+        return FilesystemMutationPlan(authored, (root,))
+
+    missing: list[Path] = []
+    cursor = root.parent
+    while not cursor.exists() and not cursor.is_symlink():
+        missing.append(cursor)
+        cursor = cursor.parent
+    if cursor.is_symlink() or not cursor.is_dir():
+        raise ManagedStateError(
+            f"persistent default parent is not a directory: {cursor}"
+        )
+    directories = tuple(
+        CreationEntry(path, "directory") for path in reversed(missing)
+    )
+    return FilesystemMutationPlan(CreationPlan((*directories, *authored.entries)))
 
 
 def plan_default_profile_upgrade(

@@ -4,11 +4,13 @@ from pathlib import Path
 import pytest
 
 from zpp.utils.agent_bootstrap import (
+    AgentIntegrationInspection,
     bootstrap_claude_code,
     bootstrap_codex,
     bootstrap_pi,
     inspect_pi_extension,
     install_pi_extension,
+    inspect_agent_integrations,
     load_packaged_pi_extension,
     plan_agent_integrations,
     preflight_claude_code,
@@ -129,3 +131,123 @@ def test_agent_integration_plan_is_pure_and_applies_every_selected_agent(
     assert (tmp_path / ".pi/agent/extensions/zpp/index.ts").is_file()
     assert json.loads((tmp_path / ".codex/hooks.json").read_text(encoding="utf-8"))["hooks"]
     assert json.loads((tmp_path / ".claude/settings.json").read_text(encoding="utf-8"))["hooks"]
+
+
+def test_agent_integration_inspection_reports_absent_destinations(
+    tmp_path: Path,
+) -> None:
+    assert inspect_agent_integrations(tmp_path, ("pi", "codex", "claude")) == (
+        AgentIntegrationInspection(
+            "pi",
+            tmp_path / ".pi/agent/extensions/zpp/index.ts",
+            "absent",
+        ),
+        AgentIntegrationInspection(
+            "codex",
+            tmp_path / ".codex/hooks.json",
+            "absent",
+        ),
+        AgentIntegrationInspection(
+            "claude",
+            tmp_path / ".claude/settings.json",
+            "absent",
+        ),
+    )
+
+
+def test_agent_integration_inspection_ignores_unrelated_native_configuration(
+    tmp_path: Path,
+) -> None:
+    codex = tmp_path / ".codex/hooks.json"
+    codex.parent.mkdir()
+    codex.write_text(json.dumps({"theme": "dark", "hooks": {}}), encoding="utf-8")
+
+    assert inspect_agent_integrations(tmp_path, ("codex",)) == (
+        AgentIntegrationInspection("codex", codex, "absent"),
+    )
+
+
+def test_agent_integration_inspection_recognizes_current_managed_integrations(
+    tmp_path: Path,
+) -> None:
+    apply_mutation_plan(plan_agent_integrations(tmp_path, ("pi", "codex", "claude")))
+
+    assert tuple(
+        item.status
+        for item in inspect_agent_integrations(tmp_path, ("pi", "codex", "claude"))
+    ) == ("current", "current", "current")
+
+
+def test_agent_integration_inspection_recognizes_exact_historical_hook(
+    tmp_path: Path,
+) -> None:
+    apply_mutation_plan(plan_agent_integrations(tmp_path, ("claude",)))
+    destination = tmp_path / ".claude/settings.json"
+    destination.write_text(
+        destination.read_text(encoding="utf-8").replace(
+            "zpp resolve --agent claude",
+            "zpp resolve",
+        ),
+        encoding="utf-8",
+    )
+
+    assert inspect_agent_integrations(tmp_path, ("claude",)) == (
+        AgentIntegrationInspection("claude", destination, "refreshable"),
+    )
+
+
+def test_agent_integration_inspection_recognizes_partial_managed_hooks(
+    tmp_path: Path,
+) -> None:
+    apply_mutation_plan(plan_agent_integrations(tmp_path, ("codex",)))
+    destination = tmp_path / ".codex/hooks.json"
+    document = json.loads(destination.read_text(encoding="utf-8"))
+    del document["hooks"]["PreToolUse"]
+    destination.write_text(json.dumps(document), encoding="utf-8")
+
+    assert inspect_agent_integrations(tmp_path, ("codex",))[0].status == "refreshable"
+
+
+@pytest.mark.parametrize(
+    "source",
+    (
+        "not-json",
+        json.dumps(
+            {
+                "hooks": {
+                    "SessionStart": [
+                        {
+                            "matcher": "wrong",
+                            "hooks": [{"type": "command", "command": "zpp resolve"}],
+                        }
+                    ]
+                }
+            }
+        ),
+    ),
+)
+def test_agent_integration_inspection_reports_malformed_or_claiming_json_as_conflict(
+    tmp_path: Path,
+    source: str,
+) -> None:
+    destination = tmp_path / ".codex/hooks.json"
+    destination.parent.mkdir()
+    destination.write_text(source, encoding="utf-8")
+
+    inspection = inspect_agent_integrations(tmp_path, ("codex",))[0]
+
+    assert inspection.status == "conflict"
+    assert inspection.reason
+
+
+def test_agent_integration_inspection_reports_unmanaged_pi_extension_as_conflict(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / ".pi/agent/extensions/zpp/index.ts"
+    destination.parent.mkdir(parents=True)
+    destination.write_text("unmanaged\n", encoding="utf-8")
+
+    inspection = inspect_agent_integrations(tmp_path, ("pi",))[0]
+
+    assert inspection.status == "conflict"
+    assert inspection.reason == "unmanaged Pi extension"
