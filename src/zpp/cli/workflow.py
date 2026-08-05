@@ -18,7 +18,10 @@ workflow_app = typer.Typer(help="Manage ZPP's standard workflow bundle.")
 @workflow_app.command("install")
 def workflow_install(
     target: Annotated[Path | None, typer.Argument()] = None,
-    global_: Annotated[bool, typer.Option("--global")] = False,
+    local_: Annotated[
+        bool,
+        typer.Option("--local", help="Manage the repository-local workflow bundle."),
+    ] = False,
     agent: Annotated[
         list[AgentOption] | None,
         typer.Option("--agent", help="Install for a supported agent application."),
@@ -38,7 +41,7 @@ def workflow_install(
     _run_workflow_command(
         "install",
         target,
-        global_,
+        local_,
         agent,
         force=force,
         bootstrap_openspec=with_openspec,
@@ -48,19 +51,25 @@ def workflow_install(
 @workflow_app.command("update")
 def workflow_update(
     target: Annotated[Path | None, typer.Argument()] = None,
-    global_: Annotated[bool, typer.Option("--global")] = False,
+    local_: Annotated[
+        bool,
+        typer.Option("--local", help="Manage the repository-local workflow bundle."),
+    ] = False,
     agent: Annotated[
         list[AgentOption] | None,
         typer.Option("--agent", help="Update for a supported agent application."),
     ] = None,
 ) -> None:
-    _run_workflow_command("update", target, global_, agent)
+    _run_workflow_command("update", target, local_, agent)
 
 
 @workflow_app.command("remove")
 def workflow_remove(
     target: Annotated[Path | None, typer.Argument()] = None,
-    global_: Annotated[bool, typer.Option("--global")] = False,
+    local_: Annotated[
+        bool,
+        typer.Option("--local", help="Manage the repository-local workflow bundle."),
+    ] = False,
     agent: Annotated[
         list[AgentOption] | None,
         typer.Option("--agent", help="Remove for a supported agent application."),
@@ -72,13 +81,13 @@ def workflow_remove(
         return
     if not yes and not typer.confirm("Remove the selected managed standard workflow bundle?"):
         return
-    _execute_workflow_command("remove", target, global_, selected)
+    _execute_workflow_command("remove", target, local_, selected)
 
 
 def _run_workflow_command(
     operation: str,
     target: Path | None,
-    global_: bool,
+    local_: bool,
     agent: list[AgentOption] | None,
     *,
     force: bool = False,
@@ -90,7 +99,7 @@ def _run_workflow_command(
     _execute_workflow_command(
         operation,
         target,
-        global_,
+        local_,
         selected,
         force=force,
         bootstrap_openspec=bootstrap_openspec,
@@ -100,21 +109,25 @@ def _run_workflow_command(
 def _execute_workflow_command(
     operation: str,
     target: Path | None,
-    global_: bool,
+    local_: bool,
     selected: tuple[str, ...],
     *,
     force: bool = False,
     bootstrap_openspec: bool = False,
 ) -> None:
-    if global_ and target is not None:
-        raise typer.BadParameter("--global does not accept a local target")
+    if not local_ and target is not None:
+        raise typer.BadParameter("a repository target requires --local")
+    if not local_ and force:
+        raise typer.BadParameter("--force requires --local")
+    if not local_ and bootstrap_openspec:
+        raise typer.BadParameter("--with-openspec requires --local")
 
     def action() -> None:
         report = manage_workflow_skills(
             home=Path.home(),
             current_directory=Path.cwd(),
             target=target,
-            scope="global" if global_ else "local",
+            scope="local" if local_ else "global",
             agents=as_agent_names(selected),
             operation=operation,  # type: ignore[arg-type]
             force=force,

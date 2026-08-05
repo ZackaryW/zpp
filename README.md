@@ -55,13 +55,14 @@ ZPP's standard workflow skills have an independent lifecycle. Install them
 globally for one or more supported agents:
 
 ```console
-zpp workflow install --global --agent codex --agent claude --agent pi
+zpp workflow install --agent codex --agent claude --agent pi
 ```
 
-For a repository-local installation, provide its path and omit `--global`:
+For a repository-local installation, select local scope explicitly and optionally
+provide its exact repository path:
 
 ```console
-zpp workflow install C:\work\project --agent codex
+zpp workflow install --local C:\work\project --agent codex
 ```
 
 A compatible global workflow normally supersedes a local installation. Use
@@ -154,12 +155,13 @@ ZPP's workflow bundle if it is installed:
 ```console
 uv tool upgrade zpp
 zpp init --agent codex --agent claude --agent pi
-zpp workflow update --global --agent codex --agent claude --agent pi
+zpp workflow update --agent codex --agent claude --agent pi
 ```
 
-For a repository-local workflow, pass its path to `zpp workflow update` instead
-of `--global`. These commands update ZPP-owned surfaces only; agent plugins have
-their own installation and update lifecycles.
+For a repository-local workflow, pass `--local`; add a path only when updating a
+repository other than the current one. `--global` is no longer accepted, and a
+bare positional target is rejected. These commands update ZPP-owned surfaces
+only; agent plugins have their own installation and update lifecycles.
 
 Initialization never overwrites an existing valid `default` profile. That
 profile is user-owned, so newly packaged defaults must be reviewed and adopted
