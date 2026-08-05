@@ -114,6 +114,21 @@ Feature: Bootstrap ZPP and configure agent applications
     And no trait cache is created
     And trait resolution is not invoked
 
+  Scenario: Workflow installation upgrades an exact historical Claude Code hook
+    Given Claude Code has the exact historical ZPP-managed SessionStart hook invoking zpp resolve
+    And every other Claude Code destination required by workflow installation can be updated safely
+    When the user runs zpp workflow install --global with agent Claude Code
+    Then the historical hook is replaced by the current agent-qualified ZPP lifecycle integration
+    And the current Claude Code codespace guards are installed
+    And unrelated Claude Code settings are byte-for-byte unchanged
+
+  Scenario: Workflow installation rejects an ambiguous historical hook
+    Given Claude Code has a user-authored SessionStart hook resembling the historical ZPP hook
+    And every Claude Code integration destination is recorded
+    When the user runs zpp workflow install --global with agent Claude Code
+    Then installation fails as a managed-state rejection
+    And every Claude Code integration destination is byte-for-byte unchanged
+
   Scenario Outline: A native agent hook resolves and injects current traits
     Given <agent> was configured by ZPP
     And its native hook is trusted and enabled by the agent application
