@@ -228,3 +228,44 @@ Feature: Bootstrap ZPP and configure agent applications
     Then the invocation fails as a usage error
     And no ZPP user state is created
     And no agent application is changed
+
+  Scenario: Initialization and global update expose distinct public help
+    Given ZPP is installed
+    When the user requests zpp init help and zpp update help
+    Then init help describes missing-state bootstrap and explicitly selected global hooks
+    And update help describes maintenance of initialized global state and installed integrations
+    And update help exposes no agent, scope, target, force, or installation option
+    And neither helper claims that ZPP upgrades its running executable
+
+  Scenario: Global update requires initialized user state
+    Given a clean user home
+    And every supported agent integration is recorded
+    When the user runs zpp update
+    Then update fails because ZPP user state is not initialized
+    And no ZPP user-state entry is created
+    And every supported agent integration is byte-for-byte unchanged
+
+  Scenario: Global update refreshes only the compatible persistent default
+    Given valid initialized user state
+    And the persistent default profile is missing one packaged standard trait
+    And a same-name packaged trait, trigger, configuration, and custom trait have user-authored content
+    And no supported agent has a ZPP-owned global surface
+    And repository-local ZPP state is recorded
+    When the user runs zpp update
+    Then only the absent packaged trait is added to the persistent default profile
+    And every existing authored default-profile value and same-name file is unchanged
+    And no agent workflow, OpenSpec skill, or native hook is installed
+    And repository-local state is byte-for-byte unchanged
+    And no trait resolution or derived cache occurs
+
+  Scenario: Global update reconciles a recognizable hook-only integration
+    Given valid initialized user state
+    And Pi has an exact historical ZPP native lifecycle hook without workflow skills
+    And Codex and Claude Code have neither ZPP hooks nor workflow skills
+    And unrelated native agent configuration is recorded
+    When the user runs zpp update twice
+    Then Pi has the current ZPP-managed native lifecycle hook
+    And Pi still has no workflow or OpenSpec skill projection
+    And Codex and Claude Code remain unchanged
+    And unrelated native agent configuration is unchanged
+    And the second update makes no further change

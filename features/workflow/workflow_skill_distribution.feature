@@ -261,6 +261,50 @@ Feature: Install and maintain a complete ZPP workflow integration
     And the managed Pi local ZPP workflow projection is unchanged
     And the unrelated skills are unchanged
 
+  Scenario: Top-level update discovers every installed managed global workflow
+    Given valid initialized user state
+    And Pi has an outdated managed global ZPP workflow bundle under .pi with no OpenSpec projection
+    And Codex has a compatible managed global ZPP workflow bundle with a historical native hook
+    And Claude Code has no managed global ZPP workflow bundle
+    And unrelated files surround every agent surface
+    When the user runs zpp update
+    Then Pi and Codex contain the complete current twelve-skill workflow bundle
+    And Pi receives generated OpenSpec core operation skills for the detected version
+    And both installed workflows have the current ZPP-managed native lifecycle hooks
+    And Claude Code receives no workflow, OpenSpec skill, or native hook
+    And every unrelated file is byte-for-byte unchanged
+
+  Scenario: Top-level update preserves and regenerates OpenSpec projections by version
+    Given valid initialized user state
+    And Pi and Claude Code have managed global workflow integrations
+    And Pi's OpenSpec projection records the currently detected version with distinguishable content
+    And Claude Code's OpenSpec projection records a different version
+    When the user runs zpp update
+    Then Pi's generated OpenSpec skills are byte-for-byte unchanged
+    And Claude Code's OpenSpec core operation skills are regenerated
+    And Claude Code records the newly detected OpenSpec version
+    And both ZPP workflow bundles are current
+
+  Scenario: One discovered conflict blocks the complete global update
+    Given valid initialized user state whose default profile is missing one packaged entry
+    And Pi has an outdated managed global workflow integration
+    And Claude Code has modified content inside its managed global workflow projection
+    And every included global surface is recorded
+    When the user runs zpp update
+    Then update fails as a managed-state rejection identifying Claude Code
+    And the persistent default profile remains unchanged
+    And every included hook, workflow bundle, and OpenSpec projection is byte-for-byte unchanged
+
+  Scenario: Top-level update is idempotent and ignores local workflow state
+    Given every supported agent has a complete compatible managed global workflow integration
+    And their generated OpenSpec projections record the detected version
+    And the persistent default profile contains every packaged standard entry
+    And compatible and conflicting repository-local workflow projections are recorded
+    When the user runs zpp update twice
+    Then both updates succeed without rewriting any managed or authored global content
+    And no OpenSpec projection is regenerated
+    And every repository-local workflow projection is byte-for-byte unchanged
+
   Scenario: Automatic workflow guidance remains advisory and skill-backed
     Given a participating layer activates a conditionless automatic-workflow trait
     And that trait references the permanent workflow skills through skill lookup
