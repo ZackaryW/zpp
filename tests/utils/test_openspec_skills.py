@@ -14,12 +14,11 @@ from zpp.utils.processes import ProcessResult
 def test_generation_collects_exact_agent_bytes_and_cleans_temporary_project(
     tmp_path: Path,
 ) -> None:
-    calls: list[tuple[tuple[str, ...], Path | None]] = []
+    calls: list[tuple[tuple[str, ...], Path | None, dict[str, str] | None]] = []
 
     def run(argv, *, cwd=None, env=None):
-        del env
         arguments = tuple(argv)
-        calls.append((arguments, cwd))
+        calls.append((arguments, cwd, None if env is None else dict(env)))
         if arguments == ("openspec", "--version"):
             return ProcessResult(arguments, 0, "1.7.0\n", "")
         assert cwd is not None
@@ -52,6 +51,10 @@ def test_generation_collects_exact_agent_bytes_and_cleans_temporary_project(
     assert next(file.content for file in bundles[0].files if file.relative_path.endswith("SKILL.md")).startswith(b"codex:")
     assert len(calls) == 1
     assert calls[0][0][:2] == ("openspec", "init")
+    assert calls[0][2] is not None
+    data_root = Path(calls[0][2]["XDG_DATA_HOME"])
+    assert data_root.is_relative_to(tmp_path)
+    assert not data_root.exists()
     assert list(tmp_path.iterdir()) == []
 
 

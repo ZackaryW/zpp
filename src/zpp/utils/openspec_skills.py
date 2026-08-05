@@ -62,7 +62,9 @@ def generate_openspec_skill_bundles(
         return ()
     parent = str(temporary_parent) if temporary_parent is not None else None
     with TemporaryDirectory(prefix="zpp-openspec-", dir=parent) as temporary:
-        project = Path(temporary) / "project"
+        temporary_root = Path(temporary)
+        project = temporary_root / "project"
+        data_root = temporary_root / "openspec-data"
         project.mkdir()
         arguments = (
             "openspec",
@@ -74,7 +76,11 @@ def generate_openspec_skill_bundles(
             "--no-animation",
         )
         try:
-            result = run(arguments, cwd=project)
+            result = run(
+                arguments,
+                cwd=project,
+                env={"XDG_DATA_HOME": str(data_root)},
+            )
         except OSError as error:
             raise ManagedStateError(f"OpenSpec generation failed: {error}") from error
         if result.returncode != 0:
