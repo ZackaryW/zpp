@@ -10,6 +10,7 @@ Feature: Bootstrap ZPP and configure agent applications
     Then the product identifies itself as ZPP version 0.9.0
     And the help exposes the confirmed initial command surface
     And the help exposes the independent workflow lifecycle command group
+    And the help exposes independent behavior initialization and named verification commands
     And the help does not expose a generic skill command group
 
   Scenario: First noninteractive initialization creates required user state

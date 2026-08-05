@@ -47,6 +47,22 @@ Feature: Resolve effective traits as Markdown
       | flutter-bdd        | Flutter BDD          |
       | flutter-tdd        | Flutter TDD          |
 
+  Scenario Outline: Optional BDD structure guidance preserves each ecosystem runner
+    Given a clean user home with initialized ZPP state
+    And ZPP_PROFILE is "default"
+    And the repository layer additionally activates <trait>
+    When the user runs zpp resolve for the repository target
+    Then resolution succeeds
+    And stdout contains <trait> with capability-oriented structure guidance
+    And no other BDD-structure trait is active
+    And the guidance preserves <runner policy>
+
+    Examples:
+      | trait                 | runner policy                                      |
+      | bdd-structure-python  | the established Python BDD runner                  |
+      | bdd-structure-ts      | TypeScript runner choice and explicit loading roots |
+      | bdd-structure-flutter | Flutter test and integration_test without Gherkin  |
+
   Scenario: Authored and configured traits remain inactive without a trigger
     Given a clean user home with an initialized global ZPP layer
     And the current directory is an existing target

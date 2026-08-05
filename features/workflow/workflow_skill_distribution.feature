@@ -1,9 +1,9 @@
 Feature: Install and maintain a complete ZPP workflow integration
   ZPP users can install and maintain the owned workflow bundle, native hooks,
-  and required OpenSpec operation skills without changing authored ZPP layers.
+  required OpenSpec operation skills, and compatible standard-profile upgrades.
 
   Background:
-    Given the packaged ZPP workflow bundle contains all eleven permanent skills
+    Given the packaged ZPP workflow bundle contains all twelve permanent skills
 
   Scenario: Install the bundle locally for explicitly selected agents
     Given the current directory is the root of a Git worktree
@@ -23,6 +23,8 @@ Feature: Install and maintain a complete ZPP workflow integration
     Given Codex, Pi, and Claude Code have no global ZPP workflow skills
     And Codex, Pi, and Claude Code have no global OpenSpec operation skills
     And Codex, Pi, and Claude Code have no ZPP integration
+    And the valid persistent default profile is missing newly packaged standard entries
+    And its existing authored files, triggers, configuration, and custom traits are recorded
     When the user runs zpp workflow install with agents Codex, Pi, and Claude Code
     Then installation succeeds without offering agent selection
     And one managed bundle is installed in the user-global Codex skill scope
@@ -34,6 +36,8 @@ Feature: Install and maintain a complete ZPP workflow integration
     And OpenSpec generation used an isolated project beneath the platform temporary directory
     And the temporary project is removed
     And no repository-local skill scope is changed
+    And only the missing packaged standard entries are added to the persistent default profile
+    And every recorded authored profile entry is unchanged
 
   Scenario: Explicitly bootstrap OpenSpec operation skills in local scope
     Given the current directory is the root of a Git worktree
@@ -130,12 +134,22 @@ Feature: Install and maintain a complete ZPP workflow integration
     Given Pi has a compatible managed global ZPP workflow bundle under .pi
     And Pi has generated OpenSpec core operation skills for the detected recorded version
     And Pi has the current ZPP-managed native lifecycle hooks
+    And the persistent default profile already contains every packaged standard entry
     And unrelated files surround every managed projection
     When the user runs zpp workflow install with agent Pi twice
     Then both installations succeed
     And every managed projection is byte-for-byte unchanged
     And OpenSpec skills are not regenerated
     And the unrelated files are byte-for-byte unchanged
+    And the persistent default profile is byte-for-byte unchanged
+
+  Scenario: A malformed persistent default blocks global workflow mutation
+    Given Pi has no global ZPP integration
+    And the persistent default profile is malformed
+    When the user runs zpp workflow install with agent Pi
+    Then installation fails as a managed-state rejection
+    And Pi's workflow skills, OpenSpec skills, and native hooks remain unchanged
+    And the malformed persistent default profile is unchanged
 
   Scenario: Every selected integration destination is preflighted before installation
     Given Pi has no global ZPP integration
@@ -167,6 +181,16 @@ Feature: Install and maintain a complete ZPP workflow integration
     And the forced local Codex bundle is unchanged
     And every Claude Code scope is unchanged
     And the differing Codex scope versions are reported
+
+  Scenario: Global update adds only missing standard-profile entries
+    Given Codex has a compatible managed global workflow integration
+    And the valid persistent default profile is missing one packaged BDD-structure trait
+    And a same-name packaged trait and existing trigger have user-authored content
+    When the user runs zpp workflow update with agent Codex
+    Then only the absent packaged trait is added to the persistent default profile
+    And the same-name user file, existing trigger, configuration, and custom traits are unchanged
+    When the user runs zpp workflow update --local with agent Codex
+    Then the persistent default profile is byte-for-byte unchanged
 
   Scenario: Update preserves OpenSpec skills when the recorded version matches
     Given Codex has a managed global workflow integration
@@ -288,10 +312,18 @@ Feature: Install and maintain a complete ZPP workflow integration
 
   Scenario: Installed skill bodies remain platform-neutral
     When the user installs the managed bundle for every supported agent
-    Then every native projection contains the same eleven permanent workflow skills
+    Then every native projection contains the same twelve permanent workflow skills
     And each skill retains its required packaged resources and scripts
     And no skill body contains platform, framework, test-runner, or agent-specific policy
     And all Python, Django, TypeScript, and Flutter workflow guidance remains in independent optional traits outside the skill bodies
+
+  Scenario: Explicit behavior configuration keeps runtime authority in core
+    Given the managed workflow bundle is installed
+    When the user explicitly invokes zpp-configure-behavior for a repository
+    Then the skill inspects the established verification structure and initializes zpp.behave.yaml through ZPP
+    And it proposes only declarative target and impact relationships
+    And it validates the mapping and runs its configured complete audit through ZPP
+    And it does not supply runtime executable text, manage Nx plugins, or own filtering and execution
 
   Scenario: Install explicit codespace worktree reconciliation
     Given a mitigated codespace records its generated project and store branches
