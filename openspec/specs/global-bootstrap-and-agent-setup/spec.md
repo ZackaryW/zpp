@@ -7,11 +7,17 @@ Defines neutral ZPP user-state initialization and optional global agent lifecycl
 ## Requirements
 
 ### Requirement: Product identity and command surface
-ZPP SHALL identify itself as version 0.9.5 and expose initialization, profile, persistent global activation, saved-profile, local-layer, resolution, repository behavior verification through `zpp behave init`, `zpp behave <command>`, and `zpp behave <command> --all`, standard-workflow lifecycle, help, and version behavior through the confirmed command hierarchy. Native lifecycle-hook configuration SHALL remain available through initialization and SHALL also participate in complete workflow installation, while standard-workflow distribution SHALL use the independent `workflow` command group and behavior verification SHALL remain independent from workflow-skill lifecycle management. The generic `skill` command group SHALL NOT remain available.
+ZPP SHALL identify itself as version 0.9.5 and expose initialization, global installed-state update, profile, persistent global activation, saved-profile, local-layer, resolution, repository behavior verification through `zpp behave init`, `zpp behave <command>`, and `zpp behave <command> --all`, standard-workflow lifecycle, help, and version behavior through the confirmed command hierarchy. Native lifecycle-hook configuration SHALL remain available through initialization and complete workflow installation, while `zpp update` SHALL maintain existing recognized global integrations without becoming an executable self-updater. Standard-workflow distribution SHALL use the independent `workflow` command group and behavior verification SHALL remain independent from workflow-skill lifecycle management. The generic `skill` command group SHALL NOT remain available.
+
+Typer help SHALL distinguish `zpp init` as missing-state bootstrap plus explicitly selected hook configuration from `zpp update` as maintenance of initialized global ZPP state and already-installed integrations.
 
 #### Scenario: Inspect the installed product
 - **WHEN** a user requests the version and help output
-- **THEN** ZPP reports version 0.9.5, exposes profile and global lifecycle behavior plus independent `behave` and standard-workflow lifecycle surfaces, and does not expose a generic skill-management group
+- **THEN** ZPP reports version 0.9.5, exposes independent `init`, top-level `update`, `behave`, and standard-workflow lifecycle surfaces, and does not expose a generic skill-management group
+
+#### Scenario: Distinguish initialization from update
+- **WHEN** a user inspects `zpp init --help` and `zpp update --help`
+- **THEN** the helpers distinguish bootstrap and selected-hook setup from global installed-state maintenance without claiming that ZPP upgrades its running executable
 
 Executable public examples are maintained in the capability feature contracts that own bootstrap, verification orchestration, and workflow distribution.
 
@@ -50,21 +56,46 @@ Submitting an empty interactive selection SHALL succeed without agent changes. C
 - **THEN** neutral user state is initialized and agent setup is skipped successfully
 
 ### Requirement: Global native agent integration
-Agents selected by initialization or complete workflow installation SHALL be configured only through their global user-home native lifecycle mechanisms. The native-integration step SHALL NOT install repository-local agent integration, instruction paragraphs, effective trait content, trust state, or enablement state; workflow installation MAY independently project its owned skill surfaces.
+Agents selected by initialization or complete workflow installation SHALL be configured only through their global user-home native lifecycle mechanisms. Global update SHALL reconcile a recognized existing ZPP native integration and SHALL ensure the current native integration for every discovered installed managed global workflow bundle. It SHALL leave an agent with neither a recognized hook nor an installed managed workflow bundle unchanged. Native-integration maintenance SHALL NOT install repository-local agent integration, instruction paragraphs, effective trait content, trust state, or enablement state; workflow installation and update MAY independently project their owned skill surfaces.
 
-Each agent integration SHALL be independently idempotent, preserve unrelated native configuration, and reject invalid or conflicting unmanaged state without overwrite. A current integration SHALL replace an exact historical ZPP-generated native hook record with the current owned record instead of treating that known legacy form as an unmanaged conflict. ZPP SHALL preflight every selected agent before changing any selected agent, although neutral ZPP user-state initialization may already have completed.
+Each agent integration SHALL be independently idempotent, preserve unrelated native configuration, and reject invalid or conflicting unmanaged state without overwrite. A current integration SHALL replace an exact historical ZPP-generated native hook record with the current owned record instead of treating that known legacy form as an unmanaged conflict. Initialization SHALL preflight every explicitly selected agent, complete workflow installation SHALL preflight every selected agent, and global update SHALL preflight every discovered ZPP-owned global surface before changing any included state.
 
 #### Scenario: Configure supported native integrations
 - **WHEN** initialization or complete workflow installation selects any combination of Pi, Codex, and Claude Code against compatible agent state
 - **THEN** each selected global native lifecycle integration exists exactly once, unrelated agent content is preserved, and unselected agents and project-local native state are unchanged
 
+#### Scenario: Refresh a recognizable installed hook
+- **WHEN** global update discovers a current or exact historical ZPP native integration without an installed workflow bundle
+- **THEN** it reconciles that hook to the current owned form while leaving absent skill projections absent
+
+#### Scenario: Ensure hooks for an installed workflow
+- **WHEN** global update discovers an installed managed global workflow bundle with a missing or historical ZPP native integration
+- **THEN** it establishes the current native integration as part of that bundle's complete maintained outcome
+
 #### Scenario: Migrate a historical ZPP hook
 - **WHEN** a selected agent contains an exact native hook record generated by an earlier supported ZPP version
 - **THEN** ZPP replaces that owned record with the current integration while preserving unrelated agent content
 
-#### Scenario: Reject a selected-agent conflict atomically
-- **WHEN** a later selected agent has invalid or conflicting unmanaged integration state
-- **THEN** agent setup fails with the conflicting destination identified and no selected agent is changed
+#### Scenario: Reject an agent conflict atomically
+- **WHEN** any included agent has invalid or conflicting unmanaged integration state
+- **THEN** the initiating operation fails with the conflicting destination identified and no included global surface is changed
+
+### Requirement: Top-level global update boundary
+`zpp update` SHALL require complete valid initialized user state and SHALL accept no agent, scope, target, force, or installation option. It SHALL automatically discover existing ZPP-owned global surfaces across Pi, Codex, and Claude Code, preflight them with the persistent default profile, and apply the complete compatible refresh atomically. It SHALL fail without mutation when required user state is absent, incomplete, or malformed and SHALL direct the user to initialize first.
+
+Global update SHALL NOT create repository-local state, mutate local skills or authored `.zpp` layers, resolve traits, create derived caches, install an absent workflow bundle, or upgrade the executable that is currently running.
+
+#### Scenario: Update initialized global state
+- **WHEN** a user runs `zpp update` against compatible initialized state with any mix of existing ZPP-owned global surfaces
+- **THEN** ZPP refreshes the complete discovered global set atomically and leaves absent and repository-local surfaces unchanged
+
+#### Scenario: Reject update before initialization
+- **WHEN** a user runs `zpp update` with absent, incomplete, or malformed required user state
+- **THEN** ZPP reports that initialization is required or invalid and changes no user or agent surface
+
+#### Scenario: Reject unsupported update syntax
+- **WHEN** a user supplies an agent, local/global scope, positional target, force, or install option to `zpp update`
+- **THEN** Typer rejects the invocation before ZPP performs discovery or mutation
 
 ### Requirement: Source-authoritative lifecycle context
 Every installed native lifecycle integration SHALL identify its owning Codex, Claude, or Pi agent when resolving traits for the agent session's current working directory at invocation time. Resolution SHALL use that identity to discover only the invoking agent's active plugin trait sources. Successful non-empty resolution output SHALL be injected exactly once into the current agent context. Empty successful output SHALL inject nothing. Resolution failure SHALL be surfaced through the agent and SHALL inject no stale or partial ZPP context.
