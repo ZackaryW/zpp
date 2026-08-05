@@ -6,15 +6,14 @@ import json
 from pathlib import Path
 from typing import Literal
 
+from zpp.utils.filesystem_mutation import FilesystemMutationPlan, apply_mutation_plan
 from zpp.utils.models import CreationEntry, CreationPlan, ManagedStateError
-from zpp.utils.removals import stage_removals
 from zpp.utils.skill_bundles import (
     SKILL_MANIFEST_NAME,
     SkillBundle,
     SkillProjectionInspection,
     manifest_for_bundle,
 )
-from zpp.utils.state_mutation import apply_creation_plan
 
 
 SkillLifecycleActionKind = Literal[
@@ -185,6 +184,13 @@ def apply_skill_lifecycle(
     bundle: SkillBundle,
     plan: SkillLifecyclePlan,
 ) -> None:
+    apply_mutation_plan(mutation_plan_for_skill_lifecycle(bundle, plan))
+
+
+def mutation_plan_for_skill_lifecycle(
+    bundle: SkillBundle,
+    plan: SkillLifecyclePlan,
+) -> FilesystemMutationPlan:
     creation = creation_plan_for_skill_lifecycle(bundle, plan)
     removal_paths: list[Path] = []
     for action in plan.actions:
@@ -198,14 +204,7 @@ def apply_skill_lifecycle(
         owned_names = tuple(dict.fromkeys(path.split("/", 1)[0] for path in manifest.files))
         removal_paths.extend(action.inspection.root / name for name in owned_names)
         removal_paths.append(action.inspection.root / SKILL_MANIFEST_NAME)
-
-    staged = stage_removals(removal_paths)
-    try:
-        apply_creation_plan(creation)
-    except BaseException:
-        staged.restore()
-        raise
-    staged.commit()
+    return FilesystemMutationPlan(creation, tuple(removal_paths))
 
 
 def _reject_conflicts(inspections: tuple[SkillProjectionInspection, ...]) -> None:

@@ -95,6 +95,15 @@ def _reconcile(
     if claims:
         if len(claims) == 1 and claims[0] == (expected_event, expected):
             return result
+        legacy = _historical_resolve_hook(expected)
+        if (
+            legacy is not None
+            and len(claims) == 1
+            and claims[0] == (expected_event, legacy)
+        ):
+            event_groups = hooks[expected_event]
+            event_groups[event_groups.index(claims[0][1])] = deepcopy(expected)
+            return result
         raise ManagedStateError(
             f"a non-identical native hook claims {expected_command!r}"
         )
@@ -122,3 +131,11 @@ def _managed_command_kind(command: str) -> str:
     if command.startswith("zpp codespace guard"):
         return "guard"
     return command
+
+
+def _historical_resolve_hook(expected: dict[str, Any]) -> dict[str, Any] | None:
+    if _managed_command_kind(_managed_command(expected)) != "resolve":
+        return None
+    historical = deepcopy(expected)
+    historical["hooks"][0]["command"] = "zpp resolve"
+    return historical

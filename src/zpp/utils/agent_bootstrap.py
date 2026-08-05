@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from contextlib import suppress
 from importlib.resources import files
 from pathlib import Path
@@ -15,7 +16,12 @@ from zpp.utils.agent_hooks import (
     reconcile_codex_hooks,
 )
 from zpp.utils.json_io import atomic_write_json
+from zpp.utils.filesystem_mutation import (
+    FilesystemMutationPlan,
+    merge_mutation_plans,
+)
 from zpp.utils.models import (
+    AgentName,
     CreationEntry,
     CreationPlan,
     ManagedStateError,
@@ -25,6 +31,28 @@ from zpp.utils.state_mutation import apply_creation_plan
 
 
 ManagedArtifactState = Literal["missing", "identical", "conflict"]
+
+
+def plan_agent_integrations(
+    home: Path,
+    requested: Iterable[AgentName],
+) -> FilesystemMutationPlan:
+    agents = tuple(dict.fromkeys(requested))
+    artifact = load_packaged_pi_extension() if "pi" in agents else None
+    plans: list[FilesystemMutationPlan] = []
+    for agent in agents:
+        if agent == "pi":
+            assert artifact is not None
+            plans.append(_plan_pi(home, artifact))
+        elif agent == "codex":
+            destination = home / ".codex" / "hooks.json"
+            current, reconciled = _prepare_codex(destination)
+            plans.append(_plan_json(destination, current, reconciled))
+        else:
+            destination = home / ".claude" / "settings.json"
+            current, reconciled = _prepare_claude_code(destination)
+            plans.append(_plan_json(destination, current, reconciled))
+    return merge_mutation_plans(plans)
 
 
 def inspect_pi_extension(
@@ -40,6 +68,37 @@ def inspect_pi_extension(
     except (OSError, UnicodeError):
         return "conflict"
     return "identical" if source == expected.source else "conflict"
+
+
+def _plan_pi(home: Path, artifact: PackagedPiExtension) -> FilesystemMutationPlan:
+    destination = home / ".pi" / "agent" / "extensions" / "zpp" / "index.ts"
+    state = inspect_pi_extension(destination, artifact)
+    if state == "conflict":
+        raise ManagedStateError(f"unmanaged Pi extension exists at {destination}")
+    if state == "identical":
+        return FilesystemMutationPlan(CreationPlan(()))
+    entries = _missing_parent_entries(destination.parent)
+    entries.append(CreationEntry(destination, "text", artifact.source))
+    return FilesystemMutationPlan(CreationPlan(tuple(entries)))
+
+
+def _plan_json(
+    destination: Path,
+    current: dict[str, Any] | None,
+    reconciled: dict[str, Any],
+) -> FilesystemMutationPlan:
+    if current == reconciled:
+        return FilesystemMutationPlan(CreationPlan(()))
+    entries = _missing_parent_entries(destination.parent)
+    source = json.dumps(
+        reconciled,
+        ensure_ascii=False,
+        indent=2,
+        sort_keys=True,
+    ) + "\n"
+    entries.append(CreationEntry(destination, "text", source))
+    replacements = (destination,) if current is not None else ()
+    return FilesystemMutationPlan(CreationPlan(tuple(entries)), replacements)
 
 
 def install_pi_extension(destination: Path, expected: PackagedPiExtension) -> None:

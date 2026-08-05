@@ -59,6 +59,18 @@ def test_native_hook_reconciliation_rejects_a_competing_zpp_command() -> None:
         reconcile_codex_hooks(conflicting, codex_session_start_hook())
 
 
+def test_native_hook_reconciliation_upgrades_only_the_exact_historical_record() -> None:
+    expected = claude_session_start_hook()
+    historical = deepcopy(expected)
+    historical["hooks"][0]["command"] = "zpp resolve"
+    source = {"theme": "dark", "hooks": {"SessionStart": [historical]}}
+
+    reconciled = reconcile_claude_settings(source, expected)
+
+    assert reconciled["hooks"]["SessionStart"] == [expected]
+    assert reconciled["theme"] == "dark"
+
+
 def test_native_hook_reconciliation_adds_one_managed_pre_tool_guard() -> None:
     codex = reconcile_codex_hooks(None, codex_session_start_hook())
     codex = reconcile_codex_hooks(codex, codex_pre_tool_use_hook())

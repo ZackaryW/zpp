@@ -37,11 +37,46 @@ def skill_projection_roots(
 
     base = home if scope == "global" else target
     assert base is not None
+    relatives = {
+        "codex": Path(".agents/skills"),
+        "pi": Path(".pi/agent/skills") if scope == "global" else Path(".pi/skills"),
+        "claude": Path(".claude/skills"),
+    }
+    return _projection_roots(base, scope, agents, relatives)
+
+
+def openspec_projection_roots(
+    *,
+    home: Path,
+    target: Path | None,
+    scope: SkillScope,
+    agents: Iterable[AgentName],
+) -> tuple[SkillProjection, ...]:
+    if scope == "local" and target is None:
+        raise ValueError("local OpenSpec projection requires a target")
+    if scope == "global" and target is not None:
+        raise ValueError("global OpenSpec projection does not accept a target")
+
+    base = home if scope == "global" else target
+    assert base is not None
+    relatives = {
+        "codex": Path(".codex/skills"),
+        "pi": Path(".pi/agent/skills") if scope == "global" else Path(".pi/skills"),
+        "claude": Path(".claude/skills"),
+    }
+    return _projection_roots(base, scope, agents, relatives)
+
+
+def _projection_roots(
+    base: Path,
+    scope: SkillScope,
+    agents: Iterable[AgentName],
+    relatives: dict[AgentName, Path],
+) -> tuple[SkillProjection, ...]:
     projections: list[SkillProjection] = []
     indexes: dict[Path, int] = {}
     for agent in dict.fromkeys(agents):
-        relative = Path(".claude/skills") if agent == "claude" else Path(".agents/skills")
-        root = base / relative
+        root = base / relatives[agent]
         if root not in indexes:
             indexes[root] = len(projections)
             projections.append(SkillProjection(root, scope, (agent,)))

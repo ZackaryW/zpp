@@ -10,10 +10,12 @@ from zpp.utils.agent_bootstrap import (
     inspect_pi_extension,
     install_pi_extension,
     load_packaged_pi_extension,
+    plan_agent_integrations,
     preflight_claude_code,
     preflight_codex,
     preflight_pi,
 )
+from zpp.utils.filesystem_mutation import apply_mutation_plan
 from zpp.utils.models import ManagedStateError, PackagedPiExtension
 
 
@@ -111,3 +113,19 @@ def test_agent_preflights_detect_a_later_conflict_without_any_agent_write(
     assert codex_path.read_text(encoding="utf-8") == codex_source
     assert not (tmp_path / ".pi").exists()
     assert not (tmp_path / ".claude").exists()
+
+
+def test_agent_integration_plan_is_pure_and_applies_every_selected_agent(
+    tmp_path: Path,
+) -> None:
+    plan = plan_agent_integrations(tmp_path, ("pi", "codex", "claude"))
+
+    assert not (tmp_path / ".pi").exists()
+    assert not (tmp_path / ".codex").exists()
+    assert not (tmp_path / ".claude").exists()
+
+    apply_mutation_plan(plan)
+
+    assert (tmp_path / ".pi/agent/extensions/zpp/index.ts").is_file()
+    assert json.loads((tmp_path / ".codex/hooks.json").read_text(encoding="utf-8"))["hooks"]
+    assert json.loads((tmp_path / ".claude/settings.json").read_text(encoding="utf-8"))["hooks"]
