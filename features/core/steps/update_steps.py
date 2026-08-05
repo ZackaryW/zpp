@@ -1,0 +1,33 @@
+from behave import given, then, when
+
+from features.support import update_support as update
+
+
+when("the user requests zpp init help and zpp update help")(update.request_update_help)
+then("init help describes missing-state bootstrap and explicitly selected global hooks")(update.assert_init_help)
+then("update help describes maintenance of initialized global state and installed integrations")(update.assert_update_help)
+then("update help exposes no agent, scope, target, force, or installation option")(update.assert_update_has_no_selection_options)
+then("neither helper claims that ZPP upgrades its running executable")(update.assert_no_helper_self_upgrade_claim)
+given("every supported agent integration is recorded")(update.record_supported_integrations)
+when("the user runs zpp update")(update.run_update)
+then("update fails because ZPP user state is not initialized")(update.assert_uninitialized_rejection)
+then("no ZPP user-state entry is created")(update.assert_no_user_state_created)
+then("every supported agent integration is byte-for-byte unchanged")(update.assert_supported_integrations_unchanged)
+given("the persistent default profile is missing one packaged standard trait")(update.make_default_additive_fixture)
+given("a same-name packaged trait, trigger, configuration, and custom trait have user-authored content")(update.assert_authored_default_fixture)
+given("no supported agent has a ZPP-owned global surface")(update.assert_no_owned_global_surfaces)
+given("repository-local ZPP state is recorded")(update.record_repository_local_state)
+then("only the absent packaged trait is added to the persistent default profile")(update.assert_only_missing_default_added)
+then("every existing authored default-profile value and same-name file is unchanged")(update.assert_authored_default_preserved)
+then("no agent workflow, OpenSpec skill, or native hook is installed")(update.assert_no_agent_surface_installed)
+then("repository-local state is byte-for-byte unchanged")(update.assert_repository_unchanged)
+then("no trait resolution or derived cache occurs")(update.assert_no_resolution_or_cache)
+given("Claude Code has an exact historical ZPP native lifecycle hook without workflow skills")(update.historical_claude_hook_only)
+given("Pi and Codex have neither ZPP hooks nor workflow skills")(update.record_absent_pi_codex)
+given("unrelated native agent configuration is recorded")(update.record_unrelated_native_configuration)
+when("the user runs zpp update twice")(update.run_update_twice)
+then("Claude Code has the current ZPP-managed native lifecycle hook")(update.assert_current_claude_hook)
+then("Claude Code still has no workflow or OpenSpec skill projection")(update.assert_claude_has_no_skill_projection)
+then("Pi and Codex remain unchanged")(update.assert_pi_codex_unchanged)
+then("unrelated native agent configuration is unchanged")(update.assert_unrelated_native_unchanged)
+then("the second update makes no further change")(update.assert_second_update_unchanged)

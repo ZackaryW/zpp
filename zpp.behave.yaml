@@ -19,9 +19,11 @@ commands:
           - src/zpp/cli/resolution.py
           - src/zpp/cli/saved.py
           - src/zpp/cli/shared.py
+          - src/zpp/cli/updating.py
           - src/zpp/core/errors.py
           - src/zpp/core/resolution.py
           - src/zpp/core/state.py
+          - src/zpp/core/updating.py
           - src/zpp/utils/behavior_*.py
           - src/zpp/utils/default_profile_upgrade.py
           - src/zpp/utils/trait_*.py
@@ -31,8 +33,10 @@ commands:
         paths:
           - features/workflow/**
           - features/support/**
+          - src/zpp/cli/updating.py
           - src/zpp/cli/workflow.py
           - src/zpp/core/skills.py
+          - src/zpp/core/updating.py
           - src/zpp/utils/agent_*.py
           - src/zpp/utils/openspec_*.py
           - src/zpp/utils/skill_*.py

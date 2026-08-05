@@ -106,6 +106,11 @@ A compatible global workflow normally supersedes a local installation. Use
 remove` removes only ZPP-owned workflow paths; it leaves native hooks, shared
 OpenSpec skills, profiles, and unrelated content installed.
 
+For routine global maintenance after upgrading ZPP, use the option-free
+`zpp update` command described below. It discovers installed managed workflows
+and recognizable ZPP hooks across all supported agents, so agent selection is
+not required.
+
 ## Repository-owned affected verification
 
 Initialize an empty, committed verification mapping at the Git worktree root:
@@ -161,10 +166,11 @@ zpp local init src\package
 
 The persistent, user-owned `default` profile contains the platform-neutral
 standard traits. Initialization creates it only when absent and never reapplies
-bundled content over an existing valid default. Global workflow install and
-update are the compatible maintenance exception: they add only missing packaged
-trait files and trigger entries, preserving every existing authored value and
-same-name file. Local workflow operations and workflow removal never mutate it.
+bundled content over an existing valid default. Global workflow install, global
+workflow update, and top-level `zpp update` are the compatible maintenance
+exceptions: they add only missing packaged trait files and trigger entries,
+preserving every existing authored value and same-name file. Local workflow
+operations and workflow removal never mutate it.
 
 `zpp profile copy` copies authored profile bytes without copying cache state.
 `zpp global activate` archives the prior global layer as a collision-safe
@@ -253,23 +259,27 @@ an implicit part of locking, opening, unlocking, or cleanup.
 
 ## Update
 
-Update the executable, reconcile the selected global hooks, and then update
-ZPP's workflow bundle if it is installed:
+Upgrade the executable externally, then reconcile initialized global ZPP state
+and every installed integration:
 
 ```console
 uv tool upgrade zpp
-zpp init --agent codex --agent claude --agent pi
-zpp workflow update --agent codex --agent claude --agent pi
+zpp update
 ```
 
-For a repository-local workflow, pass `--local`; add a path only when updating a
-repository other than the current one. `--global` is no longer accepted, and a
-bare positional target is rejected. These commands update ZPP-owned surfaces
-only; agent plugins have their own installation and update lifecycles.
+`zpp update` requires initialized user state and accepts no agent, scope,
+target, force, or installation option. It additively refreshes the persistent
+`default` profile, updates every discovered managed global workflow bundle,
+maintains its native hook and version-aware generated OpenSpec skills, and
+reconciles recognizable hook-only integrations. It leaves absent workflows,
+repository-local projections and `.zpp` layers, caches, plugins, and unrelated
+agent content untouched. Conflicting owned state rejects the complete update
+before any write.
 
-Initialization never overwrites an existing valid `default` profile. Global
-workflow install and update add only missing compatible standard entries;
-existing authored profile content remains authoritative.
+The command does not upgrade the running executable. Agent plugins retain their
+own installation and update lifecycles. Use `zpp workflow update --local` only
+for an explicitly selected repository-local managed workflow; `--global` is not
+accepted, and a bare positional target is rejected.
 
 ## Development
 

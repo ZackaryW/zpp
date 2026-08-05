@@ -18,6 +18,7 @@ def init_command(
         typer.Option("--agent", help="Configure a global agent lifecycle hook."),
     ] = None,
 ) -> None:
+    """Bootstrap missing global user state and configure selected agent hooks."""
     def action() -> None:
         home = Path.home()
         initialize_user_state(home)

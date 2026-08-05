@@ -81,6 +81,18 @@ def invoke(context, arguments: list[str], *, input_text: str | None = None):
                 side_effect=generate_openspec,
             )
         )
+        stack.enter_context(
+            patch(
+                "zpp.core.updating.detect_openspec_version",
+                return_value=getattr(context, "openspec_version", "1.7.0"),
+            )
+        )
+        stack.enter_context(
+            patch(
+                "zpp.core.updating.generate_openspec_skill_bundles",
+                side_effect=generate_openspec,
+            )
+        )
         stack.enter_context(patch(
             "zpp.cli.initialization.interactive_terminal_available",
             return_value=context.interactive,

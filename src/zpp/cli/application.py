@@ -13,6 +13,7 @@ from zpp.cli.local import local_app
 from zpp.cli.profile import profile_app
 from zpp.cli.resolution import resolve_command
 from zpp.cli.saved import saved_app
+from zpp.cli.updating import update_command
 from zpp.cli.workflow import workflow_app
 
 
@@ -31,6 +32,7 @@ app.add_typer(codespace_app, name="codespace")
 app.command("behave")(behavior_command)
 app.command("init")(init_command)
 app.command("resolve")(resolve_command)
+app.command("update")(update_command)
 
 
 def _version_callback(value: bool) -> None:
