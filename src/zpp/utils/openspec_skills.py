@@ -53,13 +53,13 @@ def detect_openspec_version(run: ProcessRunner = run_process) -> str | None:
 def generate_openspec_skill_bundles(
     agents: Iterable[AgentName],
     *,
+    detected_version: str | None,
     temporary_parent: Path | None = None,
     run: ProcessRunner = run_process,
 ) -> tuple[GeneratedOpenSpecBundle, ...]:
     selected = tuple(dict.fromkeys(agents))
     if not selected:
         return ()
-    version = detect_openspec_version(run)
     parent = str(temporary_parent) if temporary_parent is not None else None
     with TemporaryDirectory(prefix="zpp-openspec-", dir=parent) as temporary:
         project = Path(temporary) / "project"
@@ -88,7 +88,7 @@ def generate_openspec_skill_bundles(
             bundles.append(
                 GeneratedOpenSpecBundle(
                     agent,
-                    version,
+                    detected_version,
                     files,
                     fingerprint_skill_files(files),
                 )

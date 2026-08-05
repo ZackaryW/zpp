@@ -36,7 +36,10 @@ def test_generation_collects_exact_agent_bytes_and_cleans_temporary_project(
         return ProcessResult(arguments, 0, "initialized\n", "")
 
     bundles = generate_openspec_skill_bundles(
-        ("codex", "pi", "claude"), temporary_parent=tmp_path, run=run
+        ("codex", "pi", "claude"),
+        detected_version="1.7.0",
+        temporary_parent=tmp_path,
+        run=run,
     )
 
     assert tuple(bundle.agent for bundle in bundles) == ("codex", "pi", "claude")
@@ -47,7 +50,8 @@ def test_generation_collects_exact_agent_bytes_and_cleans_temporary_project(
         for bundle in bundles
     )
     assert next(file.content for file in bundles[0].files if file.relative_path.endswith("SKILL.md")).startswith(b"codex:")
-    assert len(calls) == 2
+    assert len(calls) == 1
+    assert calls[0][0][:2] == ("openspec", "init")
     assert list(tmp_path.iterdir()) == []
 
 
@@ -72,6 +76,9 @@ def test_version_detection_falls_back_to_none_and_generation_failure_cleans(
 
     with pytest.raises(ManagedStateError, match="generation failed"):
         generate_openspec_skill_bundles(
-            ("codex",), temporary_parent=tmp_path, run=failing_generation
+            ("codex",),
+            detected_version="1.7.0",
+            temporary_parent=tmp_path,
+            run=failing_generation,
         )
     assert list(tmp_path.iterdir()) == []
