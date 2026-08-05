@@ -1,0 +1,4 @@
+interface:
+  display_name: "Configure Behavior"
+  short_description: "Author validated repository behavior mappings"
+  default_prompt: "Use $zpp-configure-behavior to create or revise this repository's validated affected-verification mapping."

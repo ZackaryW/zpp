@@ -9,12 +9,15 @@ from zpp import __version__
 from zpp.core.errors import ZppDomainError
 from zpp.utils.git_layers import git_worktree_root
 from zpp.utils.agent_bootstrap import plan_agent_integrations
+from zpp.utils.authored_layers import authored_layer_creation_plan, collect_authored_layer
+from zpp.utils.default_profile_upgrade import plan_default_profile_upgrade
 from zpp.utils.filesystem_mutation import (
     FilesystemMutationPlan,
     apply_mutation_plan,
     merge_mutation_plans,
 )
-from zpp.utils.models import AgentName, ManagedStateError
+from zpp.utils.models import AgentName, CreationEntry, CreationPlan, ManagedStateError
+from zpp.utils.packaged_profiles import load_packaged_default_profile
 from zpp.utils.openspec_projections import (
     OpenSpecProjectionInspection,
     inspect_openspec_projection,
@@ -115,6 +118,9 @@ def manage_workflow_skills(
         apply_mutation_plan(skill_mutation)
     else:
         mutations = [skill_mutation, plan_agent_integrations(home, selected_agents)]
+        default_upgrade = _plan_default_profile_mutation(home=home, scope=scope)
+        if default_upgrade is not None:
+            mutations.append(default_upgrade)
         mutations.extend(
             _plan_openspec_mutations(
                 home=home,
@@ -132,6 +138,47 @@ def manage_workflow_skills(
         tuple(action.kind for action in plan.actions),
         differing_managed_versions(current),
         _coexisting_agents(current),
+    )
+
+
+def _plan_default_profile_mutation(
+    *,
+    home: Path,
+    scope: SkillScope,
+) -> FilesystemMutationPlan | None:
+    if scope != "global":
+        return None
+
+    root = home / ".zpp" / "profiles" / "default"
+    exists = root.exists() or root.is_symlink()
+    try:
+        existing = collect_authored_layer(root) if exists else None
+    except (OSError, UnicodeError, ValueError) as error:
+        raise ManagedStateError(
+            f"invalid persistent default profile at {root}: {error}"
+        ) from error
+
+    planned = plan_default_profile_upgrade(existing, load_packaged_default_profile())
+    if planned is None:
+        return None
+    authored = authored_layer_creation_plan(planned, root)
+    if exists:
+        return FilesystemMutationPlan(authored, (root,))
+
+    missing: list[Path] = []
+    cursor = root.parent
+    while not cursor.exists() and not cursor.is_symlink():
+        missing.append(cursor)
+        cursor = cursor.parent
+    if cursor.is_symlink() or not cursor.is_dir():
+        raise ManagedStateError(
+            f"persistent default parent is not a directory: {cursor}"
+        )
+    directories = tuple(
+        CreationEntry(path, "directory") for path in reversed(missing)
+    )
+    return FilesystemMutationPlan(
+        CreationPlan((*directories, *authored.entries))
     )
 
 

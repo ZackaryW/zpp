@@ -19,6 +19,7 @@ WORKFLOW_SKILL_NAMES = (
     "zpp-author-skill",
     "zpp-clarify-change",
     "zpp-commit-zmem",
+    "zpp-configure-behavior",
     "zpp-form-specs",
     "zpp-lean-audit",
     "zpp-mature-utilities",

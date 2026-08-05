@@ -1,0 +1,62 @@
+version: 1
+commands:
+  bdd:
+    provider:
+      kind: argv
+      argv: [uv, run, python, scripts/run_behave_roots.py, "{targets}", --format, progress]
+    targets:
+      core:
+        value: features/core
+        paths:
+          - features/core/**
+          - features/support/**
+          - src/zpp/cli/application.py
+          - src/zpp/cli/behavior.py
+          - src/zpp/cli/global_commands.py
+          - src/zpp/cli/initialization.py
+          - src/zpp/cli/local.py
+          - src/zpp/cli/profile.py
+          - src/zpp/cli/resolution.py
+          - src/zpp/cli/saved.py
+          - src/zpp/cli/shared.py
+          - src/zpp/core/errors.py
+          - src/zpp/core/resolution.py
+          - src/zpp/core/state.py
+          - src/zpp/utils/behavior_*.py
+          - src/zpp/utils/default_profile_upgrade.py
+          - src/zpp/utils/trait_*.py
+          - src/zpp/utils/plugin_*.py
+      workflow:
+        value: features/workflow
+        paths:
+          - features/workflow/**
+          - features/support/**
+          - src/zpp/cli/workflow.py
+          - src/zpp/core/skills.py
+          - src/zpp/utils/agent_*.py
+          - src/zpp/utils/openspec_*.py
+          - src/zpp/utils/skill_*.py
+          - src/zpp/artifacts/skills/**
+          - src/zpp/artifacts/profiles/default/**
+      codespaces:
+        value: features/codespaces
+        paths:
+          - features/codespaces/**
+          - features/support/**
+          - src/zpp/cli/codespace.py
+          - src/zpp/core/codespaces.py
+          - src/zpp/utils/codespace_*.py
+  bdd-audit:
+    provider:
+      kind: argv
+      argv: [uv, run, python, scripts/run_behave_roots.py, "{targets}", --format, progress]
+    targets:
+      core:
+        value: features/core
+        paths: ["**"]
+      workflow:
+        value: features/workflow
+        paths: ["**"]
+      codespaces:
+        value: features/codespaces
+        paths: ["**"]

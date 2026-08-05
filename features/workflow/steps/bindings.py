@@ -3,6 +3,8 @@ from behave import given, then, use_step_matcher, when
 from features.support import zpp_support as support
 
 given('the packaged ZPP workflow bundle contains all twelve permanent skills')(support.step_packaged_workflow_bundle)
+then('every native projection contains the same twelve permanent workflow skills')(support.step_every_projection_same_bundle)
+given('Codex has a compatible managed global workflow integration')(support.step_codex_complete_global_integration)
 
 use_step_matcher('parse')
 given('no interactive terminal is available')(support.step_noninteractive)

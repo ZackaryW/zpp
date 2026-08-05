@@ -1896,6 +1896,7 @@ def step_packaged_workflow_bundle(context):
         "zpp-author-skill",
         "zpp-clarify-change",
         "zpp-commit-zmem",
+        "zpp-configure-behavior",
         "zpp-form-specs",
         "zpp-lean-audit",
         "zpp-mature-utilities",
@@ -3093,7 +3094,6 @@ def step_reconciliation_records_disposition(context):
 def step_skill_bodies_neutral(context):
     forbidden = (
         "pytest",
-        "behave",
         "python-bdd",
         "django",
         "fastapi",
@@ -3117,6 +3117,7 @@ def step_platform_guidance_in_optional_traits(context):
     names = {
         "python-bdd", "python-tdd", "python-build", "python-django-tdd",
         "typescript-bdd", "typescript-tdd", "flutter-bdd", "flutter-tdd",
+        "bdd-structure-python", "bdd-structure-ts", "bdd-structure-flutter",
     }
     triggers = {item["trait"] for item in json.loads((root / "trait.json").read_text(encoding="utf-8"))}
     assert triggers.isdisjoint(names)

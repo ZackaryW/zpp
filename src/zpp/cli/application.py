@@ -5,8 +5,9 @@ from typing import Annotated
 import typer
 
 from zpp import __version__
-from zpp.cli.global_commands import global_app
+from zpp.cli.behavior import behavior_command
 from zpp.cli.codespace import codespace_app
+from zpp.cli.global_commands import global_app
 from zpp.cli.initialization import init_command
 from zpp.cli.local import local_app
 from zpp.cli.profile import profile_app
@@ -27,6 +28,7 @@ app.add_typer(global_app, name="global")
 app.add_typer(local_app, name="local")
 app.add_typer(workflow_app, name="workflow")
 app.add_typer(codespace_app, name="codespace")
+app.command("behave")(behavior_command)
 app.command("init")(init_command)
 app.command("resolve")(resolve_command)
 
