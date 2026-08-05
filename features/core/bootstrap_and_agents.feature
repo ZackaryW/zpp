@@ -260,12 +260,12 @@ Feature: Bootstrap ZPP and configure agent applications
 
   Scenario: Global update reconciles a recognizable hook-only integration
     Given valid initialized user state
-    And Pi has an exact historical ZPP native lifecycle hook without workflow skills
-    And Codex and Claude Code have neither ZPP hooks nor workflow skills
+    And Claude Code has an exact historical ZPP native lifecycle hook without workflow skills
+    And Pi and Codex have neither ZPP hooks nor workflow skills
     And unrelated native agent configuration is recorded
     When the user runs zpp update twice
-    Then Pi has the current ZPP-managed native lifecycle hook
-    And Pi still has no workflow or OpenSpec skill projection
-    And Codex and Claude Code remain unchanged
+    Then Claude Code has the current ZPP-managed native lifecycle hook
+    And Claude Code still has no workflow or OpenSpec skill projection
+    And Pi and Codex remain unchanged
     And unrelated native agent configuration is unchanged
     And the second update makes no further change
