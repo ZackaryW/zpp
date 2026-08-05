@@ -537,7 +537,7 @@ def step_bad_agent(context):
 
 def step_assert_version(context):
     assert context.results[0].exit_code == 0
-    assert context.results[0].stdout.strip() == "ZPP version 0.9.0"
+    assert context.results[0].stdout.strip() == "ZPP version 0.9.5"
 
 
 def step_assert_help(context):
@@ -2576,7 +2576,7 @@ def step_only_codex_global_updated(context):
     manifest = json.loads(
         (context.codex_global_root / ".zpp-workflow-skills.json").read_text(encoding="utf-8")
     )
-    assert manifest["bundle_version"] == "0.9.0"
+    assert manifest["bundle_version"] == "0.9.5"
 
 
 def step_codex_local_unchanged(context):

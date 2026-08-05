@@ -38,7 +38,7 @@ when('the user runs zpp init and submits the selector with no checked agent')(su
 when('the user cancels zpp init from the agent selector')(support.step_cancel_selector)
 when('the user runs zpp init with agent Claude Code')(support.step_init_claude)
 when('the user runs zpp init with an unsupported agent name')(support.step_bad_agent)
-then('the product identifies itself as ZPP version 0.9.0')(support.step_assert_version)
+then('the product identifies itself as ZPP version 0.9.5')(support.step_assert_version)
 then('the help exposes the confirmed initial command surface')(support.step_assert_help)
 then('the help exposes the independent workflow lifecycle command group')(support.step_workflow_command_group)
 then('the help does not expose a generic skill command group')(support.step_no_generic_skill_command_group)

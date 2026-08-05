@@ -1,6 +1,6 @@
 [project]
 name = "zpp"
-version = "0.9.2"
+version = "0.9.5"
 description = "Zack's Project Protocol"
 authors = [
     { name = "ZackaryW", email = "gitzackw@gmail.com" }
