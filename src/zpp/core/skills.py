@@ -9,7 +9,11 @@ from zpp import __version__
 from zpp.core.errors import ZppDomainError
 from zpp.utils.git_layers import git_worktree_root
 from zpp.utils.agent_bootstrap import plan_agent_integrations
-from zpp.utils.filesystem_mutation import apply_mutation_plan, merge_mutation_plans
+from zpp.utils.filesystem_mutation import (
+    FilesystemMutationPlan,
+    apply_mutation_plan,
+    merge_mutation_plans,
+)
 from zpp.utils.models import AgentName, ManagedStateError
 from zpp.utils.openspec_projections import (
     OpenSpecProjectionInspection,
@@ -25,12 +29,11 @@ from zpp.utils.skill_bundles import SkillProjectionInspection, load_packaged_ski
 from zpp.utils.skill_lifecycle import (
     SkillLifecycleActionKind,
     SkillVersionDifference,
-    apply_skill_lifecycle,
     differing_managed_versions,
+    mutation_plan_for_skill_lifecycle,
     plan_skill_install,
     plan_skill_remove,
     plan_skill_update,
-    mutation_plan_for_skill_lifecycle,
 )
 from zpp.utils.skill_projections import (
     SkillProjection,
@@ -140,7 +143,7 @@ def _plan_openspec_mutations(
     agents: tuple[AgentName, ...],
     operation: Literal["install", "update"],
     bootstrap_openspec: bool,
-):
+) -> tuple[FilesystemMutationPlan, ...]:
     if scope == "local" and operation == "install" and not bootstrap_openspec:
         return ()
 
