@@ -7,7 +7,7 @@ from behave import given, then, when
 
 from zpp.utils.plugin_discovery import ActivePlugin
 
-from zpp_steps import (
+from features.support.zpp_support import (
     git_init,
     initialize,
     invoke,

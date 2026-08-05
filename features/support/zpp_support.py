@@ -12,7 +12,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import yaml
-from behave import given, then, use_step_matcher, when
 
 from zpp.cli import app
 from zpp.utils.models import (
@@ -351,53 +350,41 @@ def git_init(path: Path) -> None:
     )
 
 
-@given("ZPP is installed")
 def step_installed(context):
     assert app.info.name == "zpp"
 
 
-@given("a clean user home")
 def step_clean_home(context):
     assert snapshot(context.home) == {".": ("directory", None)}
 
 
-@given("a clean user home with an initialized global ZPP layer")
-@given("a clean user home with initialized ZPP state")
 def step_clean_initialized_home(context):
     step_clean_home(context)
     initialize(context)
 
 
-@given("a project without local ZPP state")
-@given("the current project has no repository-local agent integration")
 def step_clean_project(context):
     assert not (context.project / ".zpp").exists()
     assert not any((context.project / name).exists() for name in (".pi", ".codex", ".claude"))
 
 
-@given("no interactive terminal is available")
 def step_noninteractive(context):
     context.interactive = False
 
 
-@given("rg, jq, and zmem are unavailable on PATH")
 def step_tool_traits_unavailable(context):
     context.unavailable_executables = {"rg", "jq", "zmem"}
 
 
-@given("an interactive terminal is available")
 def step_interactive(context):
     context.interactive = True
 
 
-@given("valid initialized user state")
-@given("a valid initialized ZPP user state")
 def step_initialized(context):
     initialize(context)
     context.existing_user_state = snapshot(context.home / ".zpp")
 
 
-@given("partially initialized valid user state with missing required entries")
 def step_partial_user_state(context):
     root = context.home / ".zpp"
     write_layer(root / "global")
@@ -405,14 +392,12 @@ def step_partial_user_state(context):
     context.missing_user_paths = (root / "saved", root / "cached")
 
 
-@given("the existing managed files have distinguishable valid formatting")
 def step_distinct_user_bytes(context):
     config = context.home / ".zpp" / "global" / "config.json"
     config.write_text('{ "traitsConfig": {}, "trait_overwrites": false }\n', encoding="utf-8")
     context.preserved_files = {config: config.read_bytes()}
 
 
-@given("user state contains an invalid managed source")
 def step_invalid_user_state(context):
     root = context.home / ".zpp"
     (root / "global").mkdir(parents=True)
@@ -424,20 +409,16 @@ def step_invalid_user_state(context):
     context.invalid_source = root / "global" / "config.json"
 
 
-@given("other required user-state entries are missing")
 def step_missing_user_entries(context):
     context.missing_user_paths = (context.home / ".zpp" / "global" / "traits",)
     context.state_before = snapshot(context.home / ".zpp")
 
 
-@given("Pi, Codex, and Claude Code have no ZPP integration")
-@given("Codex, Pi, and Claude Code have no ZPP integration")
 def step_no_agent_integrations(context):
     context.agents_before = snapshot(context.home)
     assert not any(agent_path(context, name).exists() for name in ("pi", "codex", "claude"))
 
 
-@given("Claude Code has the exact historical ZPP-managed SessionStart hook invoking zpp resolve")
 def step_exact_historical_claude_hook(context):
     destination = agent_path(context, "claude")
     destination.parent.mkdir()
@@ -459,13 +440,11 @@ def step_exact_historical_claude_hook(context):
     context.unrelated_claude_setting = document["theme"]
 
 
-@given("every other Claude Code destination required by workflow installation can be updated safely")
 def step_other_claude_destinations_safe(context):
     assert not workflow_skill_root(context, "claude", scope="global").exists()
     assert not openspec_skill_root(context, "claude", scope="global").exists()
 
 
-@then("the historical hook is replaced by the current agent-qualified ZPP lifecycle integration")
 def step_historical_hook_upgraded(context):
     assert context.result.exit_code == 0, context.result.output
     assert_current_agent_integration(context, "claude")
@@ -473,18 +452,15 @@ def step_historical_hook_upgraded(context):
     assert '"command": "zpp resolve"' not in source
 
 
-@then("the current Claude Code codespace guards are installed")
 def step_current_claude_guard_installed(context):
     assert_current_agent_integration(context, "claude")
 
 
-@then("unrelated Claude Code settings are byte-for-byte unchanged")
 def step_unrelated_claude_settings_preserved(context):
     document = json.loads(agent_path(context, "claude").read_text(encoding="utf-8"))
     assert document["theme"] == context.unrelated_claude_setting
 
 
-@given("Claude Code has a user-authored SessionStart hook resembling the historical ZPP hook")
 def step_ambiguous_historical_claude_hook(context):
     destination = agent_path(context, "claude")
     destination.parent.mkdir()
@@ -501,120 +477,97 @@ def step_ambiguous_historical_claude_hook(context):
     destination.write_text(json.dumps(document), encoding="utf-8")
 
 
-@given("every Claude Code integration destination is recorded")
 def step_record_claude_integration_destinations(context):
     context.claude_integration_before = snapshot(context.home / ".claude")
 
 
-@then("every Claude Code integration destination is byte-for-byte unchanged")
 def step_claude_integration_destinations_unchanged(context):
     assert snapshot(context.home / ".claude") == context.claude_integration_before
 
 
-@when("the user requests the ZPP version")
 def step_version(context):
     invoke(context, ["--version"])
 
 
-@when("the user requests ZPP help")
 def step_help(context):
     invoke(context, ["--help"])
 
 
-@when("the user runs zpp init")
 def step_run_init(context):
     invoke(context, ["init"])
 
 
-@when("the user runs zpp init twice")
 def step_run_init_twice(context):
     invoke(context, ["init"])
     context.after_first_init = snapshot(context.home / ".zpp")
     invoke(context, ["init"])
 
 
-@when("the user runs zpp init with agents Pi and Codex")
 def step_init_pi_codex(context):
     invoke(context, ["init", "--agent", "pi", "--agent", "codex"])
 
 
-@when("the user runs zpp init with agent Pi twice")
 def step_init_pi_twice(context):
     invoke(context, ["init", "--agent", "pi"])
     invoke(context, ["init", "--agent", "pi"])
 
 
-@when("the user runs zpp init and selects Claude Code")
 def step_select_claude(context):
     context.selector_answer = ("claude",)
     invoke(context, ["init"])
 
 
-@when("the user runs zpp init and submits the selector with no checked agent")
 def step_select_none(context):
     context.selector_answer = ()
     invoke(context, ["init"])
 
 
-@when("the user cancels zpp init from the agent selector")
 def step_cancel_selector(context):
     context.selector_answer = None
     invoke(context, ["init"])
 
 
-@when("the user runs zpp init with agent Claude Code")
 def step_init_claude(context):
     invoke(context, ["init", "--agent", "claude"])
 
 
-@when("the user runs zpp init with an unsupported agent name")
 def step_bad_agent(context):
     invoke(context, ["init", "--agent", "unsupported"])
 
 
-@then("the product identifies itself as ZPP version 0.9.0")
 def step_assert_version(context):
     assert context.results[0].exit_code == 0
     assert context.results[0].stdout.strip() == "ZPP version 0.9.0"
 
 
-@then("the help exposes the confirmed initial command surface")
 def step_assert_help(context):
     output = context.results[1].stdout
     for command in ("init", "profile", "local", "resolve"):
         assert command in output
 
 
-@then("the help does not expose a separate agent installation command")
 def step_no_agent_command(context):
     assert "agent install" not in context.results[1].stdout.lower()
 
 
-@then("the help exposes the independent workflow lifecycle command group")
 def step_workflow_command_group(context):
     assert "workflow" in context.results[1].stdout.lower()
 
 
-@then("the help does not expose a generic skill command group")
 def step_no_generic_skill_command_group(context):
     output = context.results[1].stdout.lower()
     assert re.search(r"(?m)^\|\s*skill(?:\s|\|)", output) is None
 
 
-@then("initialization succeeds")
 def step_init_succeeds(context):
     assert context.result.exit_code == 0, context.result.output
 
 
-@then("initialization succeeds both times")
-@then("both initializations succeed without offering agent selection")
 def step_two_inits_succeed(context):
     assert all(result.exit_code == 0 for result in context.results[-2:])
     assert context.selector_offers == []
 
 
-@then("the neutral global trait layer exists")
-@then("the neutral global user state is initialized")
 def step_global_exists(context):
     root = context.home / ".zpp" / "global"
     assert (root / "config.json").is_file()
@@ -622,8 +575,6 @@ def step_global_exists(context):
     assert (root / "traits").is_dir()
 
 
-@then("the empty profile, saved, and cache roots exist")
-@then("the saved and cache roots exist")
 def step_empty_roots(context):
     root = context.home / ".zpp"
     assert (root / "profiles").is_dir()
@@ -632,124 +583,97 @@ def step_empty_roots(context):
     assert json.loads((root / "saved" / "_bindings.json").read_text(encoding="utf-8")) == {}
 
 
-@then("no named profile exists")
 def step_no_profile(context):
     assert list((context.home / ".zpp" / "profiles").iterdir()) == []
 
 
-@then("no cache artifact exists")
-@then("no trait cache is created")
 def step_no_cache(context):
     cache = context.home / ".zpp" / "cached"
     assert not any(path.is_file() for path in cache.rglob("*"))
 
 
-@then("the project still has no local ZPP state")
 def step_no_local_state(context):
     assert not (context.project / ".zpp").exists()
 
 
-@then("no agent application is configured")
-@then("no agent application is changed")
 def step_no_agents(context):
     assert not any(agent_path(context, name).exists() for name in ("pi", "codex", "claude"))
 
 
-@then("every missing required user-state entry is created")
 def step_missing_created(context):
     assert all(path.exists() for path in context.missing_user_paths)
 
 
-@then("every pre-existing managed file is byte-for-byte unchanged")
 def step_preserved_files(context):
     assert all(path.read_bytes() == source for path, source in context.preserved_files.items())
 
 
-@then("the second initialization makes no further change")
 def step_second_unchanged(context):
     assert snapshot(context.home / ".zpp") == context.after_first_init
 
 
-@then("initialization fails as a managed-state rejection")
-@then("agent setup fails as a managed-state rejection")
 def step_managed_rejection(context):
     assert context.result.exit_code == 1
 
 
-@then("the diagnostic identifies the invalid source path")
-@then("the diagnostic identifies the invalid managed source")
 def step_invalid_diagnostic(context):
     assert_diagnostic_path(context.result.stderr, context.invalid_source)
 
 
-@then("the diagnostic identifies the invalid managed source path")
 def step_invalid_managed_path(context):
     assert_diagnostic_path(context.result.stderr, context.invalid_source)
 
 
-@then("no missing user-state entry is created")
 def step_no_missing_created(context):
     assert all(not path.exists() for path in context.missing_user_paths)
 
 
-@then("the existing user state is unchanged")
 def step_user_unchanged(context):
     expected = getattr(context, "state_before", getattr(context, "existing_user_state", None))
     if expected is not None:
         assert snapshot(context.home / ".zpp") == expected
 
 
-@then("initialization succeeds without offering agent selection")
 def step_init_no_selector(context):
     assert context.result.exit_code == 0
     assert context.selector_offers == []
 
 
-@then("one selector offers Pi, Codex, and Claude Code")
 def step_selector_offers(context):
     assert context.selector_offers == [("pi", "codex", "claude")]
 
 
-@then("{label} has one ZPP-managed native lifecycle hook")
 def step_agent_installed(context, label):
     assert agent_path(context, agent_name(label)).is_file()
 
 
-@then("neither agent receives a ZPP instruction paragraph or skill")
-@then("Claude Code receives no ZPP instruction paragraph or skill")
 def step_no_policy_install(context):
     assert not (context.home / ".codex" / "skills").exists()
     assert not (context.home / ".claude" / "skills").exists()
 
 
-@then("their agent-owned hook trust and enablement state is unchanged")
 def step_trust_unchanged(context):
     assert not any((context.home / name / "trust.json").exists() for name in (".pi", ".codex", ".claude"))
 
 
-@then("Claude Code is unchanged")
 def step_claude_unchanged(context):
     assert not agent_path(context, "claude").exists()
 
 
-@then("Pi and Codex are unchanged")
 def step_pi_codex_unchanged(context):
     assert not agent_path(context, "pi").exists()
     assert not agent_path(context, "codex").exists()
 
 
-@then("the current project still has no repository-local agent integration")
 def step_no_repo_agent(context):
     assert not any((context.project / name).exists() for name in (".pi", ".codex", ".claude"))
 
 
-@then("initialization is cancelled")
 def step_cancelled(context):
     assert context.result.exit_code == 1
     assert "cancelled" in context.result.stderr.lower()
 
 
-@given("valid initialized user state contains an activatable authored trait")
 def step_activatable_state(context):
     initialize(context)
     root = context.home / ".zpp" / "global"
@@ -757,12 +681,10 @@ def step_activatable_state(context):
     (root / "trait.json").write_text('[{"trait":"neutral"}]\n', encoding="utf-8")
 
 
-@given("no trait cache exists")
 def step_no_trait_cache(context):
     assert not any((context.home / ".zpp" / "cached").rglob("traits.json"))
 
 
-@given("Pi has a ZPP integration surrounded by unmanaged content")
 def step_pi_surrounded(context):
     invoke(context, ["init", "--agent", "pi"])
     sibling = context.home / ".pi" / "agent" / "extensions" / "keep.ts"
@@ -771,41 +693,34 @@ def step_pi_surrounded(context):
     context.results.clear()
 
 
-@given("Codex was previously configured by ZPP")
 def step_codex_existing(context):
     invoke(context, ["init", "--agent", "codex"])
     context.codex_before = snapshot(context.home / ".codex")
     context.results.clear()
 
 
-@then("Pi has exactly one valid ZPP integration")
 def step_one_pi_integration(context):
     assert agent_path(context, "pi").is_file()
 
 
-@then("Pi's unmanaged content is byte-for-byte unchanged")
 def step_pi_unmanaged_unchanged(context):
     assert all(path.read_bytes() == source for path, source in context.pi_unmanaged.items())
 
 
-@then("Codex remains installed and unchanged")
 def step_codex_still(context):
     assert snapshot(context.home / ".codex") == context.codex_before
 
 
-@then("no effective trait, workflow direction, or platform guidance is copied into Pi's installed hook")
 def step_pi_no_trait_copy(context):
     source = agent_path(context, "pi").read_text(encoding="utf-8")
     assert "Do the neutral thing" not in source
     assert "zpp" in source and "resolve" in source
 
 
-@then("trait resolution is not invoked")
 def step_resolution_not_invoked(context):
     assert not any((context.home / ".zpp" / "cached").rglob("traits.json"))
 
 
-@given('{agent} was configured by ZPP')
 def step_agent_configured(context, agent):
     initialize(context)
     context.agent = agent_name(agent)
@@ -814,19 +729,16 @@ def step_agent_configured(context, agent):
     context.results.clear()
 
 
-@given("its native hook is trusted and enabled by the agent application")
 def step_hook_enabled(context):
     context.hook_enabled = True
 
 
-@given("its current working directory resolves one effective trait document")
 def step_hook_one_trait(context):
     root = context.home / ".zpp" / "global"
     write_trait(root, "current", body="Current context.\n")
     (root / "trait.json").write_text('[{"trait":"current"}]\n', encoding="utf-8")
 
 
-@given("its current working directory resolves no active traits")
 def step_hook_empty(context):
     triggers = json.loads(
         (context.home / ".zpp" / "global" / "trait.json").read_text(
@@ -836,7 +748,6 @@ def step_hook_empty(context):
     assert triggers == []
 
 
-@given("its current working directory causes trait resolution to fail")
 def step_hook_failure(context):
     root = context.home / ".zpp" / "global"
     (root / "traits" / "broken.md").write_text("invalid\n", encoding="utf-8")
@@ -844,11 +755,8 @@ def step_hook_failure(context):
     context.injected = ["stale context"]
 
 
-use_step_matcher("re")
 
 
-@when(r"(?:.+ )?invokes the ZPP hook")
-@when("the native ZPP hook is invoked")
 def step_invoke_hook(context):
     context.results.clear()
     result = invoke(
@@ -858,18 +766,14 @@ def step_invoke_hook(context):
     context.injected = [result.stdout] if result.exit_code == 0 and result.stdout else []
 
 
-use_step_matcher("parse")
 
 
-@then("ZPP resolves the current working directory")
-@then("ZPP resolves the current working directory with {agent} as the invoking agent")
 def step_hook_cwd(context, agent=None):
     assert context.result.exit_code == 0
     if agent is not None:
         assert agent_name(agent) == context.agent
 
 
-@then("only {agent}'s active plugin trait sources are eligible")
 def step_hook_agent_plugins(context, agent):
     assert agent_name(agent) == context.agent
     source = agent_path(context, context.agent).read_text(encoding="utf-8")
@@ -881,36 +785,30 @@ def step_hook_agent_plugins(context, agent):
     assert expected in source
 
 
-@then("the complete effective trait document is injected exactly once into {agent} context")
 def step_hook_injected(context, agent):
     assert agent_name(agent) == context.agent
     assert len(context.injected) == 1
     assert parse_documents(context.injected[0])[0][0]["name"] == "current"
 
 
-@then("hook execution succeeds")
 def step_hook_success(context):
     assert context.result.exit_code == 0
 
 
-@then("no ZPP trait context is injected into {agent}")
 def step_hook_no_context(context, agent):
     assert agent_name(agent) == context.agent
     assert context.injected == []
 
 
-@then("the resolution failure is surfaced through {agent}")
 def step_hook_failure_surfaced(context, agent):
     assert agent_name(agent) == context.agent
     assert context.result.exit_code == 1 and context.result.stderr
 
 
-@then("no stale or partial ZPP trait context is injected")
 def step_no_stale_context(context):
     assert context.injected == []
 
 
-@given("Claude Code has an unmanaged hook conflicting with ZPP integration")
 def step_claude_conflict(context):
     path = agent_path(context, "claude")
     path.parent.mkdir(parents=True)
@@ -921,12 +819,10 @@ def step_claude_conflict(context):
     context.claude_before = snapshot(path.parent)
 
 
-@given("Pi has no ZPP integration")
 def step_pi_missing(context):
     context.pi_before = snapshot(context.home / ".pi")
 
 
-@given("Codex has an unmanaged hook conflicting with ZPP integration")
 def step_codex_conflict(context):
     path = agent_path(context, "codex")
     path.parent.mkdir(parents=True)
@@ -936,34 +832,27 @@ def step_codex_conflict(context):
     context.conflicting_before = path.read_bytes()
 
 
-@then("the diagnostic identifies the conflicting path")
 def step_conflict_path(context):
     assert str(context.conflicting_path) in context.result.stderr
 
 
-@then("the conflicting unmanaged hook is unchanged")
-@then("the conflicting Codex hook remains unchanged")
 def step_conflict_unchanged(context):
     assert context.conflicting_path.read_bytes() == context.conflicting_before
 
 
-@then("all other Claude Code content is unchanged")
 def step_claude_content_unchanged(context):
     assert snapshot(context.conflicting_path.parent) == context.claude_before
 
 
-@then("Pi remains unchanged")
 def step_pi_unchanged(context):
     root = getattr(context, "pi_unchanged_root", context.home / ".pi")
     assert snapshot(root) == context.pi_before
 
 
-@then("the invocation fails as a usage error")
 def step_usage_error(context):
     assert context.result.exit_code == 2
 
 
-@then("no ZPP user state is created")
 def step_no_user_state(context):
     assert not (context.home / ".zpp").exists()
 
@@ -971,7 +860,6 @@ def step_no_user_state(context):
 # Profile and saved lifecycle
 
 
-@given('a valid profile named "{name}" with distinctive authored bytes')
 def step_existing_profile(context, name):
     root = context.home / ".zpp" / "profiles" / name
     write_layer(root)
@@ -979,12 +867,10 @@ def step_existing_profile(context, name):
     context.profile_bytes = snapshot(root)
 
 
-@given('no profile named "{name}" exists')
 def step_no_named_profile(context, name):
     assert not (context.home / ".zpp" / "profiles" / name).exists()
 
 
-@given('profile "{name}" has invalid managed state and a required artifact absent')
 def step_broken_profile(context, name):
     root = context.home / ".zpp" / "profiles" / name
     root.mkdir(parents=True)
@@ -993,34 +879,26 @@ def step_broken_profile(context, name):
     context.invalid_source = root / "config.json"
 
 
-@given("the complete ZPP user state is recorded")
 def step_record_user_state(context):
     context.state_before = snapshot(context.home / ".zpp")
 
 
-use_step_matcher("re")
 
 
-@when(r"the user runs (?P<command>zpp (?:profile|local)(?!.* and declines confirmation).+)")
 def step_run_profile_or_local(context, command):
     invoke(context, translate_command(context, command))
 
 
-use_step_matcher("parse")
 
 
-@then("both profile creations succeed")
-@then("both saved creations succeed")
 def step_last_two_succeed(context):
     assert all(result.exit_code == 0 for result in context.results[-2:])
 
 
-@then('the authored bytes of profile "alpha" are unchanged')
 def step_profile_bytes(context):
     assert snapshot(context.home / ".zpp" / "profiles" / "alpha") == context.profile_bytes
 
 
-@then('profile "beta" contains one neutral authored ZPP layer')
 def step_beta_neutral(context):
     root = context.home / ".zpp" / "profiles" / "beta"
     assert json.loads((root / "config.json").read_text(encoding="utf-8")) == {"trait_overwrites": False, "traitsConfig": {}}
@@ -1028,28 +906,22 @@ def step_beta_neutral(context):
     assert (root / "traits").is_dir()
 
 
-@then("neither profile has a derived cache")
 def step_profiles_no_cache(context):
     assert not (context.home / ".zpp" / "cached" / "profiles" / "alpha").exists()
     assert not (context.home / ".zpp" / "cached" / "profiles" / "beta").exists()
 
 
-@then("the command succeeds with stdout:")
 def step_stdout_docstring(context):
     assert context.result.exit_code == 0
     assert context.result.stdout.strip() == context.text.strip()
 
 
-@then("the command is rejected with exit code 1")
-@then("resolution fails with exit code 1")
 def step_exit_one(context):
     assert context.result.exit_code == 1
 
 
-use_step_matcher("re")
 
 
-@then(r'the diagnostic identifies (?P<subject>the invalid profile name|the invalid saved name|the invalid managed source|the missing source profile|the existing destination|the persistent default profile|".+")')
 def step_diagnostic_subject(context, subject):
     subject = subject.strip()
     if subject == "the invalid profile name" or subject == "the invalid saved name":
@@ -1071,15 +943,12 @@ def step_diagnostic_subject(context, subject):
     assert expected.lower() in context.result.stderr.lower()
 
 
-use_step_matcher("parse")
 
 
-@then("the complete ZPP user state is unchanged")
 def step_complete_user_unchanged(context):
     assert snapshot(context.home / ".zpp") == context.state_before
 
 
-@given('profiles "work" and "keep" and their independent caches exist')
 def step_profiles_and_caches(context):
     for name in ("work", "keep"):
         invoke(context, ["profile", "create", name])
@@ -1090,85 +959,68 @@ def step_profiles_and_caches(context):
     context.results.clear()
 
 
-@given('ZPP_PROFILE is "work"')
 def step_profile_env(context):
     context.env["ZPP_PROFILE"] = "work"
 
 
-@when("the user runs zpp profile remove work and declines confirmation")
 def step_decline_profile(context):
     invoke(context, ["profile", "remove", "work"], input_text="n\n")
 
 
-@then('profile "work" and its cache remain unchanged')
 def step_work_remains(context):
     assert (context.home / ".zpp" / "profiles" / "work").exists()
     assert (context.home / ".zpp" / "cached" / "profiles" / "work").exists()
 
 
-@then('profile "work" and its independent cache no longer exist')
 def step_work_removed(context):
     assert not (context.home / ".zpp" / "profiles" / "work").exists()
     assert not (context.home / ".zpp" / "cached" / "profiles" / "work").exists()
 
 
-@then('profile "keep" and its independent cache are unchanged')
 def step_keep_profile(context):
     assert snapshot(context.home / ".zpp" / "profiles" / "keep") == context.keep_before
 
 
-@then("ZPP_PROFILE remains \"work\"")
 def step_env_unchanged(context):
     assert context.env["ZPP_PROFILE"] == "work"
 
 
-@then("the command succeeds")
 def step_command_succeeds(context):
     assert context.result.exit_code == 0, context.result.output
 
 
-@then("the command succeeds with empty stdout")
 def step_empty_stdout(context):
     assert context.result.exit_code == 0
     assert context.result.stdout == ""
 
 
-use_step_matcher("re")
 
 
-@given(r'"(?P<path>C:\\work\\[ab])" is an existing directory and no saved layer named "(?P<name>.+)" exists')
 def step_saved_target(context, path, name):
     target = fixture_path(context, path)
     target.mkdir(parents=True, exist_ok=True)
     assert not (context.home / ".zpp" / "saved" / name).exists()
 
 
-use_step_matcher("parse")
 
 
-@then("the saved creation succeeds")
 def step_saved_succeeds(context):
     assert context.result.exit_code == 0
 
 
-@then("one authored layer exists at ~/.zpp/saved/shared")
-@then('saved layer "shared" is one neutral authored ZPP layer')
 def step_saved_layer(context):
     root = context.home / ".zpp" / "saved" / "shared"
     assert (root / "config.json").is_file() and (root / "trait.json").is_file() and (root / "traits").is_dir()
 
 
-@then('no saved layer named "shared" exists under ~/.zpp/profiles')
 def step_saved_not_profile(context):
     assert not (context.home / ".zpp" / "profiles" / "shared").exists()
 
 
-@then('no independent cache exists for saved layer "shared"')
 def step_saved_no_cache(context):
     assert not (context.home / ".zpp" / "cached" / "saved" / "shared").exists()
 
 
-@then("the command succeeds with these saved bindings in canonical-target order:")
 def step_saved_table(context):
     expected = [
         (
@@ -1181,7 +1033,6 @@ def step_saved_table(context):
     assert actual == expected, (actual, expected)
 
 
-@given('an existing saved layer named "shared" with distinctive authored bytes bound to "C:\\work\\b"')
 def step_existing_saved(context):
     target = fixture_path(context, "C:\\work\\b")
     target.mkdir(parents=True)
@@ -1192,33 +1043,27 @@ def step_existing_saved(context):
     context.results.clear()
 
 
-@given('"C:\\work\\a" is an existing directory')
 def step_work_a(context):
     fixture_path(context, "C:\\work\\a").mkdir(parents=True, exist_ok=True)
 
 
-@given('"c:/WORK/B" identifies the same Windows target as "C:\\work\\b"')
 def step_equivalent_b(context):
     context.paths["c:/work/b"] = context.paths["c:\\work\\b"]
 
 
-@when('the user repeats zpp profile saved create shared "c:/WORK/B"')
 def step_repeat_saved(context):
     invoke(context, ["profile", "saved", "create", "shared", str(context.paths["c:\\work\\b"])])
 
 
-@then('the authored bytes of saved layer "shared" are unchanged')
 def step_saved_bytes(context):
     assert snapshot(context.home / ".zpp" / "saved" / "shared") == context.saved_bytes
 
 
-@then('the saved index maps exactly both canonical absolute targets to "shared"')
 def step_two_bindings(context):
     index = json.loads((context.home / ".zpp" / "saved" / "_bindings.json").read_text(encoding="utf-8"))
     assert len(index) == 2 and set(index.values()) == {"shared"}
 
 
-@given('"C:\\work\\a" is canonically bound to saved layer "shared"')
 def step_bound_shared(context):
     target = fixture_path(context, "C:\\work\\a")
     target.mkdir(parents=True, exist_ok=True)
@@ -1226,30 +1071,24 @@ def step_bound_shared(context):
     context.results.clear()
 
 
-@given('no saved layer named "other" exists')
 def step_no_other_saved(context):
     assert not (context.home / ".zpp" / "saved" / "other").exists()
 
 
-use_step_matcher("re")
 
 
-@given(r'"(?P<path>C:\\missing)" does not exist and no saved layer named "new" exists')
 def step_missing_saved_target(context, path):
     assert not fixture_path(context, path).exists()
 
 
-@given(r'"(?P<path>C:\\work\\file\.txt)" is an existing file and no saved layer named "new" exists')
 def step_file_saved_target(context, path):
     target = fixture_path(context, path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("file\n", encoding="utf-8")
 
 
-use_step_matcher("parse")
 
 
-@given('saved layer "broken" has invalid managed state and "C:\\work\\a" is an existing directory')
 def step_broken_saved(context):
     target = fixture_path(context, "C:\\work\\a")
     target.mkdir(parents=True, exist_ok=True)
@@ -1260,7 +1099,6 @@ def step_broken_saved(context):
     context.invalid_source = root / "config.json"
 
 
-@given('saved layer "shared" has two target bindings and an independent cache')
 def step_shared_two_cache(context):
     for authored in ("C:\\work\\a", "C:\\work\\b"):
         target = fixture_path(context, authored)
@@ -1272,7 +1110,6 @@ def step_shared_two_cache(context):
     context.results.clear()
 
 
-@given('saved layer "keep" has the canonical target binding "C:\\work\\keep" and an independent cache')
 def step_keep_saved(context):
     target = fixture_path(context, "C:\\work\\keep")
     target.mkdir(parents=True)
@@ -1284,12 +1121,10 @@ def step_keep_saved(context):
     context.results.clear()
 
 
-@when("the user runs zpp profile saved remove shared and declines confirmation")
 def step_decline_saved(context):
     invoke(context, ["profile", "saved", "remove", "shared"], input_text="n\n")
 
 
-@then('saved layer "shared", its bindings, and its cache remain unchanged')
 def step_shared_remains(context):
     assert (context.home / ".zpp" / "saved" / "shared").exists()
     assert (context.home / ".zpp" / "cached" / "saved" / "shared").exists()
@@ -1297,19 +1132,16 @@ def step_shared_remains(context):
     assert list(index.values()).count("shared") == 2
 
 
-@then('every binding for "shared" is absent from the saved index')
 def step_shared_bindings_removed(context):
     index = json.loads((context.home / ".zpp" / "saved" / "_bindings.json").read_text(encoding="utf-8"))
     assert "shared" not in index.values()
 
 
-@then('saved layer "shared" and its independent cache no longer exist')
 def step_shared_removed(context):
     assert not (context.home / ".zpp" / "saved" / "shared").exists()
     assert not (context.home / ".zpp" / "cached" / "saved" / "shared").exists()
 
 
-@then('saved layer "keep", its binding, and its independent cache are unchanged')
 def step_keep_saved_unchanged(context):
     assert snapshot(context.home / ".zpp" / "saved" / "keep") == context.keep_saved_before
     assert (context.home / ".zpp" / "cached" / "saved" / "keep").exists()
@@ -1318,34 +1150,28 @@ def step_keep_saved_unchanged(context):
 # Local layers
 
 
-@given("the current working directory is the root of a Git worktree")
 def step_git_root(context):
     git_init(context.project)
 
 
-@given('an existing directory "src\\nested" is inside that worktree')
 def step_nested_dir(context):
     context.nested = fixture_path(context, "src\\nested")
     context.nested.mkdir(parents=True)
 
 
-@given("neither target has local ZPP state")
 def step_no_target_layers(context):
     assert not (context.project / ".zpp").exists()
     assert not (context.nested / ".zpp").exists()
 
 
-@when('the user repeats zpp local init "src"')
 def step_local_explicit(context):
     invoke(context, ["local", "init", str(fixture_path(context, "src"))])
 
 
-@then("both local initializations succeed")
 def step_local_success(context):
     assert all(result.exit_code == 0 for result in context.results[-2:])
 
 
-@then("each target contains one neutral authored ZPP layer")
 def step_each_local(context):
     for target in (context.project, context.nested):
         assert (target / ".zpp" / "config.json").is_file()
@@ -1353,26 +1179,22 @@ def step_each_local(context):
         assert (target / ".zpp" / "traits").is_dir()
 
 
-@then("neither target contains derived cache state")
 def step_no_local_caches(context):
     assert not (context.project / ".zpp" / "cached").exists()
     assert not (context.nested / ".zpp" / "cached").exists()
 
 
-@then("no other directory gains local ZPP state")
 def step_only_expected_local(context):
     roots = {path.parent.resolve() for path in context.project.rglob(".zpp")}
     assert roots == {context.project.resolve(), context.nested.resolve()}
 
 
-@given('an existing Git-worktree directory "src"')
 def step_git_src(context):
     git_init(context.project)
     context.src = context.project / "src"
     context.src.mkdir()
 
 
-@given('"src/.zpp" contains valid distinctive trait.json and config.json bytes')
 def step_distinct_local(context):
     root = context.src / ".zpp"
     root.mkdir()
@@ -1381,27 +1203,22 @@ def step_distinct_local(context):
     context.local_bytes = {path: path.read_bytes() for path in (root / "config.json", root / "trait.json")}
 
 
-@given('"src/.zpp/traits" is absent')
 def step_traits_absent(context):
     assert not (context.src / ".zpp" / "traits").exists()
 
 
-@then("the distinctive authored bytes are unchanged")
 def step_local_bytes(context):
     assert all(path.read_bytes() == source for path, source in context.local_bytes.items())
 
 
-@then('"src/.zpp/traits" exists as a directory')
 def step_local_traits(context):
     assert (context.src / ".zpp" / "traits").is_dir()
 
 
-@then('"src/.zpp" contains no derived cache state')
 def step_local_no_cache(context):
     assert not (context.src / ".zpp" / "cached").exists()
 
 
-@given('"src/.zpp" contains an invalid managed source')
 def step_invalid_local(context):
     root = context.src / ".zpp"
     root.mkdir()
@@ -1410,50 +1227,39 @@ def step_invalid_local(context):
     context.invalid_source = root / "config.json"
 
 
-@given("another required local-layer artifact is absent")
 def step_missing_local_artifact(context):
     assert not (context.src / ".zpp" / "traits").exists()
 
 
-@given("the complete worktree state is recorded")
-@given("the complete surrounding state is recorded")
 def step_record_worktree(context):
     context.worktree_before = snapshot(context.project)
 
 
-@then("the complete worktree state is unchanged")
-@then("the complete surrounding state is unchanged")
 def step_worktree_unchanged(context):
     assert snapshot(context.project) == context.worktree_before
 
 
-use_step_matcher("re")
 
 
-@given(r'"(?P<path>C:\\missing)" does not exist')
 def step_missing_target(context, path):
     assert not fixture_path(context, path).exists()
 
 
-@given(r'"(?P<path>C:\\work\\file\.txt)" is an existing file')
 def step_file_target(context, path):
     target = fixture_path(context, path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("file\n", encoding="utf-8")
 
 
-@given(r'"(?P<path>C:\\outside)" is an existing directory outside Git')
 def step_outside_git(context, path):
     fixture_path(context, path).mkdir(parents=True)
 
 
-use_step_matcher("parse")
 
 
 # Trait compilation and resolution
 
 
-@given("an initialized global layer has multiple valid activated authored traits")
 def step_compilation_traits(context):
     initialize(context)
     root = context.home / ".zpp" / "global"
@@ -1464,12 +1270,10 @@ def step_compilation_traits(context):
     (root / "trait.json").write_text('[{"trait":"alpha"},{"trait":"beta"}]\n', encoding="utf-8")
 
 
-@given("one trait omits optional frontmatter while another contains order, config, skill lookup, and UTF-8 text")
 def step_compilation_shape(context):
     context.authored_bytes = {path: path.read_bytes() for path in context.compilation_sources}
 
 
-@given("an inactive profile also has an authored trait")
 def step_inactive_profile(context):
     invoke(context, ["profile", "create", "inactive"])
     root = context.home / ".zpp" / "profiles" / "inactive"
@@ -1478,49 +1282,38 @@ def step_inactive_profile(context):
     context.results.clear()
 
 
-@given("no derived trait cache exists")
 def step_no_derived_cache(context):
     assert not any((context.home / ".zpp" / "cached").rglob("traits.json"))
 
 
-@when("the user runs zpp resolve for an existing directory")
-@when("the user runs zpp resolve for an existing target")
-@when("the user runs zpp resolve for the target")
-@when("the user runs zpp resolve for the nested target")
 def step_resolve_target(context):
     target = getattr(context, "target", context.project)
     invoke(context, ["resolve", str(target)])
 
 
-@then("resolution succeeds with complete native documents for the activated global traits")
 def step_compilation_output(context):
     assert context.result.exit_code == 0
     assert {meta["name"] for meta, _ in parse_documents(context.result.stdout)} == {"alpha", "beta"}
 
 
-@then("the resolved bodies preserve their authored whitespace and UTF-8 text")
 def step_compilation_bodies(context):
     bodies = {meta["name"]: body for meta, body in parse_documents(context.result.stdout)}
     assert bodies == {"alpha": "  alpha whitespace\n", "beta": "β advisory\n"}
 
 
-@then("the participating global layer gains one independent compiled cache")
 def step_global_cache(context):
     root = context.home / ".zpp" / "cached" / "global"
     assert (root / "traits.json").is_file() and (root / "traits.watch.json").is_file()
 
 
-@then("no cache is created for the inactive profile")
 def step_inactive_no_cache(context):
     assert not (context.home / ".zpp" / "cached" / "profiles" / "inactive").exists()
 
 
-@then("every authored trait file remains byte-for-byte unchanged")
 def step_sources_unchanged(context):
     assert all(path.read_bytes() == source for path, source in context.authored_bytes.items())
 
 
-@given("an activated authored trait has previously been resolved")
 def step_previously_resolved(context):
     initialize(context)
     root = context.home / ".zpp" / "global"
@@ -1531,7 +1324,6 @@ def step_previously_resolved(context):
     context.results.clear()
 
 
-@given("its authored body changes after the derived cache was certified")
 def step_change_source(context):
     source = context.changed_source.read_text(encoding="utf-8").replace("old advisory", "new advisory")
     context.changed_source.write_text(source, encoding="utf-8")
@@ -1540,27 +1332,22 @@ def step_change_source(context):
     os.utime(context.changed_source, ns=(newer, newer))
 
 
-@when("the user runs zpp resolve for its target")
 def step_resolve_changed(context):
     invoke(context, ["resolve", str(context.project)])
 
 
-@then("resolution succeeds with the changed advisory body")
 def step_changed_body(context):
     assert context.result.exit_code == 0 and "new advisory" in context.result.stdout
 
 
-@then("no stale advisory body is returned")
 def step_no_old_body(context):
     assert "old advisory" not in context.result.stdout
 
 
-@then("the authored trait remains authoritative")
 def step_authored_authority(context):
     assert "new advisory" in context.changed_source.read_text(encoding="utf-8")
 
 
-@given("a participating layer has stale derived data")
 def step_stale_layer(context):
     initialize(context)
     root = context.home / ".zpp" / "global"
@@ -1571,7 +1358,6 @@ def step_stale_layer(context):
     context.results.clear()
 
 
-@given("multiple authored traits in that layer are invalid")
 def step_multiple_invalid(context):
     cache = context.home / ".zpp" / "cached" / "global" / "traits.json"
     newer = cache.stat().st_mtime_ns + 10_000_000
@@ -1580,76 +1366,62 @@ def step_multiple_invalid(context):
         os.utime(path, ns=(newer, newer))
 
 
-@then("resolution fails as a managed-state rejection")
 def step_resolution_rejected(context):
     assert context.result.exit_code == 1
 
 
-@then("stdout is empty")
 def step_stdout_empty(context):
     assert context.result.stdout == ""
 
 
-@then("stderr is empty")
 def step_stderr_empty(context):
     assert context.result.stderr == ""
 
 
-@then("stderr identifies every invalid authored source without a stack trace")
 def step_all_invalid_sources(context):
     assert all(str(path) in context.result.stderr for path in context.invalid_traits)
     assert "Traceback" not in context.result.stderr
 
 
-@then("no valid subset or stale trait document is returned")
 def step_no_stale_subset(context):
     assert context.result.stdout == "" and context.stale_output
 
 
-@given("the current directory is an existing target")
 def step_current_target(context):
     context.target = context.project
 
 
-@given("the global layer authors a valid neutral trait")
 def step_global_neutral(context):
     root = context.home / ".zpp" / "global"
     write_trait(root, "neutral", body="Neutral advisory.\n")
 
 
-@given("the global layer configures that trait")
 def step_global_configures(context):
     root = context.home / ".zpp" / "global"
     (root / "config.json").write_text(json.dumps({"trait_overwrites": False, "traitsConfig": {"neutral": {"useThis": False}}}), encoding="utf-8")
 
 
-@given("the global trait trigger configuration is empty")
 def step_empty_triggers(context):
     (context.home / ".zpp" / "global" / "trait.json").write_text("[]\n", encoding="utf-8")
 
 
-@when("the user runs zpp resolve without a target argument")
 def step_resolve_default(context):
     invoke(context, ["resolve"])
 
 
-@then("resolution succeeds")
 def step_resolution_success(context):
     assert context.result.exit_code == 0, context.result.output
 
 
-@given("the global trait trigger configuration contains only that trait name")
 def step_conditionless(context):
     (context.home / ".zpp" / "global" / "trait.json").write_text('[{"trait":"neutral"}]\n', encoding="utf-8")
 
 
-@then("stdout contains exactly the complete effective neutral trait document")
 def step_exact_neutral(context):
     documents = parse_documents(context.result.stdout)
     assert len(documents) == 1 and documents[0][0]["name"] == "neutral"
 
 
-@given("an existing target contains a matching workspace file for the second alternative of a workspace_contain rule")
 def step_workspace_match(context):
     initialize(context)
     context.target = context.project
@@ -1657,7 +1429,6 @@ def step_workspace_match(context):
     (context.project / "src" / "match.py").write_text("", encoding="utf-8")
 
 
-@given("a fixture executable named neutral-tool is available on PATH")
 def step_fixture_tool(context):
     tools = context.sandbox / "tools"
     tools.mkdir()
@@ -1666,7 +1437,6 @@ def step_fixture_tool(context):
     context.env["PATH"] = f"{tools}{os.pathsep}{context.env['PATH']}"
 
 
-@given("matching decoy files exist only under .git, an independent cache directory, and a directory symlink")
 def step_decoys(context):
     (context.target / ".git").mkdir()
     (context.target / ".git" / "git.decoy").write_text("", encoding="utf-8")
@@ -1683,7 +1453,6 @@ def step_decoys(context):
         context.symlink_unavailable = True
 
 
-@given("the composed trigger rules include matching which and workspace_contain rules for the same neutral trait")
 def step_matching_rules(context):
     root = context.home / ".zpp" / "global"
     for name in ("neutral", "git-only", "cache-only", "link-only", "unavailable"):
@@ -1699,7 +1468,6 @@ def step_matching_rules(context):
     context.trigger_rules = rules
 
 
-@given("the composed trigger rules include traits whose only matches are the excluded decoys")
 def step_decoy_rules(context):
     traits = {rule["trait"] for rule in context.trigger_rules}
     assert {"git-only", "cache-only"}.issubset(traits)
@@ -1707,35 +1475,29 @@ def step_decoy_rules(context):
         assert "link-only" in traits
 
 
-@given("the composed trigger rules include a trait whose executable is unavailable")
 def step_unavailable_rule(context):
     context.trigger_rules.append({"trait": "unavailable", "which": "zpp-missing-tool"})
     (context.home / ".zpp" / "global" / "trait.json").write_text(json.dumps(context.trigger_rules), encoding="utf-8")
 
 
-@then("stdout contains the matching neutral trait exactly once")
 def step_neutral_once(context):
     assert [meta["name"] for meta, _ in parse_documents(context.result.stdout)].count("neutral") == 1
 
 
-@then("stdout contains no trait matched only through .git, an independent cache directory, or directory symlink traversal")
 def step_no_decoys(context):
     names = {meta["name"] for meta, _ in parse_documents(context.result.stdout)}
     assert not names.intersection({"git-only", "cache-only", "link-only"})
 
 
-@then("stdout contains no trait whose executable is unavailable")
 def step_no_unavailable(context):
     assert "unavailable" not in {meta["name"] for meta, _ in parse_documents(context.result.stdout)}
 
 
-@then("the resolved skill lookup remains passive frontmatter metadata")
 def step_skill_lookup_passive(context):
     neutral = next(meta for meta, _ in parse_documents(context.result.stdout) if meta["name"] == "neutral")
     assert neutral["skill_lookup"] == ["lookup-note"]
 
 
-@given("the global layer activates trait alpha")
 def step_global_alpha(context):
     initialize(context)
     root = context.home / ".zpp" / "global"
@@ -1744,13 +1506,11 @@ def step_global_alpha(context):
     (root / "trait.json").write_text('[{"trait":"alpha"}]\n', encoding="utf-8")
 
 
-@given("the repository-root layer sets trait_overwrites to true without a trait.json file")
 def step_root_overwrite(context):
     git_init(context.project)
     write_layer(context.project / ".zpp", config={"trait_overwrites": True, "traitsConfig": {}}, omit_triggers=True)
 
 
-@given("a nested layer uses extending trigger behavior and activates trait beta")
 def step_nested_beta(context):
     context.target = context.project / "nested"
     context.target.mkdir()
@@ -1759,18 +1519,15 @@ def step_nested_beta(context):
     write_trait(root, "beta")
 
 
-@given("trait gamma is authored and configured but is not named by an active trigger")
 def step_gamma_config(context):
     root = context.target / ".zpp"
     (root / "config.json").write_text(json.dumps({"trait_overwrites": False, "traitsConfig": {"gamma": {"ignored": True}}}), encoding="utf-8")
 
 
-@then("stdout contains exactly the effective trait document named beta")
 def step_only_beta(context):
     assert [meta["name"] for meta, _ in parse_documents(context.result.stdout)] == ["beta"]
 
 
-@given("an existing target is nested inside a Git worktree")
 def step_nested_worktree(context):
     initialize(context)
     git_init(context.project)
@@ -1778,14 +1535,12 @@ def step_nested_worktree(context):
     context.target.mkdir(parents=True)
 
 
-@given("ZPP_PROFILE names an existing work profile")
 def step_work_profile(context):
     invoke(context, ["profile", "create", "work"])
     context.env["ZPP_PROFILE"] = "work"
     context.results.clear()
 
 
-@given("global, work profile, repository-root, and root-to-target nested layers participate")
 def step_all_layers(context):
     roots = [
         context.home / ".zpp" / "global",
@@ -1799,19 +1554,16 @@ def step_all_layers(context):
     context.precedence_roots = roots
 
 
-@given("two saved bindings are ancestors of the target with different saved layer names")
 def step_two_saved_ancestors(context):
     for name, target in (("far", context.project), ("close", context.project / "one")):
         invoke(context, ["profile", "saved", "create", name, str(target)])
     context.results.clear()
 
 
-@given("the closer saved binding is nested below the farther saved binding")
 def step_saved_closer(context):
     assert (context.project / "one").is_relative_to(context.project)
 
 
-@given("each participating layer supplies a definition or configuration for the same activated neutral trait")
 def step_precedence_definitions(context):
     roots = [
         context.precedence_roots[0],
@@ -1828,13 +1580,11 @@ def step_precedence_definitions(context):
     context.precedence_all_roots = roots
 
 
-@given("the closest nested layer supplies the winning description, order, default config, skill lookup, and advisory body")
 def step_winning_nested(context):
     root = context.target / ".zpp"
     write_trait(root, "neutral", description="winning description", body="winning advisory\n", order=7, config={"default": True, "nested": {"default": True}}, skill_lookup=["winning-skill"])
 
 
-@given("successive traitsConfig values contain distinct keys and replacement values for the same nested object key")
 def step_distinct_overlays(context):
     for number, root in enumerate(context.precedence_all_roots):
         config = json.loads((root / "config.json").read_text(encoding="utf-8"))
@@ -1843,25 +1593,21 @@ def step_distinct_overlays(context):
         assert overlay["nested"] == {"value": number}
 
 
-@then("the work profile participates after global")
 def step_profile_participates(context):
     metadata = parse_documents(context.result.stdout)[0][0]
     assert metadata["config"]["layer0"] is True and metadata["config"]["layer1"] is True
 
 
-@then("only the closest matching saved layer participates")
 def step_only_close_saved(context):
     config = parse_documents(context.result.stdout)[0][0]["config"]
     assert "layer3" in config and "layer2" not in config
 
 
-@then("repository layers participate from the repository root toward the target")
 def step_repo_layer_order(context):
     config = parse_documents(context.result.stdout)[0][0]["config"]
     assert all(key in config for key in ("layer4", "layer5", "layer6"))
 
 
-@then("the effective trait uses the complete document from the closest nested definition")
 def step_winning_document(context):
     metadata, body = parse_documents(context.result.stdout)[0]
     assert metadata["description"] == "winning description"
@@ -1869,32 +1615,27 @@ def step_winning_document(context):
     assert body == "winning advisory\n"
 
 
-@then("its effective config contains distinct layered keys")
 def step_layered_keys(context):
     config = parse_documents(context.result.stdout)[0][0]["config"]
     assert all(config[key] is True for key in ("layer0", "layer1", "layer3", "layer4", "layer5", "layer6"))
 
 
-@then("its latest nested object value replaces rather than recursively merges earlier nested object values")
 def step_shallow_nested(context):
     config = parse_documents(context.result.stdout)[0][0]["config"]
     assert config["nested"] == {"value": 6}
 
 
-@given("an existing target is outside every Git worktree")
 def step_outside_worktree(context):
     initialize(context)
     context.target = context.sandbox / "outside-tree" / "target"
     context.target.mkdir(parents=True)
 
 
-@given("the target descends from a saved binding")
 def step_target_saved(context):
     invoke(context, ["profile", "saved", "create", "outside", str(context.target.parent)])
     context.results.clear()
 
 
-@given("global and saved rules activate different neutral traits")
 def step_global_saved_rules(context):
     global_root = context.home / ".zpp" / "global"
     saved_root = context.home / ".zpp" / "saved" / "outside"
@@ -1904,17 +1645,14 @@ def step_global_saved_rules(context):
     (saved_root / "trait.json").write_text('[{"trait":"saved-trait"}]\n', encoding="utf-8")
 
 
-@then("stdout contains exactly the global and saved effective trait documents in order")
 def step_global_saved_output(context):
     assert [meta["name"] for meta, _ in parse_documents(context.result.stdout)] == ["global-trait", "saved-trait"]
 
 
-@then("no repository or subfolder layer is required")
 def step_no_repo_required(context):
     assert context.result.exit_code == 0 and not (context.target / ".zpp").exists()
 
 
-@given("traits are first activated in the order alpha, beta, gamma, delta, epsilon, zeta")
 def step_order_traits(context):
     initialize(context)
     git_init(context.project)
@@ -1928,7 +1666,6 @@ def step_order_traits(context):
     (root / "trait.json").write_text(json.dumps(rules), encoding="utf-8")
 
 
-@given("one of those traits is activated by a later duplicate rule")
 def step_duplicate_activation(context):
     path = context.home / ".zpp" / "global" / "trait.json"
     rules = json.loads(path.read_text(encoding="utf-8"))
@@ -1936,10 +1673,6 @@ def step_duplicate_activation(context):
     path.write_text(json.dumps(rules), encoding="utf-8")
 
 
-@given("gamma and delta have order 100")
-@given("zeta has order 200")
-@given("beta and epsilon have no order")
-@given("alpha originally has an explicit order")
 def step_order_characterized(context):
     root = context.home / ".zpp" / "global" / "traits"
     metadata = {
@@ -1952,26 +1685,22 @@ def step_order_characterized(context):
     assert metadata["alpha"]["order"] is not None
 
 
-@given("a later layer completely replaces alpha with an authored document that has no order")
 def step_replace_alpha(context):
     root = context.project / ".zpp"
     write_layer(root)
     write_trait(root, "alpha", order=None)
 
 
-@given("traitsConfig for zeta contains a config key named order")
 def step_config_order_key(context):
     root = context.project / ".zpp"
     (root / "config.json").write_text(json.dumps({"trait_overwrites": False, "traitsConfig": {"zeta": {"order": "config-only"}}}), encoding="utf-8")
 
 
-@then("stdout contains exactly these effective trait documents in order:")
 def step_trait_order(context):
     expected = [row["name"] for row in context.table]
     assert [meta["name"] for meta, _ in parse_documents(context.result.stdout)] == expected
 
 
-@given("an activated neutral trait has all accepted frontmatter fields")
 def step_full_trait(context):
     initialize(context)
     context.target = context.project
@@ -1981,8 +1710,6 @@ def step_full_trait(context):
     (root / "trait.json").write_text('[{"trait":"complete"}]\n', encoding="utf-8")
 
 
-@given("its description and advisory body contain UTF-8 text")
-@given("its advisory body contains deliberate whitespace")
 def step_full_trait_characterized(context):
     source = (context.home / ".zpp" / "global" / "traits" / "complete.md").read_text(
         encoding="utf-8"
@@ -1990,18 +1717,15 @@ def step_full_trait_characterized(context):
     assert "描述" in source and context.full_body in source
 
 
-@given("a participating layer overrides part of its config")
 def step_full_overlay(context):
     root = context.home / ".zpp" / "global"
     (root / "config.json").write_text(json.dumps({"trait_overwrites": False, "traitsConfig": {"complete": {"replace": "new"}}}, ensure_ascii=False), encoding="utf-8")
 
 
-@then("stdout contains exactly one complete Markdown trait document")
 def step_one_complete_doc(context):
     assert len(parse_documents(context.result.stdout)) == 1
 
 
-@then("its YAML frontmatter semantically contains name, description, order, effective config, and ordered skill_lookup")
 def step_complete_metadata(context):
     metadata = parse_documents(context.result.stdout)[0][0]
     assert metadata["name"] == "complete" and metadata["description"] == "描述"
@@ -2009,22 +1733,18 @@ def step_complete_metadata(context):
     assert metadata["config"] == {"base": True, "replace": "new"}
 
 
-@then("its body preserves the authored UTF-8 text and whitespace")
 def step_body_exact(context):
     assert parse_documents(context.result.stdout)[0][1] == context.full_body
 
 
-@then("the effective config contains the accepted shallow override")
 def step_effective_override(context):
     assert parse_documents(context.result.stdout)[0][0]["config"]["replace"] == "new"
 
 
-@given("the requested target does not exist")
 def step_invalid_missing_resolution(context):
     initialize(context)
 
 
-@given("the requested target exists as a file")
 def step_invalid_file_resolution(context):
     initialize(context)
     target = context.paths["c:\\work\\file.txt"]
@@ -2032,14 +1752,12 @@ def step_invalid_file_resolution(context):
     target.write_text("file\n", encoding="utf-8")
 
 
-@given("ZPP_PROFILE names a profile that does not exist")
 def step_unknown_profile(context):
     initialize(context)
     context.target = context.project
     context.env["ZPP_PROFILE"] = "missing-profile"
 
 
-@given("the saved index binds the target to a saved layer that does not exist")
 def step_missing_saved_layer(context):
     initialize(context)
     context.target = context.project
@@ -2047,20 +1765,16 @@ def step_missing_saved_layer(context):
     index.write_text(json.dumps({str(context.project.resolve()): "missing-saved"}), encoding="utf-8")
 
 
-@when("the user runs zpp resolve for the missing target")
 def step_run_missing_resolve(context):
     invoke(context, ["resolve", str(context.paths["c:\\missing"])])
 
 
-@when("the user runs zpp resolve for the file target")
 def step_run_file_resolve(context):
     invoke(context, ["resolve", str(context.paths["c:\\work\\file.txt"])])
 
 
-use_step_matcher("re")
 
 
-@then(r"stderr identifies (?P<subject>the missing target|the file target|the unknown profile|the missing saved layer) without a stack trace")
 def step_resolution_diagnostic(context, subject):
     mappings = {
         "the missing target": str(context.paths["c:\\missing"].resolve(strict=False)),
@@ -2077,10 +1791,8 @@ def step_resolution_diagnostic(context, subject):
     assert "Traceback" not in context.result.stderr
 
 
-use_step_matcher("parse")
 
 
-@then("no fallback resolution is returned")
 def step_no_fallback(context):
     assert context.result.stdout == ""
 
@@ -2179,9 +1891,6 @@ def assert_current_agent_integration(context, agent: str) -> None:
     assert f"zpp codespace guard --agent {agent}" in commands
 
 
-@given("the packaged ZPP workflow bundle contains all seven permanent skills")
-@given("the packaged ZPP workflow bundle contains all eight permanent skills")
-@given("the packaged ZPP workflow bundle contains all eleven permanent skills")
 def step_packaged_workflow_bundle(context):
     context.workflow_skill_names = (
         "zpp-author-skill",
@@ -2198,13 +1907,10 @@ def step_packaged_workflow_bundle(context):
     )
 
 
-@given("the current directory is the root of a Git worktree")
 def step_skill_git_root(context):
     git_init(context.project)
 
 
-@given("Codex, Pi, and Claude Code have no local ZPP workflow skills")
-@given("every supported agent has no ZPP workflow skills")
 def step_no_local_workflow_skills(context):
     git_init(context.project)
     assert not workflow_skill_root(context, "codex", scope="local").exists()
@@ -2212,19 +1918,16 @@ def step_no_local_workflow_skills(context):
     assert not workflow_skill_root(context, "claude", scope="local").exists()
 
 
-@given("Codex, Pi, and Claude Code have no global ZPP workflow skills")
 def step_no_global_workflow_skills(context):
     assert not workflow_skill_root(context, "codex", scope="global").exists()
     assert not workflow_skill_root(context, "pi", scope="global").exists()
     assert not workflow_skill_root(context, "claude", scope="global").exists()
 
 
-@given("the current project has no authored ZPP layer")
 def step_no_authored_project_layer(context):
     assert not (context.project / ".zpp").exists()
 
 
-@when("the user runs zpp workflow install --local with agents Codex, Pi, and Claude Code")
 def step_install_all_agents_local(context):
     invoke(
         context,
@@ -2242,7 +1945,6 @@ def step_install_all_agents_local(context):
     )
 
 
-@when("the user runs zpp workflow install with agents Codex, Pi, and Claude Code")
 def step_install_all_agents_global(context):
     invoke(
         context,
@@ -2259,13 +1961,11 @@ def step_install_all_agents_global(context):
     )
 
 
-@then("installation succeeds without offering agent selection")
 def step_skill_install_succeeds(context):
     assert context.result.exit_code == 0, context.result.output
     assert context.selector_offers == []
 
 
-@then("one managed bundle is installed in the repository-local shared Codex and Pi skill scope")
 def step_local_shared_bundle(context):
     assert_workflow_projection(
         context,
@@ -2273,7 +1973,6 @@ def step_local_shared_bundle(context):
     )
 
 
-@then("one managed bundle is installed in the repository-local Claude Code skill scope")
 def step_local_claude_bundle(context):
     assert_workflow_projection(
         context,
@@ -2281,22 +1980,18 @@ def step_local_claude_bundle(context):
     )
 
 
-@when("the user runs zpp workflow install --global with agent Codex")
 def step_install_global_codex(context):
     invoke(context, ["workflow", "install", "--global", "--agent", "codex"])
 
 
-@when("the user runs zpp workflow install with agent Codex")
 def step_install_default_global_codex(context):
     invoke(context, ["workflow", "install", "--agent", "codex"])
 
 
-@when("the user runs zpp workflow install with agent Claude Code")
 def step_install_default_global_claude(context):
     invoke(context, ["workflow", "install", "--agent", "claude"])
 
 
-@then("one managed bundle is installed in the repository-local Codex skill scope")
 def step_local_codex_bundle(context):
     assert_workflow_projection(
         context,
@@ -2304,14 +1999,12 @@ def step_local_codex_bundle(context):
     )
 
 
-@then("one managed bundle is installed in the repository-local Pi skill scope under .pi")
 def step_local_pi_bundle(context):
     root = workflow_skill_root(context, "pi", scope="local")
     assert root == context.project / ".pi" / "skills"
     assert_workflow_projection(context, root)
 
 
-@then("one managed bundle is installed in the user-global shared Codex and Pi skill scope")
 def step_global_shared_bundle(context):
     assert_workflow_projection(
         context,
@@ -2319,7 +2012,6 @@ def step_global_shared_bundle(context):
     )
 
 
-@then("one managed bundle is installed in the user-global Claude Code skill scope")
 def step_global_claude_bundle(context):
     assert_workflow_projection(
         context,
@@ -2327,7 +2019,6 @@ def step_global_claude_bundle(context):
     )
 
 
-@then("one managed bundle is installed in the user-global Codex skill scope")
 def step_global_codex_bundle(context):
     assert_workflow_projection(
         context,
@@ -2335,14 +2026,12 @@ def step_global_codex_bundle(context):
     )
 
 
-@then("one managed bundle is installed in the user-global Pi skill scope under .pi")
 def step_global_pi_bundle(context):
     root = workflow_skill_root(context, "pi", scope="global")
     assert root == context.home / ".pi" / "agent" / "skills"
     assert_workflow_projection(context, root)
 
 
-@given("Codex, Pi, and Claude Code have no global OpenSpec operation skills")
 def step_no_global_openspec_skills(context):
     assert all(
         not openspec_skill_root(context, agent, scope="global").exists()
@@ -2350,7 +2039,6 @@ def step_no_global_openspec_skills(context):
     )
 
 
-@given("Codex, Pi, and Claude Code have no local workflow skills")
 def step_no_local_workflow_integration(context):
     step_no_local_workflow_skills(context)
     assert all(
@@ -2359,7 +2047,6 @@ def step_no_local_workflow_integration(context):
     )
 
 
-@when("the user runs zpp workflow install --local --with-openspec for Codex, Pi, and Claude Code")
 def step_install_all_agents_local_with_openspec(context):
     invoke(
         context,
@@ -2378,7 +2065,6 @@ def step_install_all_agents_local_with_openspec(context):
     )
 
 
-@then("every selected agent has the managed ZPP workflow bundle in its native local skill scope")
 def step_all_local_zpp_bundles(context):
     assert context.result.exit_code == 0, context.result.output
     for agent in ("codex", "pi", "claude"):
@@ -2388,7 +2074,6 @@ def step_all_local_zpp_bundles(context):
         )
 
 
-@then("Codex has generated OpenSpec core operation skills under .codex")
 def step_local_codex_openspec(context):
     assert_openspec_projection(
         openspec_skill_root(context, "codex", scope="local"),
@@ -2397,7 +2082,6 @@ def step_local_codex_openspec(context):
     )
 
 
-@then("Pi has generated OpenSpec core operation skills under .pi")
 def step_local_pi_openspec(context):
     assert_openspec_projection(
         openspec_skill_root(context, "pi", scope="local"),
@@ -2406,7 +2090,6 @@ def step_local_pi_openspec(context):
     )
 
 
-@then("Claude Code has generated OpenSpec core operation skills under .claude")
 def step_local_claude_openspec(context):
     assert_openspec_projection(
         openspec_skill_root(context, "claude", scope="local"),
@@ -2415,7 +2098,6 @@ def step_local_claude_openspec(context):
     )
 
 
-@then("every selected agent has its generated OpenSpec core operation skills")
 def step_all_global_openspec_bundles(context):
     for agent in ("codex", "pi", "claude"):
         assert_openspec_projection(
@@ -2425,19 +2107,16 @@ def step_all_global_openspec_bundles(context):
         )
 
 
-@then("every selected agent has the current ZPP-managed native lifecycle hooks")
 def step_all_current_native_hooks(context):
     for agent in ("codex", "pi", "claude"):
         assert_current_agent_integration(context, agent)
 
 
-@then("both selected agents have the current ZPP-managed native lifecycle hooks")
 def step_selected_current_native_hooks(context):
     for agent in ("pi", "claude"):
         assert_current_agent_integration(context, agent)
 
 
-@then("no repository-local OpenSpec operation skills are installed")
 def step_no_local_openspec_installed(context):
     for agent in ("codex", "pi", "claude"):
         root = openspec_skill_root(context, agent, scope="local")
@@ -2445,7 +2124,6 @@ def step_no_local_openspec_installed(context):
         assert all(not (root / name).exists() for name in OPENSPEC_CORE_SKILL_NAMES)
 
 
-@then("the detected OpenSpec version is recorded for every generated projection")
 def step_global_openspec_versions_recorded(context):
     for agent in ("codex", "pi", "claude"):
         manifest = json.loads(
@@ -2457,15 +2135,12 @@ def step_global_openspec_versions_recorded(context):
         assert manifest["openspec_version"] == "1.7.0"
 
 
-@then("OpenSpec generation used an isolated project beneath the platform temporary directory")
 def step_openspec_generation_boundary_used(context):
     assert context.openspec_generation_calls == [
         (("codex", "pi", "claude"), "1.7.0")
     ]
 
 
-@then("the temporary project is removed")
-@then("the isolated temporary project is removed")
 def step_no_generation_temporary_project(context):
     assert not any(
         path.name.startswith("zpp-openspec-")
@@ -2473,7 +2148,6 @@ def step_no_generation_temporary_project(context):
     )
 
 
-@then("no duplicate Codex or Pi projection is created")
 def step_no_shared_duplicate(context):
     root = workflow_skill_root(context, "codex", scope="local")
     assert root == workflow_skill_root(context, "pi", scope="local")
@@ -2481,21 +2155,17 @@ def step_no_shared_duplicate(context):
     assert not (context.project / ".pi" / "skills").exists()
 
 
-@then("the current project still has no authored ZPP layer")
-@then("no authored ZPP layer is created or modified")
 def step_no_authored_layer_after_skills(context):
     assert not (context.project / ".zpp").exists()
     if hasattr(context, "skill_target"):
         assert not (context.skill_target / ".zpp").exists()
 
 
-@then("no repository-local skill scope is changed")
 def step_no_local_skill_scope(context):
     for agent in ("codex", "pi", "claude"):
         assert not workflow_skill_root(context, agent, scope="local").exists()
 
 
-@given('"C:\\work\\repo\\nested" is an existing directory inside a Git worktree')
 def step_exact_nested_skill_target(context):
     root = context.sandbox / "work" / "repo"
     context.skill_target = root / "nested"
@@ -2504,12 +2174,10 @@ def step_exact_nested_skill_target(context):
     context.paths["c:\\work\\repo\\nested"] = context.skill_target
 
 
-@given("the current directory is outside that worktree")
 def step_current_outside_target_worktree(context):
     assert not context.project.is_relative_to(context.skill_target.parent)
 
 
-@when('the user runs zpp workflow install --local "C:\\work\\repo\\nested" with agent Claude Code')
 def step_install_exact_target(context):
     invoke(
         context,
@@ -2517,7 +2185,6 @@ def step_install_exact_target(context):
     )
 
 
-@then("the managed bundle is installed only in that exact directory's local Claude Code skill scope")
 def step_only_exact_target(context):
     assert_workflow_projection(
         context,
@@ -2531,7 +2198,6 @@ def step_only_exact_target(context):
     ).exists()
 
 
-@given("every agent skill scope is recorded")
 def step_record_agent_skill_scopes(context):
     context.skill_state_before = workflow_skill_snapshot(context)
 
@@ -2550,22 +2216,18 @@ def run_invalid_skill_target(context, target: str) -> None:
     )
 
 
-@when('the user runs zpp workflow install --local "C:\\missing" with agent Codex')
 def step_install_missing_skill_target(context):
     run_invalid_skill_target(context, '"C:\\missing"')
 
 
-@when('the user runs zpp workflow install --local "C:\\work\\file.txt" with agent Codex')
 def step_install_file_skill_target(context):
     run_invalid_skill_target(context, '"C:\\work\\file.txt"')
 
 
-@when('the user runs zpp workflow install --local "C:\\outside" with agent Codex')
 def step_install_outside_skill_target(context):
     run_invalid_skill_target(context, '"C:\\outside"')
 
 
-@when('the user runs zpp workflow install "C:\\work\\repo" with agent Codex')
 def step_default_global_with_target(context):
     invoke(
         context,
@@ -2573,44 +2235,36 @@ def step_default_global_with_target(context):
     )
 
 
-@when("the user runs zpp workflow install with agent Codex and --force")
 def step_global_force_rejected(context):
     invoke(context, ["workflow", "install", "--agent", "codex", "--force"])
 
 
-@when("the user runs zpp workflow install with agent Codex and --with-openspec")
 def step_global_openspec_rejected(context):
     invoke(context, ["workflow", "install", "--agent", "codex", "--with-openspec"])
 
 
-@then("the invocation is rejected as a domain error")
 def step_skill_domain_error(context):
     assert context.result.exit_code == 1, context.result.output
 
 
-@then("the invocation is rejected as a usage error")
 def step_skill_usage_error(context):
     assert context.result.exit_code == 2, context.result.output
 
 
-@then("every agent skill scope is unchanged")
 def step_agent_skill_scopes_unchanged(context):
     assert workflow_skill_snapshot(context) == context.skill_state_before
 
 
-@when("the user runs zpp workflow install --local and selects Pi and Claude Code")
 def step_select_skill_agents(context):
     context.selector_answer = ("pi", "claude")
     invoke(context, ["workflow", "install", "--local"])
 
 
-@then("the managed bundle is installed in the selected native local scopes")
 def step_selected_skill_scopes(context):
     assert_workflow_projection(context, workflow_skill_root(context, "pi", scope="local"))
     assert_workflow_projection(context, workflow_skill_root(context, "claude", scope="local"))
 
 
-@then("Codex receives no independent projection beyond the shared Pi scope")
 def step_codex_shared_only(context):
     assert workflow_skill_root(context, "codex", scope="local") == workflow_skill_root(
         context,
@@ -2620,49 +2274,41 @@ def step_codex_shared_only(context):
     assert not (context.project / ".codex" / "skills").exists()
 
 
-@then("Pi uses its .pi local skill scope")
 def step_pi_uses_local_pi_scope(context):
     root = workflow_skill_root(context, "pi", scope="local")
     assert root == context.project / ".pi" / "skills"
     assert_workflow_projection(context, root)
 
 
-@then("Codex receives no workflow projection")
 def step_codex_receives_no_projection(context):
     assert not workflow_skill_root(context, "codex", scope="local").exists()
 
 
-@when("the user submits zpp workflow install with no checked agent")
 def step_skill_select_none(context):
     context.selector_answer = ()
     invoke(context, ["workflow", "install"])
 
 
-@then("installation succeeds without changing any agent skill scope")
 def step_empty_skill_selection(context):
     assert context.result.exit_code == 0
     assert workflow_skill_snapshot(context) == context.skill_state_before
 
 
-@when("the user cancels zpp workflow install from the agent selector")
 def step_cancel_skill_selection(context):
     context.selector_answer = None
     invoke(context, ["workflow", "install"])
 
 
-@then("installation is cancelled without changing any agent skill scope")
 def step_cancelled_skill_selection(context):
     assert context.result.exit_code == 1
     assert "cancelled" in context.result.stderr.lower()
     assert workflow_skill_snapshot(context) == context.skill_state_before
 
 
-@when("the user runs zpp workflow install without an agent option")
 def step_skill_no_agent(context):
     invoke(context, ["workflow", "install"])
 
 
-@given("Codex has a compatible managed global ZPP workflow bundle")
 def step_compatible_global_codex(context):
     git_init(context.project)
     result = invoke(context, ["workflow", "install", "--agent", "codex"])
@@ -2680,57 +2326,47 @@ def assert_agent_no_local_bundle(context, agent: str) -> None:
     assert not root.exists()
 
 
-@given("Codex has no local ZPP workflow bundle")
 def step_codex_no_local_bundle(context):
     assert_agent_no_local_bundle(context, "codex")
 
 
-@given("Pi has no local ZPP workflow bundle")
 def step_pi_no_local_bundle(context):
     assert_agent_no_local_bundle(context, "pi")
 
 
-@given("Claude Code has no local ZPP workflow bundle")
 def step_claude_no_local_bundle(context):
     assert_agent_no_local_bundle(context, "claude")
 
 
-@when("the user runs zpp workflow install --local with agent Codex")
 def step_install_codex_skill(context):
     invoke(context, ["workflow", "install", "--local", "--agent", "codex"])
 
 
-@then("installation succeeds and reports that the compatible global bundle is reused")
 def step_global_bundle_reused(context):
     assert context.result.exit_code == 0, context.result.output
     assert "global" in context.result.stdout.lower()
     assert "skipped" in context.result.stdout.lower()
 
 
-@then("no local bundle is installed")
 def step_no_local_bundle(context):
     assert not workflow_skill_root(context, "codex", scope="local").exists()
 
 
-@when("the user repeats zpp workflow install --local with agent Codex and --force")
 def step_force_local_codex(context):
     invoke(context, ["workflow", "install", "--local", "--agent", "codex", "--force"])
 
 
-@then("a compatible managed local bundle is installed")
 def step_compatible_local_installed(context):
     assert context.result.exit_code == 0, context.result.output
     assert_workflow_projection(context, workflow_skill_root(context, "codex", scope="local"))
 
 
-@then("both managed scopes are reported without claiming scope precedence")
 def step_both_scopes_reported(context):
     output = context.result.stdout.lower()
     assert "global and local" in output
     assert "no scope precedence" in output
 
 
-@given("Claude Code has an outdated managed global ZPP workflow bundle")
 def step_outdated_global_claude(context):
     git_init(context.project)
     result = invoke(context, ["workflow", "install", "--agent", "claude"])
@@ -2741,25 +2377,21 @@ def step_outdated_global_claude(context):
     context.results.clear()
 
 
-@when("the user runs zpp workflow install --local with agent Claude Code")
 def step_install_claude_skill(context):
     invoke(context, ["workflow", "install", "--local", "--agent", "claude"])
 
 
-@then("the current managed bundle is installed locally")
 def step_current_local_claude(context):
     assert context.result.exit_code == 0, context.result.output
     assert_workflow_projection(context, workflow_skill_root(context, "claude", scope="local"))
 
 
-@then("the differing managed scope versions are reported without selecting one")
 def step_version_difference_reported(context):
     output = context.result.stdout.lower()
     assert "versions differ" in output
     assert "no scope precedence" in output
 
 
-@given("Pi has a compatible managed local ZPP workflow bundle")
 def step_compatible_local_pi(context):
     git_init(context.project)
     result = invoke(context, ["workflow", "install", "--agent", "pi"])
@@ -2768,7 +2400,6 @@ def step_compatible_local_pi(context):
     context.results.clear()
 
 
-@given("unrelated files surround the managed projection")
 def step_surround_skill_projection(context):
     unrelated = context.pi_skill_root / "third-party" / "SKILL.md"
     unrelated.parent.mkdir()
@@ -2777,23 +2408,18 @@ def step_surround_skill_projection(context):
     context.managed_projection_before = snapshot(context.pi_skill_root)
 
 
-@then("both installations succeed")
 def step_both_skill_installs_succeed(context):
     assert all(result.exit_code == 0 for result in context.results[-2:])
 
 
-@then("the managed projection is unchanged")
 def step_managed_projection_unchanged(context):
     assert snapshot(context.pi_skill_root) == context.managed_projection_before
 
 
-@then("the unrelated files are byte-for-byte unchanged")
-@then("the unrelated skills are unchanged")
 def step_unrelated_skills_unchanged(context):
     assert all(path.read_bytes() == source for path, source in context.unrelated_skill_bytes.items())
 
 
-@given("Pi has a compatible managed global ZPP workflow bundle under .pi")
 def step_complete_global_pi_bundle(context):
     result = invoke(context, ["workflow", "install", "--agent", "pi"])
     assert result.exit_code == 0, result.output
@@ -2803,7 +2429,6 @@ def step_complete_global_pi_bundle(context):
     context.openspec_generation_calls.clear()
 
 
-@given("Pi has generated OpenSpec core operation skills for the detected recorded version")
 def step_pi_has_compatible_generated_skills(context):
     assert_openspec_projection(
         openspec_skill_root(context, "pi", scope="global"),
@@ -2812,12 +2437,10 @@ def step_pi_has_compatible_generated_skills(context):
     )
 
 
-@given("Pi has the current ZPP-managed native lifecycle hooks")
 def step_pi_has_current_hooks(context):
     assert_current_agent_integration(context, "pi")
 
 
-@given("unrelated files surround every managed projection")
 def step_unrelated_files_surround_complete_pi(context):
     skill_neighbor = context.pi_skill_root / "third-party" / "SKILL.md"
     skill_neighbor.parent.mkdir()
@@ -2831,28 +2454,23 @@ def step_unrelated_files_surround_complete_pi(context):
     context.complete_pi_before = snapshot(context.home / ".pi")
 
 
-@when("the user runs zpp workflow install with agent Pi twice")
 def step_install_complete_pi_twice(context):
     invoke(context, ["workflow", "install", "--agent", "pi"])
     invoke(context, ["workflow", "install", "--agent", "pi"])
 
 
-@then("every managed projection is byte-for-byte unchanged")
 def step_complete_pi_unchanged(context):
     assert snapshot(context.home / ".pi") == context.complete_pi_before
 
 
-@then("OpenSpec skills are not regenerated")
 def step_openspec_not_regenerated(context):
     assert context.openspec_generation_calls == []
 
 
-@given("Pi has no global ZPP integration")
 def step_pi_no_global_integration(context):
     context.pi_global_before = snapshot(context.home / ".pi")
 
 
-@given("Claude Code has an unmanaged global conflict at a required OpenSpec skill destination")
 def step_claude_unmanaged_openspec_conflict(context):
     root = openspec_skill_root(context, "claude", scope="global")
     context.skill_conflict = root / OPENSPEC_CORE_SKILL_NAMES[0] / "SKILL.md"
@@ -2861,7 +2479,6 @@ def step_claude_unmanaged_openspec_conflict(context):
     context.skill_conflict_before = context.skill_conflict.read_bytes()
 
 
-@when("the user runs zpp workflow install with agents Pi and Claude Code")
 def step_install_global_pi_claude(context):
     invoke(
         context,
@@ -2876,23 +2493,19 @@ def step_install_global_pi_claude(context):
     )
 
 
-@then("Pi's workflow skills, OpenSpec skills, and native hooks remain unchanged")
 def step_pi_global_integration_unchanged(context):
     assert snapshot(context.home / ".pi") == context.pi_global_before
 
 
-@given("every selected agent integration is recorded")
 def step_record_selected_integrations(context):
     context.failure_agents = ("codex", "pi")
     context.selected_integration_before = snapshot(context.home)
 
 
-@given("OpenSpec cannot generate one selected agent's core operation skills")
 def step_openspec_generation_fails(context):
     context.openspec_generation_error = ManagedStateError("generation failed")
 
 
-@when("the user runs zpp workflow install for those agents")
 def step_install_global_failure_agents(context):
     arguments = ["workflow", "install"]
     for agent in context.failure_agents:
@@ -2900,12 +2513,10 @@ def step_install_global_failure_agents(context):
     invoke(context, arguments)
 
 
-@then("installation fails before committing any selected-agent change")
 def step_generation_failure_rejected(context):
     assert context.result.exit_code == 1, context.result.output
 
 
-@then("every selected agent integration is byte-for-byte unchanged")
 def step_selected_integrations_unchanged(context):
     assert snapshot(context.home) == context.selected_integration_before
 
@@ -2919,34 +2530,26 @@ def create_unmanaged_local_skill_conflict(context, agent: str) -> None:
     context.skill_conflict_before = context.skill_conflict.read_bytes()
 
 
-@given("Claude Code has an unmanaged local conflict at a required skill destination")
 def step_unmanaged_local_claude_conflict(context):
     create_unmanaged_local_skill_conflict(context, "claude")
 
 
-@given("Codex has an unmanaged local conflict at a required skill destination")
 def step_unmanaged_local_codex_conflict(context):
     create_unmanaged_local_skill_conflict(context, "codex")
 
 
-@when("the user runs zpp workflow install --local with agent Codex and --force")
 def step_force_conflicting_codex(context):
     invoke(context, ["workflow", "install", "--local", "--agent", "codex", "--force"])
 
 
-@then("installation fails as a managed-state rejection")
-@then("update fails as a managed-state rejection")
 def step_skill_managed_rejection(context):
     assert context.result.exit_code == 1, context.result.output
 
 
-@then("the conflicting Claude Code content is unchanged")
-@then("the conflicting content is unchanged")
 def step_skill_conflict_unchanged(context):
     assert context.skill_conflict.read_bytes() == context.skill_conflict_before
 
 
-@given("Codex has outdated managed global and forced local ZPP workflow bundles")
 def step_outdated_codex_both_scopes(context):
     git_init(context.project)
     for arguments in (
@@ -2963,12 +2566,10 @@ def step_outdated_codex_both_scopes(context):
     context.results.clear()
 
 
-@when("the user runs zpp workflow update with agent Codex")
 def step_update_global_codex(context):
     invoke(context, ["workflow", "update", "--agent", "codex"])
 
 
-@then("only the Codex global managed bundle is updated to the packaged version")
 def step_only_codex_global_updated(context):
     assert context.result.exit_code == 0, context.result.output
     manifest = json.loads(
@@ -2977,23 +2578,19 @@ def step_only_codex_global_updated(context):
     assert manifest["bundle_version"] == "0.9.0"
 
 
-@then("the forced local Codex bundle is unchanged")
 def step_codex_local_unchanged(context):
     assert snapshot(context.codex_local_root) == context.codex_local_before
 
 
-@then("every Claude Code scope is unchanged")
 def step_claude_scopes_unchanged(context):
     assert snapshot(context.claude_global_root) == context.claude_global_before
     assert not workflow_skill_root(context, "claude", scope="local").exists()
 
 
-@then("the differing Codex scope versions are reported")
 def step_codex_difference_reported(context):
     assert "versions differ for codex" in context.result.stdout.lower()
 
 
-@given("Codex has a managed global workflow integration")
 def step_codex_complete_global_integration(context):
     result = invoke(context, ["workflow", "install", "--agent", "codex"])
     assert result.exit_code == 0, result.output
@@ -3003,7 +2600,6 @@ def step_codex_complete_global_integration(context):
     context.openspec_generation_calls.clear()
 
 
-@given("its OpenSpec projection records the currently detected OpenSpec version")
 def step_projection_records_current_version(context):
     manifest = json.loads(
         (context.codex_openspec_root / ".zpp-openspec-skills.json").read_text(
@@ -3013,24 +2609,20 @@ def step_projection_records_current_version(context):
     assert manifest["openspec_version"] == "1.7.0"
 
 
-@given("the generated OpenSpec skills have distinguishable compatible content")
 def step_record_compatible_openspec_content(context):
     context.codex_openspec_before = snapshot(context.codex_openspec_root)
 
 
-@then("the ZPP workflow bundle is updated when needed")
 def step_zpp_bundle_update_succeeds(context):
     assert context.result.exit_code == 0, context.result.output
     assert_workflow_projection(context, context.codex_global_root)
 
 
-@then("the generated OpenSpec skills are byte-for-byte unchanged")
 def step_codex_openspec_unchanged(context):
     assert snapshot(context.codex_openspec_root) == context.codex_openspec_before
     assert context.openspec_generation_calls == []
 
 
-@given("Claude Code has a managed global workflow integration")
 def step_claude_complete_global_integration(context):
     result = invoke(context, ["workflow", "install", "--agent", "claude"])
     assert result.exit_code == 0, result.output
@@ -3044,7 +2636,6 @@ def step_claude_complete_global_integration(context):
     context.openspec_generation_calls.clear()
 
 
-@given("its OpenSpec projection records a different version from the detected OpenSpec version")
 def step_claude_projection_version_changes(context):
     manifest = json.loads(
         (context.claude_openspec_root / ".zpp-openspec-skills.json").read_text(
@@ -3055,7 +2646,6 @@ def step_claude_projection_version_changes(context):
     context.openspec_version = "1.8.0"
 
 
-@then("the OpenSpec core operation skills are regenerated for Claude Code")
 def step_claude_openspec_regenerated(context):
     assert context.result.exit_code == 0, context.result.output
     assert context.openspec_generation_calls == [(("claude",), "1.8.0")]
@@ -3067,7 +2657,6 @@ def step_claude_openspec_regenerated(context):
     assert "1.8.0" in content
 
 
-@then("the newly detected OpenSpec version is recorded")
 def step_claude_new_version_recorded(context):
     manifest = json.loads(
         (context.claude_openspec_root / ".zpp-openspec-skills.json").read_text(
@@ -3077,7 +2666,6 @@ def step_claude_new_version_recorded(context):
     assert manifest["openspec_version"] == "1.8.0"
 
 
-@then("unrelated Claude Code content is byte-for-byte unchanged")
 def step_unrelated_claude_content_unchanged(context):
     assert all(
         path.read_bytes() == content
@@ -3085,12 +2673,10 @@ def step_unrelated_claude_content_unchanged(context):
     )
 
 
-@given("OpenSpec can generate its core operation skills but cannot report its version")
 def step_openspec_version_unknown(context):
     context.openspec_version = None
 
 
-@then("the generated OpenSpec projection records an unknown version")
 def step_unknown_version_recorded(context):
     manifest = json.loads(
         (
@@ -3101,7 +2687,6 @@ def step_unknown_version_recorded(context):
     assert manifest["openspec_version"] is None
 
 
-@then("installation otherwise completes normally")
 def step_install_otherwise_normal(context):
     assert context.result.exit_code == 0, context.result.output
     assert_workflow_projection(
@@ -3111,7 +2696,6 @@ def step_install_otherwise_normal(context):
     assert_current_agent_integration(context, "codex")
 
 
-@given("Codex has a historical managed global workflow bundle that predates one permanent skill")
 def step_historical_global_codex_bundle(context):
     git_init(context.project)
     result = invoke(context, ["workflow", "install", "--agent", "codex"])
@@ -3141,7 +2725,6 @@ def step_historical_global_codex_bundle(context):
     context.results.clear()
 
 
-@given("unrelated skills surround the historical managed projection")
 def step_unrelated_historical_global_skills(context):
     unrelated = context.codex_global_root / "third-party" / "SKILL.md"
     unrelated.parent.mkdir()
@@ -3149,13 +2732,11 @@ def step_unrelated_historical_global_skills(context):
     context.unrelated_global_bytes = {unrelated: unrelated.read_bytes()}
 
 
-@then("the Codex global projection contains the complete current workflow bundle")
 def step_historical_global_updated(context):
     assert context.result.exit_code == 0, context.result.output
     assert_workflow_projection(context, context.codex_global_root)
 
 
-@then("only paths owned by the historical manifest were replaced")
 def step_only_historical_owned_paths_replaced(context):
     current = json.loads(
         (context.codex_global_root / ".zpp-workflow-skills.json").read_text(
@@ -3169,7 +2750,6 @@ def step_only_historical_owned_paths_replaced(context):
     )
 
 
-@then("the unrelated global skills are byte-for-byte unchanged")
 def step_unrelated_global_skills_unchanged(context):
     assert all(
         path.read_bytes() == content
@@ -3177,28 +2757,23 @@ def step_unrelated_global_skills_unchanged(context):
     )
 
 
-@when("the user runs zpp workflow update --local with agent Codex")
 def step_update_local_codex(context):
     invoke(context, ["workflow", "update", "--local", "--agent", "codex"])
 
 
-@then("update reports that the local projection is not installed")
 def step_update_reports_local_absent(context):
     assert context.result.exit_code == 1, context.result.output
     assert "not installed" in context.result.stderr.lower(), context.result.stderr
 
 
-@then("it does not describe absent local state as unmanaged content")
 def step_absent_is_not_unmanaged(context):
     assert "unmanaged" not in context.result.stderr.lower()
 
 
-@then("the compatible global bundle remains unchanged")
 def step_compatible_global_bundle_unchanged(context):
     assert snapshot(context.codex_global_root) == context.codex_global_before
 
 
-@given("Claude Code has an unmanaged global skill directory matching a permanent skill name")
 def step_unmanaged_global_claude_skill(context):
     root = workflow_skill_root(context, "claude", scope="global")
     context.skill_conflict = root / context.workflow_skill_names[0] / "SKILL.md"
@@ -3207,12 +2782,10 @@ def step_unmanaged_global_claude_skill(context):
     context.skill_conflict_before = context.skill_conflict.read_bytes()
 
 
-@when("the user runs zpp workflow update with agent Claude Code")
 def step_update_unmanaged_claude(context):
     invoke(context, ["workflow", "update", "--agent", "claude"])
 
 
-@given("Pi has a managed local ZPP workflow bundle surrounded by unrelated skills")
 def step_managed_pi_with_unrelated(context):
     git_init(context.project)
     result = invoke(context, ["workflow", "install", "--local", "--agent", "pi"])
@@ -3225,7 +2798,6 @@ def step_managed_pi_with_unrelated(context):
     context.results.clear()
 
 
-@given("Claude Code has a managed local ZPP workflow bundle")
 def step_managed_local_claude(context):
     result = invoke(context, ["workflow", "install", "--local", "--agent", "claude"])
     assert result.exit_code == 0, result.output
@@ -3234,7 +2806,6 @@ def step_managed_local_claude(context):
     context.results.clear()
 
 
-@given("Pi has generated local OpenSpec operation skills")
 def step_pi_generated_local_openspec(context):
     result = invoke(
         context,
@@ -3256,32 +2827,26 @@ def step_pi_generated_local_openspec(context):
     context.results.clear()
 
 
-@given("Pi has current ZPP-managed native lifecycle hooks")
 def step_record_pi_current_hooks(context):
     assert_current_agent_integration(context, "pi")
     context.pi_hook_before = agent_path(context, "pi").read_bytes()
 
 
-@when("the user runs zpp workflow remove --local with agent Pi and declines confirmation")
 def step_decline_skill_remove(context):
     context.skill_state_before = workflow_skill_snapshot(context)
     invoke(context, ["workflow", "remove", "--local", "--agent", "pi"], input_text="n\n")
 
 
-@when("the user runs zpp workflow remove --local with agent Pi and --yes")
 def step_confirm_local_skill_remove(context):
     invoke(context, ["workflow", "remove", "--local", "--agent", "pi", "--yes"])
 
 
-@then("only the managed shared Codex and Pi projection is removed")
-@then("only the managed Pi ZPP workflow projection is removed")
 def step_shared_projection_removed(context):
     assert context.result.exit_code == 0, context.result.output
     assert not (context.pi_skill_root / ".zpp-workflow-skills.json").exists()
     assert all(not (context.pi_skill_root / name).exists() for name in context.workflow_skill_names)
 
 
-@then("Pi's generated OpenSpec operation skills are unchanged")
 def step_pi_openspec_preserved_on_remove(context):
     assert all(
         path.read_bytes() == content
@@ -3289,17 +2854,14 @@ def step_pi_openspec_preserved_on_remove(context):
     )
 
 
-@then("Pi's native lifecycle hooks are unchanged")
 def step_pi_hooks_preserved_on_remove(context):
     assert agent_path(context, "pi").read_bytes() == context.pi_hook_before
 
 
-@then("the Claude Code projection is unchanged")
 def step_claude_projection_unchanged(context):
     assert snapshot(context.claude_local_root) == context.claude_local_before
 
 
-@given("Pi has managed global and local ZPP workflow bundles")
 def step_pi_has_global_and_local_bundles(context):
     git_init(context.project)
     for arguments in (
@@ -3314,7 +2876,6 @@ def step_pi_has_global_and_local_bundles(context):
     context.results.clear()
 
 
-@given("unrelated skills surround both managed projections")
 def step_unrelated_skills_surround_both_pi_projections(context):
     global_neighbor = context.pi_global_root / "third-party" / "SKILL.md"
     local_neighbor = context.pi_local_root / "project-owned" / "SKILL.md"
@@ -3331,12 +2892,10 @@ def step_unrelated_skills_surround_both_pi_projections(context):
     context.pi_local_before = snapshot(context.pi_local_root)
 
 
-@when("the user runs zpp workflow remove with agent Pi and --yes")
 def step_confirm_global_skill_remove(context):
     invoke(context, ["workflow", "remove", "--agent", "pi", "--yes"])
 
 
-@then("only the managed Pi global ZPP workflow projection is removed")
 def step_only_pi_global_projection_removed(context):
     assert context.result.exit_code == 0, context.result.output
     assert not (context.pi_global_root / ".zpp-workflow-skills.json").exists()
@@ -3346,12 +2905,10 @@ def step_only_pi_global_projection_removed(context):
     )
 
 
-@then("the managed Pi local ZPP workflow projection is unchanged")
 def step_pi_local_projection_unchanged(context):
     assert snapshot(context.pi_local_root) == context.pi_local_before
 
 
-@given("a participating layer activates a conditionless automatic-workflow trait")
 def step_automatic_workflow_trait(context):
     initialize(context)
     context.target = context.project
@@ -3375,7 +2932,6 @@ def step_automatic_workflow_trait(context):
     )
 
 
-@given("that trait references the permanent workflow skills through skill lookup")
 def step_automatic_trait_lookup(context):
     source = (
         context.home / ".zpp" / "global" / "traits" / "automatic-workflow.md"
@@ -3383,30 +2939,25 @@ def step_automatic_trait_lookup(context):
     assert all(name in source for name in context.workflow_skill_names)
 
 
-@when("the user resolves traits for the target")
 def step_resolve_automatic_trait(context):
     invoke(context, ["resolve", str(context.target)])
 
 
-@then("the effective trait directs unattended continuation only across satisfied gates")
 def step_automatic_trait_direction(context):
     assert context.result.exit_code == 0, context.result.output
     assert "Continue across satisfied workflow stages" in context.result.stdout
 
 
-@then("the skill lookup remains passive frontmatter metadata")
 def step_automatic_lookup_passive(context):
     metadata, body = parse_documents(context.result.stdout)[0]
     assert metadata["skill_lookup"] == list(context.workflow_skill_names)
     assert not any(name in body for name in context.workflow_skill_names)
 
 
-@then("the trait does not grant mutation authority or bypass a failed gate")
 def step_automatic_trait_limits(context):
     assert "grants no authority or failed-gate bypass" in context.result.stdout
 
 
-@when("the user installs the managed bundle for every supported agent")
 def step_install_bundle_for_every_agent(context):
     git_init(context.project)
     step_install_all_agents_local(context)
@@ -3416,7 +2967,6 @@ def step_install_bundle_for_every_agent(context):
     )
 
 
-@given("the packaged default profile contains executable-guarded tool-use traits")
 def step_packaged_tool_traits(context):
     root = REPO_ROOT / "src" / "zpp" / "artifacts" / "profiles" / "default"
     triggers = json.loads((root / "trait.json").read_text(encoding="utf-8"))
@@ -3427,14 +2977,12 @@ def step_packaged_tool_traits(context):
     ]
 
 
-@then("every native projection contains zpp-use-zmem, zpp-lean-audit, and zpp-author-skill")
 def step_projection_contains_generic_skills(context):
     for root in context.installed_workflow_roots:
         for name in ("zpp-use-zmem", "zpp-lean-audit", "zpp-author-skill"):
             assert (root / name / "SKILL.md").is_file()
 
 
-@then("use-zmem looks up zpp-use-zmem and zpp-commit-zmem only when the zmem executable is available")
 def step_use_zmem_guard(context):
     root = REPO_ROOT / "src" / "zpp" / "artifacts" / "profiles" / "default"
     triggers = json.loads((root / "trait.json").read_text(encoding="utf-8"))
@@ -3444,7 +2992,6 @@ def step_use_zmem_guard(context):
     assert metadata["skill_lookup"] == ["zpp-use-zmem", "zpp-commit-zmem"]
 
 
-@then("zpp-use-zmem teaches recall, search, detail inspection, links, output interpretation, and current-authority verification")
 def step_zmem_skill_complete(context):
     source = (
         context.installed_workflow_roots[0] / "zpp-use-zmem" / "SKILL.md"
@@ -3455,7 +3002,6 @@ def step_zmem_skill_complete(context):
     ))
 
 
-@then("zpp-lean-audit is read-only and substantially attributed to the upstream Ponytail ladder, taxonomy, output, and safety boundaries")
 def step_lean_skill_contract(context):
     source = (
         context.installed_workflow_roots[0] / "zpp-lean-audit" / "SKILL.md"
@@ -3465,7 +3011,6 @@ def step_lean_skill_contract(context):
     assert all(term in source for term in ("rank", "output", "security", "accessibility"))
 
 
-@then("zpp-lean-audit preserves ZPP's proportional maturity evaluation for external dependencies")
 def step_lean_dependency_fit(context):
     source = (
         context.installed_workflow_roots[0] / "zpp-lean-audit" / "SKILL.md"
@@ -3475,7 +3020,6 @@ def step_lean_dependency_fit(context):
     ))
 
 
-@then("zpp-author-skill keeps context-continuity and explicit-control-flow guidance in focused references rather than runtime traits")
 def step_author_skill_references(context):
     skill = context.installed_workflow_roots[0] / "zpp-author-skill"
     body = (skill / "SKILL.md").read_text(encoding="utf-8")
@@ -3488,15 +3032,11 @@ def step_author_skill_references(context):
     assert not (trait_root / "explicit-control-flow.md").exists()
 
 
-@then("every native projection contains the same seven permanent workflow skills")
-@then("every native projection contains the same eight permanent workflow skills")
-@then("every native projection contains the same eleven permanent workflow skills")
 def step_every_projection_same_bundle(context):
     for root in context.installed_workflow_roots:
         assert_workflow_projection(context, root)
 
 
-@then("each skill retains its required packaged resources and scripts")
 def step_packaged_resources_retained(context):
     for root in context.installed_workflow_roots:
         scripts = root / "zpp-commit-zmem" / "scripts"
@@ -3504,7 +3044,6 @@ def step_packaged_resources_retained(context):
         assert (scripts / "check-commit-msg.sh").is_file()
 
 
-@given("a mitigated codespace records its generated project and store branches")
 def step_recorded_reconciliation_branches(context):
     skill = (
         REPO_ROOT
@@ -3520,7 +3059,6 @@ def step_recorded_reconciliation_branches(context):
     assert "branch" in context.reconciliation_skill
 
 
-@then("every native projection contains the permanent codespace worktree-reconciliation skill")
 def step_projection_contains_reconciliation_skill(context):
     for root in context.installed_workflow_roots:
         assert (
@@ -3528,8 +3066,6 @@ def step_projection_contains_reconciliation_skill(context):
         ).is_file()
 
 
-@then("the skill consumes the recorded codespace branch metadata")
-@then("the skill consumes the released claim's generated-checkout and branch metadata")
 def step_reconciliation_consumes_metadata(context):
     source = context.reconciliation_skill
     assert "zpp codespace status ID --json" in source
@@ -3538,26 +3074,22 @@ def step_reconciliation_consumes_metadata(context):
     assert "source/effective checkout identities" in source
 
 
-@then("reconciliation requires explicit invocation")
 def step_reconciliation_is_explicit(context):
     assert "Require an explicit reconciliation request" in context.reconciliation_skill
 
 
-@then("the skill never makes codespace locking merge work automatically")
 def step_reconciliation_never_auto_merges(context):
     source = context.reconciliation_skill
     assert "never authorize a" in source
     assert "merge" in source
 
 
-@then("successful reconciliation can give every retained branch a disposition before finalization")
 def step_reconciliation_records_disposition(context):
     source = " ".join(context.reconciliation_skill.split())
     assert "every retained branch an explicit reconciled or abandoned disposition" in source
     assert "before finalization" in source
 
 
-@then("no skill body contains platform, framework, test-runner, or agent-specific policy")
 def step_skill_bodies_neutral(context):
     forbidden = (
         "pytest",
@@ -3580,7 +3112,6 @@ def step_skill_bodies_neutral(context):
             assert not any(term in source for term in forbidden), (name, source)
 
 
-@then("all Python, Django, TypeScript, and Flutter workflow guidance remains in independent optional traits outside the skill bodies")
 def step_platform_guidance_in_optional_traits(context):
     root = REPO_ROOT / "src" / "zpp" / "artifacts" / "profiles" / "default"
     names = {
@@ -3592,7 +3123,6 @@ def step_platform_guidance_in_optional_traits(context):
     assert all((root / "traits" / f"{name}.md").is_file() for name in names)
 
 
-@then("platform-specific installation behavior remains outside the skill bodies")
 def step_installation_policy_outside_bodies(context):
     assert workflow_skill_root(context, "codex", scope="local") == (
         context.project / ".agents" / "skills"
@@ -3615,7 +3145,6 @@ def authored_bytes(root: Path) -> dict[str, bytes]:
     }
 
 
-@then("the persistent user-owned default profile exists")
 def step_default_profile_exists(context):
     root = context.home / ".zpp" / "profiles" / "default"
     assert (root / "config.json").is_file()
@@ -3623,23 +3152,12 @@ def step_default_profile_exists(context):
     assert (root / "traits").is_dir()
 
 
-@then(
-    "the default profile is provisioned without participating in resolution"
-)
 def step_default_profile_inactive(context):
     global_triggers = context.home / ".zpp" / "global" / "trait.json"
     assert json.loads(global_triggers.read_text(encoding="utf-8")) == []
     assert context.env["ZPP_PROFILE"] is None
 
 
-@then(
-    "the default profile selects exactly automatic-workflow, codespace-claim-guard, "
-    "zero-assumptions, and ponytail when explicitly used"
-)
-@then(
-    "the default profile conditionlessly selects exactly automatic-workflow, "
-    "codespace-claim-guard, zero-assumptions, and ponytail when explicitly used"
-)
 def step_default_profile_triggers(context):
     source = context.home / ".zpp" / "profiles" / "default" / "trait.json"
     triggers = json.loads(source.read_text(encoding="utf-8"))
@@ -3651,7 +3169,6 @@ def step_default_profile_triggers(context):
     ]
 
 
-@then("the default profile guards use-rg, use-jq, and use-zmem by their corresponding executables")
 def step_default_tool_guards(context):
     source = context.home / ".zpp" / "profiles" / "default" / "trait.json"
     assert json.loads(source.read_text(encoding="utf-8"))[4:] == [
@@ -3661,10 +3178,6 @@ def step_default_tool_guards(context):
     ]
 
 
-@then(
-    "the default profile contains inactive python-bdd, python-tdd, "
-    "and python-build traits"
-)
 def step_default_optional_python_traits(context):
     root = context.home / ".zpp" / "profiles" / "default"
     triggers = {
@@ -3676,7 +3189,6 @@ def step_default_optional_python_traits(context):
     assert triggers.isdisjoint(optional)
 
 
-@then("the default profile contains all packaged platform workflow traits without activating them")
 def step_default_optional_platform_traits(context):
     root = context.home / ".zpp" / "profiles" / "default"
     triggers = {
@@ -3697,7 +3209,6 @@ def step_default_optional_platform_traits(context):
     assert triggers.isdisjoint(optional)
 
 
-@given("the default profile has valid user-authored changes with distinctive formatting")
 def step_user_edited_default(context):
     root = context.home / ".zpp" / "profiles" / "default"
     (root / "config.json").write_text(
@@ -3708,14 +3219,11 @@ def step_user_edited_default(context):
     context.default_before = snapshot(root)
 
 
-@then("the complete default profile is byte-for-byte unchanged")
-@then("no bundled default content is reapplied")
 def step_user_default_preserved(context):
     root = context.home / ".zpp" / "profiles" / "default"
     assert snapshot(root) == context.default_before
 
 
-@given('profile "source" has distinctive valid authored bytes and an independent cache')
 def step_copy_source_profile(context):
     root = context.home / ".zpp" / "profiles" / "source"
     write_layer(root, triggers=[{"trait": "source"}])
@@ -3731,7 +3239,6 @@ def step_copy_source_profile(context):
     context.source_cache_before = snapshot(cache)
 
 
-@given("the global layer has distinctive authored bytes")
 def step_distinct_global_bytes(context):
     root = context.home / ".zpp" / "global"
     write_trait(root, "global-distinctive", body="global distinctive body\n")
@@ -3742,18 +3249,15 @@ def step_distinct_global_bytes(context):
     context.global_before = snapshot(root)
 
 
-@then('profile "derived" contains a byte-for-byte copy of the authored source layer')
 def step_derived_profile_copy(context):
     derived = context.home / ".zpp" / "profiles" / "derived"
     assert authored_bytes(derived) == context.source_authored_before
 
 
-@then('profile "derived" has no derived cache')
 def step_derived_has_no_cache(context):
     assert not (context.home / ".zpp" / "cached" / "profiles" / "derived").exists()
 
 
-@then('profile "source" and its independent cache are unchanged')
 def step_copy_source_unchanged(context):
     source = context.home / ".zpp" / "profiles" / "source"
     cache = context.home / ".zpp" / "cached" / "profiles" / "source"
@@ -3761,12 +3265,10 @@ def step_copy_source_unchanged(context):
     assert snapshot(cache) == context.source_cache_before
 
 
-@then("the global layer is unchanged")
 def step_global_unchanged(context):
     assert snapshot(context.home / ".zpp" / "global") == context.global_before
 
 
-@given('profiles "source" and "existing" already exist')
 def step_source_and_existing_profiles(context):
     for name in ("source", "existing"):
         result = invoke(context, ["profile", "create", name])
@@ -3774,7 +3276,6 @@ def step_source_and_existing_profiles(context):
     context.results.clear()
 
 
-@given('profile "broken" has invalid managed state')
 def step_invalid_profile_for_copy(context):
     root = context.home / ".zpp" / "profiles" / "broken"
     write_layer(root)
@@ -3782,12 +3283,10 @@ def step_invalid_profile_for_copy(context):
     context.invalid_source = root / "config.json"
 
 
-@given("the current timestamp for archive naming is 20260730-143522")
 def step_fixed_archive_time(context):
     context.archive_time = datetime(2026, 7, 30, 14, 35, 22)
 
 
-@given("the global layer has distinctive valid authored bytes and derived state")
 def step_global_layer_for_activation(context):
     root = context.home / ".zpp" / "global"
     write_trait(root, "prior-global", body="prior global body\n")
@@ -3802,10 +3301,6 @@ def step_global_layer_for_activation(context):
     context.prior_global_authored = authored_bytes(root)
 
 
-@given(
-    "the default profile has different distinctive valid authored bytes "
-    "and derived state"
-)
 def step_default_layer_for_activation(context):
     root = context.home / ".zpp" / "profiles" / "default"
     (root / "config.json").write_text(
@@ -3820,7 +3315,6 @@ def step_default_layer_for_activation(context):
     context.default_cache_before = snapshot(cache)
 
 
-@when('the user runs zpp global activate {profile}')
 def step_activate_global_profile(context, profile):
     fixed = getattr(context, "archive_time", None)
     if fixed is None:
@@ -3831,7 +3325,6 @@ def step_activate_global_profile(context, profile):
         invoke(context, ["global", "activate", profile])
 
 
-@then('profile "20260730-143522-global" contains the prior global authored layer')
 def step_archived_global_layer(context):
     archive = context.home / ".zpp" / "profiles" / "20260730-143522-global"
     actual = authored_bytes(archive)
@@ -3842,20 +3335,17 @@ def step_archived_global_layer(context):
     )
 
 
-@then("the global layer contains a byte-for-byte copy of the default authored layer")
 def step_global_matches_default(context):
     assert authored_bytes(context.home / ".zpp" / "global") == (
         context.default_authored_before
     )
 
 
-@then("the default profile is byte-for-byte unchanged")
 def step_default_profile_unchanged(context):
     root = context.home / ".zpp" / "profiles" / "default"
     assert authored_bytes(root) == context.default_authored_before
 
 
-@then("no derived cache or modification sidecar is copied into either authored layer")
 def step_no_derived_state_copied(context):
     root = context.home / ".zpp"
     archive = root / "profiles" / "20260730-143522-global"
@@ -3865,7 +3355,6 @@ def step_no_derived_state_copied(context):
     assert not tuple(archive.rglob("traits.watch.json"))
 
 
-@then("affected derived caches are invalidated")
 def step_activation_cache_invalidated(context):
     root = context.home / ".zpp"
     assert not (root / "cached" / "global").exists()
@@ -3874,13 +3363,11 @@ def step_activation_cache_invalidated(context):
     )
 
 
-@when("the user resolves traits without ZPP_PROFILE")
 def step_resolve_without_profile(context):
     context.env["ZPP_PROFILE"] = None
     invoke(context, ["resolve", str(context.project)])
 
 
-@then("the platform-neutral base traits resolve from global")
 def step_base_traits_from_global(context):
     assert context.result.exit_code == 0, context.result.output
     names = [meta["name"] for meta, _ in parse_documents(context.result.stdout)]
@@ -3890,7 +3377,6 @@ def step_base_traits_from_global(context):
     assert set(names[4:]).issubset({"use-rg", "use-jq", "use-zmem"})
 
 
-@given('profiles "work" and "default" exist')
 def step_work_and_default_profiles(context):
     result = invoke(context, ["profile", "create", "work"])
     assert result.exit_code == 0, result.output
@@ -3900,7 +3386,6 @@ def step_work_and_default_profiles(context):
     context.results.clear()
 
 
-@then("the default profile still exists unchanged")
 def step_default_still_unchanged(context):
     root = context.home / ".zpp" / "profiles" / "default"
     assert authored_bytes(root) == context.default_authored_before
@@ -3909,25 +3394,21 @@ def step_default_still_unchanged(context):
 # Standard trait resolution
 
 
-@given('ZPP_PROFILE is "default"')
 def step_default_profile_env(context):
     context.env["ZPP_PROFILE"] = "default"
 
 
-@then('automatic-workflow has effective mode "automatic"')
 def step_automatic_mode(context):
     documents = parse_documents(context.result.stdout)
     automatic = next(meta for meta, _ in documents if meta["name"] == "automatic-workflow")
     assert automatic["config"]["mode"] == "automatic"
 
 
-@then("stdout contains no Python-specific trait")
 def step_no_python_traits(context):
     names = {meta["name"] for meta, _ in parse_documents(context.result.stdout)}
     assert names.isdisjoint({"python-bdd", "python-tdd", "python-build"})
 
 
-@given('the repository layer overrides automatic-workflow mode to "manual"')
 def step_local_manual_mode(context):
     git_init(context.project)
     context.target = context.project
@@ -3940,19 +3421,16 @@ def step_local_manual_mode(context):
     )
 
 
-@when("the user runs zpp resolve for the repository target")
 def step_resolve_repository_target(context):
     invoke(context, ["resolve", str(context.project)])
 
 
-@then('automatic-workflow remains active with effective mode "manual"')
 def step_manual_mode_active(context):
     documents = parse_documents(context.result.stdout)
     automatic = next(meta for meta, _ in documents if meta["name"] == "automatic-workflow")
     assert automatic["config"]["mode"] == "manual"
 
 
-@then("the same platform-neutral base traits remain active")
 def step_same_base_traits(context):
     names = [meta["name"] for meta, _ in parse_documents(context.result.stdout)]
     assert names[:4] == [
@@ -3961,30 +3439,19 @@ def step_same_base_traits(context):
     assert set(names[4:]).issubset({"use-rg", "use-jq", "use-zmem"})
 
 
-@then("codespace-claim-guard remains active")
 def step_claim_guard_remains_active(context):
     names = {meta["name"] for meta, _ in parse_documents(context.result.stdout)}
     assert "codespace-claim-guard" in names
 
 
-use_step_matcher("re")
 
 
-@given(
-    r"the repository layer additionally activates "
-    r"(?P<trait>python-(?:bdd|tdd|build|django-tdd)|typescript-(?:bdd|tdd)|flutter-(?:bdd|tdd))"
-)
 def step_activate_optional_python_trait(context, trait):
     git_init(context.project)
     context.target = context.project
     write_layer(context.project / ".zpp", triggers=[{"trait": trait}])
 
 
-@then(
-    r"stdout contains "
-    r"(?P<trait>python-(?:bdd|tdd|build|django-tdd)|typescript-(?:bdd|tdd)|flutter-(?:bdd|tdd)) "
-    r"with only (?P<responsibility>Behave|pytest|the uv environment|Django testing|TypeScript BDD|TypeScript TDD|Flutter BDD|Flutter TDD) guidance"
-)
 def step_optional_python_guidance(context, trait, responsibility):
     documents = parse_documents(context.result.stdout)
     body = next(body for meta, body in documents if meta["name"] == trait)
@@ -4001,11 +3468,8 @@ def step_optional_python_guidance(context, trait, responsibility):
     assert expected in body
 
 
-use_step_matcher("parse")
 
 
-@then("stdout contains no other optional Python trait")
-@then("stdout contains no other optional platform workflow trait")
 def step_no_other_python_trait(context):
     names = {
         meta["name"]
@@ -4018,30 +3482,23 @@ def step_no_other_python_trait(context):
 # Standard workflow trait ownership and delegated progression
 
 
-@given("the user-owned default profile is recorded")
 def step_record_default_profile(context):
     context.default_profile_before = snapshot(
         context.home / ".zpp" / "profiles" / "default"
     )
 
 
-@then("the user-owned default profile is unchanged")
 def step_owned_default_unchanged(context):
     assert snapshot(context.home / ".zpp" / "profiles" / "default") == (
         context.default_profile_before
     )
 
 
-@then("completed checkpoints, successful verification, and ordinary stage transitions are not human gates")
 def step_ordinary_transitions_not_gates(context):
     output = context.result.stdout
     assert "checkpoints, successful verification, or ordinary handoffs" in output
 
 
-@then(
-    "the effective trait pauses only for unresolved clarification, "
-    "a new product boundary, or a missing or changed utility shape"
-)
 def step_only_real_human_gates(context):
     assert (
         "Pause only for unresolved clarification, a new product boundary, "
@@ -4049,7 +3506,6 @@ def step_only_real_human_gates(context):
     ) in context.result.stdout
 
 
-@given('a participating layer activates automatic-workflow with mode "manual"')
 def step_manual_automatic_workflow(context):
     initialize(context)
     context.target = context.project
@@ -4066,21 +3522,15 @@ def step_manual_automatic_workflow(context):
     context.manual_config_before = (root / "config.json").read_bytes()
 
 
-@given("the user explicitly delegates the complete change end to end")
 def step_complete_delegation(context):
     context.complete_delegation = True
 
 
-@when("a workflow stage completes with its gate satisfied")
 def step_satisfied_stage(context):
     assert context.complete_delegation
     invoke(context, ["resolve", str(context.target)])
 
 
-@then(
-    "the effective guidance directs continuation through the next owning "
-    "workflow without requesting stage approval"
-)
 def step_delegated_continuation(context):
     assert context.result.exit_code == 0, context.result.output
     output = " ".join(context.result.stdout.split())
@@ -4088,7 +3538,6 @@ def step_delegated_continuation(context):
     assert "without approval" in output
 
 
-@then("the manual configuration remains unchanged")
 def step_manual_config_unchanged(context):
     source = context.project / ".zpp" / "config.json"
     assert source.read_bytes() == context.manual_config_before
@@ -4096,24 +3545,17 @@ def step_manual_config_unchanged(context):
     assert metadata["config"]["mode"] == "manual"
 
 
-@then("the trait still cannot execute a skill or grant mutation authority")
 def step_manual_trait_advisory(context):
     output = " ".join(context.result.stdout.split())
     assert "skill lookup is passive and grants no authority" in output.lower()
 
 
-@given("the initialized default profile contains the platform-neutral base traits")
 def step_initialized_default_traits(context):
     initialize(context)
     step_default_profile_triggers(context)
     step_default_optional_python_traits(context)
 
 
-@then("cross-cutting zero-assumption and Ponytail guidance remains in its owning trait")
-@then(
-    "cross-cutting codespace claim, zero-assumption, and Ponytail guidance "
-    "remains in its owning trait"
-)
 def step_cross_cutting_trait_ownership(context):
     traits = context.home / ".zpp" / "profiles" / "default" / "traits"
     claim = (traits / "codespace-claim-guard.md").read_text(encoding="utf-8")
@@ -4124,7 +3566,6 @@ def step_cross_cutting_trait_ownership(context):
     assert "dependency" in ponytail
 
 
-@given("a participating layer activates codespace-claim-guard")
 def step_activate_claim_guard(context):
     initialize(context)
     context.env["ZPP_PROFILE"] = "default"
@@ -4138,40 +3579,33 @@ def step_activate_claim_guard(context):
     ).read_text(encoding="utf-8").split())
 
 
-@given('automatic-workflow has effective mode "automatic"')
 def step_claim_workflow_automatic(context):
     context.claim_workflow_mode = "automatic"
 
 
-@given('automatic-workflow has effective mode "manual"')
 def step_claim_workflow_manual(context):
     context.claim_workflow_mode = "manual"
 
 
-@when("a write-capable ZPP workflow is about to mutate a physical checkout")
 def step_claim_guard_before_mutation(context):
     assert context.claim_guard
     assert context.claim_workflow_mode in {"automatic", "manual"}
 
 
-@then("the claim guard directs automatic acquisition or verification of the claim")
 def step_claim_guard_automatic(context):
     assert context.claim_workflow_mode == "automatic"
     assert "automatic obtains or verifies the complete claim" in context.claim_guard
 
 
-@then("the claim guard directs prompting before claim acquisition")
 def step_claim_guard_manual(context):
     assert context.claim_workflow_mode == "manual"
     assert "manual prompts before acquisition" in context.claim_guard
 
 
-@then("the trait does not treat an OpenSpec workset as ownership")
 def step_claim_guard_not_workset_authority(context):
     assert "OpenSpec worksets are opening projections, never ownership" in context.claim_guard
 
 
-@then("the trait rejects supported direct writes into associated read-only members")
 def step_claim_guard_rejects_read_only_writes(context):
     assert (
         "reject supported direct writes into another claim or an associated "
@@ -4179,12 +3613,10 @@ def step_claim_guard_rejects_read_only_writes(context):
     ) in context.claim_guard
 
 
-@then("the trait cannot override a conflicting claim or grant mutation authority")
 def step_claim_guard_is_advisory(context):
     assert "cannot override conflicts or grant mutation authority" in context.claim_guard
 
 
-@then("each permanent skill contains only its stage-specific operations and gates")
 def step_skills_stage_specific(context):
     forbidden = (
         "Persist established information before absorbing new details",
@@ -4196,10 +3628,6 @@ def step_skills_stage_specific(context):
             assert not any(text in source for text in forbidden)
 
 
-@then(
-    "hard OpenSpec operation ownership, verification authority, and zmem "
-    "materiality remain in their owning skills"
-)
 def step_hard_rules_remain_in_skills(context):
     root = context.installed_workflow_roots[0]
     mature = (root / "zpp-mature-utilities" / "SKILL.md").read_text(encoding="utf-8")
@@ -4210,10 +3638,6 @@ def step_hard_rules_remain_in_skills(context):
     assert "material tracked work" in zmem
 
 
-@then(
-    "python-bdd, python-tdd, and python-build remain independent optional "
-    "traits outside the skill bodies"
-)
 def step_python_traits_outside_skills(context):
     optional = ("python-bdd", "python-tdd", "python-build")
     for root in context.installed_workflow_roots:
@@ -4245,32 +3669,24 @@ def install_change_lifecycle_policy(context) -> None:
     ).read_text(encoding="utf-8")
 
 
-@given(
-    "a workflow relates a product change, a utility companion, "
-    "and a temporary internal anchor"
-)
 def step_related_change_types(context):
     install_change_lifecycle_policy(context)
 
 
-@given("an unrelated OpenSpec change remains active")
 def step_unrelated_change_active(context):
     context.unrelated_change_active = True
 
 
-@when("the mature workflow reaches finalization")
 def step_workflow_reaches_finalization(context):
     assert context.lifecycle_skills
 
 
-@then("the product change is handed to the owning OpenSpec finalizer")
 def step_product_change_finalized(context):
     source = context.lifecycle_skills["zpp-form-specs"]
     assert "explicitly to `openspec-archive-change`" in source
     assert "Require the product change to be archived" in source
 
 
-@then("the verified utility companion and consumed internal anchor are discarded")
 def step_companions_discarded(context):
     mature = context.lifecycle_skills["zpp-mature-utilities"]
     form = context.lifecycle_skills["zpp-form-specs"]
@@ -4279,7 +3695,6 @@ def step_companions_discarded(context):
     assert "to be discarded" in form.lower()
 
 
-@then("the unrelated active change is left untouched")
 def step_unrelated_change_untouched(context):
     assert context.unrelated_change_active
     assert "Leave unrelated active changes untouched" in (
@@ -4288,7 +3703,6 @@ def step_unrelated_change_untouched(context):
     assert "leave unrelated changes untouched" in context.lifecycle_trait
 
 
-@then("completion requires a final audit of the related change set")
 def step_final_related_change_audit(context):
     clarify = context.lifecycle_skills["zpp-clarify-change"]
     form = context.lifecycle_skills["zpp-form-specs"]
@@ -4298,25 +3712,18 @@ def step_final_related_change_audit(context):
     assert "Close or assign each related change before completion" in trait
 
 
-@given("a mature product change has formed and checkpointed canonical specifications")
 def step_mature_change_has_formed_specs(context):
     install_change_lifecycle_policy(context)
 
 
-@given("its active OpenSpec proposal and capability deltas remain uncommitted")
 def step_active_openspec_remains_uncommitted(context):
     context.active_openspec_uncommitted = True
 
 
-@when("the owning OpenSpec finalizer archives the product change")
 def step_openspec_finalizer_archives(context):
     assert context.active_openspec_uncommitted
 
 
-@then(
-    "the exact finalized archive is handed to zpp-commit-zmem as material "
-    "repository history"
-)
 def step_archive_becomes_repository_history(context):
     form = context.lifecycle_skills["zpp-form-specs"]
     commit = context.lifecycle_skills["zpp-commit-zmem"]
@@ -4325,7 +3732,6 @@ def step_archive_becomes_repository_history(context):
     assert "newly created finalized archive files" in commit
 
 
-@then("the archive checkpoint excludes unrelated active changes and disposable utility plans")
 def step_archive_checkpoint_is_scoped(context):
     form = context.lifecycle_skills["zpp-form-specs"]
     commit = context.lifecycle_skills["zpp-commit-zmem"]
@@ -4334,16 +3740,11 @@ def step_archive_checkpoint_is_scoped(context):
     assert "unrelated active OpenSpec changes" in commit
 
 
-@then("archiving alone does not require a zmem annotation")
 def step_archive_does_not_force_zmem(context):
     commit = context.lifecycle_skills["zpp-commit-zmem"]
     assert "Archiving alone does not require zmem" in commit
 
 
-@then(
-    "the repository ignore policy keeps active changes hidden and finalized "
-    "archives trackable"
-)
 def step_repository_ignore_policy_distinguishes_archives(context):
     active = subprocess.run(
         ["git", "check-ignore", "--no-index", "openspec/changes/example/proposal.md"],
@@ -4370,25 +3771,21 @@ def step_repository_ignore_policy_distinguishes_archives(context):
     assert archived.returncode == 1
 
 
-@given("a consumed related OpenSpec change remains active without an owning stage")
 def step_unowned_related_change(context):
     install_change_lifecycle_policy(context)
     context.unowned_related_change = True
 
 
-@when("the workflow evaluates its completion gate")
 def step_evaluate_completion_gate(context):
     assert context.unowned_related_change
 
 
-@then("the workflow cannot report completion")
 def step_completion_blocked(context):
     source = context.lifecycle_skills["zpp-form-specs"]
     assert "the workflow is incomplete" in source
     assert "never report overall completion" in source
 
 
-@then("the unrelated OpenSpec change list is not required to be empty")
 def step_unrelated_list_may_remain_active(context):
     assert "leave unrelated changes untouched" in context.lifecycle_trait
     assert "Leave unrelated active changes untouched" in (
@@ -4396,150 +3793,120 @@ def step_unrelated_list_may_remain_active(context):
     )
 
 
-@given("canonical OpenSpec records the currently accepted product behavior")
 def step_canonical_openspec_current(context):
     install_change_lifecycle_policy(context)
 
 
-@given("zmem records chronological decisions including a later change of direction")
 def step_zmem_temporal_decisions(context):
     context.temporal_decisions = ("initial direction", "later direction")
 
 
-@given("an active OpenSpec change contains mutable proposal and capability delta specs")
 def step_active_planning_artifacts(context):
     context.active_planning_artifacts = True
 
 
-@when("clarification establishes the product boundary")
 def step_clarification_establishes_boundary(context):
     assert context.temporal_decisions
     assert context.active_planning_artifacts
 
 
-@then("it compares the later zmem direction with canonical OpenSpec")
 def step_clarification_compares_history(context):
     clarify = context.lifecycle_skills["zpp-clarify-change"]
     assert "compare the latest relevant direction with canonical OpenSpec" in clarify
 
 
-@then("it treats canonical OpenSpec as the long-standing current authority")
 def step_canonical_authority(context):
     trait = " ".join(context.lifecycle_trait.split())
     assert "Canonical OpenSpec owns current accepted behavior" in trait
 
 
-@then("it treats zmem as temporal decision history rather than current product truth")
 def step_zmem_temporal_not_current(context):
     clarify = context.lifecycle_skills["zpp-clarify-change"]
     assert "chronological evidence of meaningful decision changes" in clarify
     assert "never as current product truth" in clarify
 
 
-@then("it treats the active OpenSpec planning artifacts as temporary working state")
 def step_planning_artifacts_temporary_working_state(context):
     clarify = context.lifecycle_skills["zpp-clarify-change"]
     assert "proposal and capability delta specs as mutable working state" in clarify
 
 
-@then("no zmem dependency graph is required")
 def step_no_zmem_dependency_graph(context):
     zmem = context.lifecycle_skills["zpp-commit-zmem"]
     assert "do not require a dependency graph" in zmem
 
 
-@given("an OpenSpec proposal declares multiple new or modified capabilities")
 def step_proposal_declares_capabilities(context):
     install_change_lifecycle_policy(context)
     context.declared_capabilities = ("first-capability", "second-capability")
 
 
-@when("clarification settles behavior for the complete change")
 def step_clarification_settles_complete_change(context):
     assert context.declared_capabilities
 
 
-@then(
-    "proposal.md retains the overview, capability inventory, impact, "
-    "and unresolved owner decisions"
-)
 def step_proposal_retains_overview(context):
     clarify = context.lifecycle_skills["zpp-clarify-change"]
     assert "motivation, scope, capability inventory, impact" in clarify
     assert "Unresolved — Do Not Assume" in clarify
 
 
-@then("each declared capability has its own specs capability delta document")
 def step_each_capability_has_delta(context):
     clarify = context.lifecycle_skills["zpp-clarify-change"]
     assert "one status-reported delta at `specs/<capability>/spec.md`" in clarify
 
 
-@then("settled behavior is persisted into its owning delta before clarification continues")
 def step_settled_behavior_persisted(context):
     clarify = context.lifecycle_skills["zpp-clarify-change"]
     assert "settled normative behavior belongs in its owning capability delta" in clarify
     assert "update the proposal and every affected capability delta before asking" in clarify
 
 
-@then(
-    "design and task artifacts follow the selected OpenSpec schema "
-    "rather than a ZPP one-file rule"
-)
 def step_schema_owns_other_artifacts(context):
     clarify = context.lifecycle_skills["zpp-clarify-change"]
     assert "follow the selected schema's complete artifact graph" in clarify
     assert "do not impose ZPP-specific artifact omissions" in clarify
 
 
-@given("a confirmed OpenSpec change contains proposal and capability delta documents")
 def step_confirmed_multi_artifact_change(context):
     install_change_lifecycle_policy(context)
 
 
-@when("the workflow shapes the complete Gherkin feature set")
 def step_shape_complete_gherkin(context):
     context.shaping_started = True
 
 
-@then("shaping consumes both proposal and capability delta documents")
 def step_shaping_consumes_artifacts(context):
     assert context.shaping_started
     shape = context.lifecycle_skills["zpp-shape-feature"]
     assert "confirmed proposal and every status-reported capability delta" in shape
 
 
-@then("shaping removes only executable examples duplicated by Gherkin")
 def step_shaping_removes_only_examples(context):
     shape = context.lifecycle_skills["zpp-shape-feature"]
     assert "remove only duplicated executable examples" in shape
 
 
-@then("shaping preserves stable intent, constraints, invariants, and acceptance obligations")
 def step_shaping_preserves_contract(context):
     shape = context.lifecycle_skills["zpp-shape-feature"]
     assert "preserve intent, scope, constraints, invariants, and acceptance obligations" in shape
 
 
-@when("mature green behavior later forms canonical specifications")
 def step_mature_green_forms_specs(context):
     context.specification_formation_started = True
 
 
-@then("formation reconciles the existing capability deltas")
 def step_formation_reconciles_deltas(context):
     assert context.specification_formation_started
     form = context.lifecycle_skills["zpp-form-specs"]
     assert "Reconcile each existing capability delta" in form
 
 
-@then("formation does not create capability specifications for the first time")
 def step_formation_requires_existing_deltas(context):
     form = context.lifecycle_skills["zpp-form-specs"]
     assert "Do not create a declared capability's delta for the first time" in form
 
 
-@given("a valid conventional commit message contains no zmem annotation")
 def step_unannotated_conventional_message(context):
     context.commit_message = context.project / "commit-message.txt"
     context.commit_message.write_text(
@@ -4584,59 +3951,49 @@ def run_packaged_zmem_validator(context, *, require_zmem: bool) -> None:
     context.validator_output = json.loads(context.validator_result.stdout)
 
 
-@when("the bundled commit-message validator checks an ordinary commit")
 def step_validate_ordinary_commit(context):
     run_packaged_zmem_validator(context, require_zmem=False)
 
 
-@then("validation succeeds with zero zmem annotations")
 def step_ordinary_commit_valid(context):
     assert context.validator_result.returncode == 0
     assert context.validator_output["ok"] is True
     assert context.validator_output["annotations"] == 0
 
 
-@when("the bundled commit-message validator checks a memory-bearing checkpoint")
 def step_validate_memory_checkpoint(context):
     run_packaged_zmem_validator(context, require_zmem=True)
 
 
-@then("validation fails because a canonical zmem annotation is required")
 def step_memory_checkpoint_requires_annotation(context):
     assert context.validator_result.returncode == 23
     assert context.validator_output["ok"] is False
     assert context.validator_output["code"] == 23
 
 
-@given("mature green behavior reflects the latest accepted decision")
 def step_green_behavior_latest_decision(context):
     install_change_lifecycle_policy(context)
 
 
-@given("zmem retains earlier directions, reversals, and their reasons")
 def step_zmem_retains_history(context):
     context.temporal_history_retained = True
 
 
-@when("the workflow forms canonical OpenSpec specifications")
 def step_form_canonical_specs(context):
     assert context.temporal_history_retained
 
 
-@then("only the enduring current behavior enters canonical OpenSpec")
 def step_only_current_behavior_is_canonical(context):
     form = context.lifecycle_skills["zpp-form-specs"]
     assert "Canonical specs own the current mature product behavior only" in form
 
 
-@then("abandoned or superseded chronology remains in zmem")
 def step_superseded_chronology_in_zmem(context):
     form = context.lifecycle_skills["zpp-form-specs"]
     assert "Zmem retains the meaningful temporal sequence" in form
     assert "abandoned or superseded chronology" in form
 
 
-@then("no zmem checkpoint is created merely to mark specification formation")
 def step_no_spec_marker_zmem(context):
     form = context.lifecycle_skills["zpp-form-specs"]
     assert "never repeat an already recorded decision" in form
@@ -4655,7 +4012,6 @@ from zpp.utils.openspec_adapter import (
     OpenSpecWorkset,
 )
 
-use_step_matcher("re")
 
 
 def create_committed_repository(root: Path, name: str) -> Path:
@@ -4684,7 +4040,6 @@ def create_committed_repository(root: Path, name: str) -> Path:
 
 
 # Bindings for the claim-owned codespace contract.
-use_step_matcher("parse")
 
 
 def setup_claim_codespace(context) -> None:
@@ -6140,16 +5495,3 @@ def bind_claim_step(handler, text: str):
     return bound
 
 
-for _text in CLAIM_GIVENS:
-    given(_text)(bind_claim_step(claim_given, _text))
-for _text in CLAIM_WHENS:
-    when(_text)(bind_claim_step(claim_when, _text))
-for _agent in ("Pi", "Codex", "Claude Code"):
-    _direct = (
-        f"{_agent} attempts a supported direct edit or write tool call from a different codespace"
-    )
-    _shell = f"{_agent} submits a supported shell tool call"
-    when(_direct)(bind_claim_step(claim_when, _direct))
-    when(_shell)(bind_claim_step(claim_when, _shell))
-for _text in CLAIM_THENS:
-    then(_text)(bind_claim_step(claim_then, _text))
