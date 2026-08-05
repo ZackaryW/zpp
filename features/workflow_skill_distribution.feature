@@ -10,7 +10,7 @@ Feature: Install and maintain a complete ZPP workflow integration
     And Codex, Pi, and Claude Code have no local ZPP workflow skills
     And Codex, Pi, and Claude Code have no ZPP integration
     And the current project has no authored ZPP layer
-    When the user runs zpp workflow install with agents Codex, Pi, and Claude Code
+    When the user runs zpp workflow install --local with agents Codex, Pi, and Claude Code
     Then installation succeeds without offering agent selection
     And one managed bundle is installed in the repository-local Codex skill scope
     And one managed bundle is installed in the repository-local Pi skill scope under .pi
@@ -23,7 +23,7 @@ Feature: Install and maintain a complete ZPP workflow integration
     Given Codex, Pi, and Claude Code have no global ZPP workflow skills
     And Codex, Pi, and Claude Code have no global OpenSpec operation skills
     And Codex, Pi, and Claude Code have no ZPP integration
-    When the user runs zpp workflow install --global with agents Codex, Pi, and Claude Code
+    When the user runs zpp workflow install with agents Codex, Pi, and Claude Code
     Then installation succeeds without offering agent selection
     And one managed bundle is installed in the user-global Codex skill scope
     And one managed bundle is installed in the user-global Pi skill scope under .pi
@@ -38,7 +38,7 @@ Feature: Install and maintain a complete ZPP workflow integration
   Scenario: Explicitly bootstrap OpenSpec operation skills in local scope
     Given the current directory is the root of a Git worktree
     And Codex, Pi, and Claude Code have no local workflow skills
-    When the user requests local OpenSpec bootstrap during workflow installation for Codex, Pi, and Claude Code
+    When the user runs zpp workflow install --local --with-openspec for Codex, Pi, and Claude Code
     Then every selected agent has the managed ZPP workflow bundle in its native local skill scope
     And Codex has generated OpenSpec core operation skills under .codex
     And Pi has generated OpenSpec core operation skills under .pi
@@ -49,14 +49,14 @@ Feature: Install and maintain a complete ZPP workflow integration
   Scenario: Install locally into an exact target inside a Git worktree
     Given "C:\work\repo\nested" is an existing directory inside a Git worktree
     And the current directory is outside that worktree
-    When the user runs zpp workflow install "C:\work\repo\nested" with agent Claude Code
+    When the user runs zpp workflow install --local "C:\work\repo\nested" with agent Claude Code
     Then the managed bundle is installed only in that exact directory's local Claude Code skill scope
     And no authored ZPP layer is created or modified
 
   Scenario Outline: Reject an invalid local target without changes
     Given <target state>
     And every agent skill scope is recorded
-    When the user runs zpp workflow install <target> with agent Codex
+    When the user runs zpp workflow install --local <target> with agent Codex
     Then the invocation is rejected as a domain error
     And every agent skill scope is unchanged
 
@@ -66,16 +66,28 @@ Feature: Install and maintain a complete ZPP workflow integration
       | "C:\work\file.txt" is an existing file          | "C:\work\file.txt" |
       | "C:\outside" is an existing directory outside Git | "C:\outside"   |
 
-  Scenario: Global scope rejects a local target
+  Scenario: Default global scope rejects a local target without --local
     Given every agent skill scope is recorded
-    When the user runs zpp workflow install "C:\work\repo" --global with agent Codex
+    When the user runs zpp workflow install "C:\work\repo" with agent Codex
     Then the invocation is rejected as a usage error
     And every agent skill scope is unchanged
+
+  Scenario Outline: Removed and local-only options are rejected in global scope
+    Given every agent skill scope is recorded
+    When the user runs <invalid invocation>
+    Then the invocation is rejected as a usage error
+    And every agent skill scope is unchanged
+
+    Examples:
+      | invalid invocation                                        |
+      | zpp workflow install --global with agent Codex            |
+      | zpp workflow install with agent Codex and --force         |
+      | zpp workflow install with agent Codex and --with-openspec |
 
   Scenario: Interactive selection configures all selected agents atomically
     Given an interactive terminal is available
     And every supported agent has no ZPP workflow skills
-    When the user runs zpp workflow install and selects Pi and Claude Code
+    When the user runs zpp workflow install --local and selects Pi and Claude Code
     Then one selector offers Pi, Codex, and Claude Code
     And the managed bundle is installed in the selected native local scopes
     And Pi uses its .pi local skill scope
@@ -100,17 +112,17 @@ Feature: Install and maintain a complete ZPP workflow integration
   Scenario: A compatible global bundle suppresses local duplication
     Given Codex has a compatible managed global ZPP workflow bundle
     And Codex has no local ZPP workflow bundle
-    When the user runs zpp workflow install with agent Codex
+    When the user runs zpp workflow install --local with agent Codex
     Then installation succeeds and reports that the compatible global bundle is reused
     And no local bundle is installed
-    When the user repeats zpp workflow install with agent Codex and --force
+    When the user repeats zpp workflow install --local with agent Codex and --force
     Then a compatible managed local bundle is installed
     And both managed scopes are reported without claiming scope precedence
 
   Scenario: An outdated global bundle does not suppress the current local bundle
     Given Claude Code has an outdated managed global ZPP workflow bundle
     And Claude Code has no local ZPP workflow bundle
-    When the user runs zpp workflow install with agent Claude Code
+    When the user runs zpp workflow install --local with agent Claude Code
     Then the current managed bundle is installed locally
     And the differing managed scope versions are reported without selecting one
 
@@ -119,7 +131,7 @@ Feature: Install and maintain a complete ZPP workflow integration
     And Pi has generated OpenSpec core operation skills for the detected recorded version
     And Pi has the current ZPP-managed native lifecycle hooks
     And unrelated files surround every managed projection
-    When the user runs zpp workflow install --global with agent Pi twice
+    When the user runs zpp workflow install with agent Pi twice
     Then both installations succeed
     And every managed projection is byte-for-byte unchanged
     And OpenSpec skills are not regenerated
@@ -128,7 +140,7 @@ Feature: Install and maintain a complete ZPP workflow integration
   Scenario: Every selected integration destination is preflighted before installation
     Given Pi has no global ZPP integration
     And Claude Code has an unmanaged global conflict at a required OpenSpec skill destination
-    When the user runs zpp workflow install --global with agents Pi and Claude Code
+    When the user runs zpp workflow install with agents Pi and Claude Code
     Then installation fails as a managed-state rejection
     And Pi's workflow skills, OpenSpec skills, and native hooks remain unchanged
     And the conflicting Claude Code content is unchanged
@@ -136,21 +148,21 @@ Feature: Install and maintain a complete ZPP workflow integration
   Scenario: OpenSpec generation failure leaves every selected agent unchanged
     Given every selected agent integration is recorded
     And OpenSpec cannot generate one selected agent's core operation skills
-    When the user runs zpp workflow install --global for those agents
+    When the user runs zpp workflow install for those agents
     Then installation fails before committing any selected-agent change
     And every selected agent integration is byte-for-byte unchanged
     And the isolated temporary project is removed
 
   Scenario: Force never overwrites an unmanaged conflict
     Given Codex has an unmanaged local conflict at a required skill destination
-    When the user runs zpp workflow install with agent Codex and --force
+    When the user runs zpp workflow install --local with agent Codex and --force
     Then installation fails as a managed-state rejection
     And the conflicting content is unchanged
 
   Scenario: Update changes only the selected managed scope
     Given Codex has outdated managed global and forced local ZPP workflow bundles
     And Claude Code has an outdated managed global ZPP workflow bundle
-    When the user runs zpp workflow update --global with agent Codex
+    When the user runs zpp workflow update with agent Codex
     Then only the Codex global managed bundle is updated to the packaged version
     And the forced local Codex bundle is unchanged
     And every Claude Code scope is unchanged
@@ -160,28 +172,28 @@ Feature: Install and maintain a complete ZPP workflow integration
     Given Codex has a managed global workflow integration
     And its OpenSpec projection records the currently detected OpenSpec version
     And the generated OpenSpec skills have distinguishable compatible content
-    When the user runs zpp workflow update --global with agent Codex
+    When the user runs zpp workflow update with agent Codex
     Then the ZPP workflow bundle is updated when needed
     And the generated OpenSpec skills are byte-for-byte unchanged
 
   Scenario: Update regenerates OpenSpec skills when the version changes
     Given Claude Code has a managed global workflow integration
     And its OpenSpec projection records a different version from the detected OpenSpec version
-    When the user runs zpp workflow update --global with agent Claude Code
+    When the user runs zpp workflow update with agent Claude Code
     Then the OpenSpec core operation skills are regenerated for Claude Code
     And the newly detected OpenSpec version is recorded
     And unrelated Claude Code content is byte-for-byte unchanged
 
   Scenario: Unavailable OpenSpec version is recorded as unknown
     Given OpenSpec can generate its core operation skills but cannot report its version
-    When the user runs zpp workflow install --global with agent Codex
+    When the user runs zpp workflow install with agent Codex
     Then the generated OpenSpec projection records an unknown version
     And installation otherwise completes normally
 
   Scenario: Update an intact historical managed bundle
     Given Codex has a historical managed global workflow bundle that predates one permanent skill
     And unrelated skills surround the historical managed projection
-    When the user runs zpp workflow update --global with agent Codex
+    When the user runs zpp workflow update with agent Codex
     Then the Codex global projection contains the complete current workflow bundle
     And only paths owned by the historical manifest were replaced
     And the unrelated global skills are byte-for-byte unchanged
@@ -189,7 +201,7 @@ Feature: Install and maintain a complete ZPP workflow integration
   Scenario: Update reports an absent selected scope distinctly
     Given Codex has a compatible managed global ZPP workflow bundle
     And Codex has no local ZPP workflow bundle
-    When the user runs zpp workflow update with agent Codex
+    When the user runs zpp workflow update --local with agent Codex
     Then update reports that the local projection is not installed
     And it does not describe absent local state as unmanaged content
     And the compatible global bundle remains unchanged
@@ -197,7 +209,7 @@ Feature: Install and maintain a complete ZPP workflow integration
   Scenario: Update rejects a selected scope that is not ZPP-managed
     Given Claude Code has an unmanaged global skill directory matching a permanent skill name
     And every agent skill scope is recorded
-    When the user runs zpp workflow update --global with agent Claude Code
+    When the user runs zpp workflow update with agent Claude Code
     Then update fails as a managed-state rejection
     And every agent skill scope is unchanged
 
@@ -207,15 +219,23 @@ Feature: Install and maintain a complete ZPP workflow integration
     And Pi has current ZPP-managed native lifecycle hooks
     And Claude Code has a managed local ZPP workflow bundle
     And the user-owned default profile is recorded
-    When the user runs zpp workflow remove with agent Pi and declines confirmation
+    When the user runs zpp workflow remove --local with agent Pi and declines confirmation
     Then every agent skill scope is unchanged
-    When the user runs zpp workflow remove with agent Pi and --yes
+    When the user runs zpp workflow remove --local with agent Pi and --yes
     Then only the managed Pi ZPP workflow projection is removed
     And Pi's generated OpenSpec operation skills are unchanged
     And Pi's native lifecycle hooks are unchanged
     And the unrelated skills are unchanged
     And the Claude Code projection is unchanged
     And the user-owned default profile is unchanged
+
+  Scenario: Removal defaults to the selected global scope
+    Given Pi has managed global and local ZPP workflow bundles
+    And unrelated skills surround both managed projections
+    When the user runs zpp workflow remove with agent Pi and --yes
+    Then only the managed Pi global ZPP workflow projection is removed
+    And the managed Pi local ZPP workflow projection is unchanged
+    And the unrelated skills are unchanged
 
   Scenario: Automatic workflow guidance remains advisory and skill-backed
     Given a participating layer activates a conditionless automatic-workflow trait
