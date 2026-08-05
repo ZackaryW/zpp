@@ -19,10 +19,20 @@ def merge_mutation_plans(
     plans: Iterable[FilesystemMutationPlan],
 ) -> FilesystemMutationPlan:
     items = tuple(plans)
-    entries = tuple(entry for plan in items for entry in plan.creation.entries)
-    paths = tuple(entry.path for entry in entries)
-    if len(set(paths)) != len(paths):
-        raise ValueError("mutation plans contain duplicate creation ownership")
+    entries_by_path = {}
+    for plan in items:
+        for entry in plan.creation.entries:
+            previous = entries_by_path.get(entry.path)
+            if previous is None:
+                entries_by_path[entry.path] = entry
+            elif not (
+                previous.kind == "directory"
+                and entry.kind == "directory"
+                and previous.source is None
+                and entry.source is None
+            ):
+                raise ValueError("mutation plans contain duplicate creation ownership")
+    entries = tuple(entries_by_path.values())
 
     replacements = tuple(path for plan in items for path in plan.replacements)
     if len(set(replacements)) != len(replacements):

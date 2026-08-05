@@ -59,3 +59,36 @@ def test_merge_mutation_plans_rejects_duplicate_creation_ownership(
 
     with pytest.raises(ValueError, match="duplicate"):
         merge_mutation_plans((first, second))
+
+
+def test_merge_mutation_plans_coalesces_identical_shared_directories(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "shared"
+    first_file = root / "zpp-skill" / "SKILL.md"
+    second_file = root / "openspec-skill" / "SKILL.md"
+    first = FilesystemMutationPlan(
+        CreationPlan(
+            (
+                CreationEntry(root, "directory"),
+                CreationEntry(first_file.parent, "directory"),
+                CreationEntry(first_file, "text", "zpp"),
+            )
+        )
+    )
+    second = FilesystemMutationPlan(
+        CreationPlan(
+            (
+                CreationEntry(root, "directory"),
+                CreationEntry(second_file.parent, "directory"),
+                CreationEntry(second_file, "text", "openspec"),
+            )
+        )
+    )
+
+    merged = merge_mutation_plans((first, second))
+    apply_mutation_plan(merged)
+
+    assert first_file.read_text(encoding="utf-8") == "zpp"
+    assert second_file.read_text(encoding="utf-8") == "openspec"
+    assert tuple(entry.path for entry in merged.creation.entries).count(root) == 1
