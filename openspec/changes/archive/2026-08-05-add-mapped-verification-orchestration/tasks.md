@@ -38,4 +38,4 @@
 
 - [x] 7.1 Run focused unit tests, each capability-oriented Behave root, mapped filtered execution, and the uncached complete audit; resolve every regression.
 - [x] 7.2 Validate and form the canonical OpenSpec specifications, archive the completed change, and leave no consumed related active change.
-- [ ] 7.3 Install/update the completed workflow globally for Pi, Codex, and Claude Code, verify their native hooks and twelve-skill projections, and validate the globally upgraded default profile.
+- [x] 7.3 Install/update the completed workflow globally for Pi, Codex, and Claude Code, verify their native hooks and twelve-skill projections, and validate the globally upgraded default profile.
