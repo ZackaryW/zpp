@@ -17,7 +17,7 @@ zpp --version
 ZPP requires Python 3.10 or newer. The installed command is independent from
 the optional governance plugins an agent application may load.
 
-## Initialize ZPP and agent hooks
+## Initialize ZPP and agent integrations
 
 ```console
 zpp init
@@ -42,15 +42,22 @@ Initialization creates neutral user state without modifying the current project:
 └── cached/
 ```
 
-With no explicit `--agent`, an interactive terminal offers Pi, Codex, and Claude Code. Noninteractive initialization skips agent setup. Selected ZPP hooks are installed in global user space:
+With no explicit `--agent`, an interactive terminal offers Pi, Codex, and Claude
+Code. Noninteractive initialization skips agent setup. Each selected agent
+receives its complete current global integration: the twelve ZPP workflow
+skills, version-matched generated OpenSpec core skills, and native lifecycle
+hooks. Skill projections use the agent-native global roots documented below;
+hooks use:
 
 - Pi: `~/.pi/agent/extensions/zpp/index.ts`
 - Codex: `~/.codex/hooks.json`
 - Claude Code: `~/.claude/settings.json`
 
-`zpp init` installs only these ZPP lifecycle hooks. It does not install workflow
-skills, third-party plugins, instruction paragraphs, repository-local
-integrations, or trust settings.
+Initialization preflights every selected global destination before changing any
+selected agent, preserves compatible projections, and refreshes intact outdated
+managed projections. It does not install third-party plugins, instruction
+paragraphs, repository-local integrations, or trust settings. Existing valid
+user-owned default-profile content is not upgraded or rewritten during `init`.
 
 ## Install the standard workflow
 

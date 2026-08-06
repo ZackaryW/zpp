@@ -6,19 +6,24 @@ from typing import Annotated
 import typer
 
 from zpp.cli.shared import AgentOption, interactive_terminal_available, run_domain
-from zpp.core.agents import as_agent_names, configure_agents
+from zpp.core.agents import as_agent_names
+from zpp.core.skills import plan_selected_global_integration
 from zpp.core.state import initialize_user_state
 from zpp.utils.agent_selection import select_agents
+from zpp.utils.filesystem_mutation import apply_mutation_plan
 from zpp.utils.models import CancelledAgentSelection
 
 
 def init_command(
     agent: Annotated[
         list[AgentOption] | None,
-        typer.Option("--agent", help="Configure a global agent lifecycle hook."),
+        typer.Option(
+            "--agent",
+            help="Install a complete global integration for a supported agent.",
+        ),
     ] = None,
 ) -> None:
-    """Bootstrap missing global user state and configure selected agent hooks."""
+    """Bootstrap missing global user state and completely set up selected agents."""
     def action() -> None:
         home = Path.home()
         initialize_user_state(home)
@@ -30,6 +35,11 @@ def init_command(
                 raise typer.Exit(1)
             selected = selection.agents
         if selected:
-            configure_agents(home, as_agent_names(selected))
+            integration = plan_selected_global_integration(
+                home=home,
+                agents=as_agent_names(selected),
+                upgrade_default_profile=False,
+            )
+            apply_mutation_plan(integration.mutation)
 
     run_domain(action)

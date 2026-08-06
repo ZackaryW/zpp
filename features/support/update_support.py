@@ -18,7 +18,8 @@ def request_update_help(context) -> None:
 def assert_init_help(context) -> None:
     text = context.init_help.lower()
     assert "bootstrap missing global user state" in text
-    assert "selected agent hooks" in text
+    assert "completely set up selected agents" in text
+    assert "complete global integration" in text
 
 
 def assert_update_help(context) -> None:

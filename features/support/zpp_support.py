@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 import yaml
 
+from zpp import __version__
 from zpp.cli import app
 from zpp.utils.models import (
     CancelledAgentSelection,
@@ -549,7 +550,7 @@ def step_bad_agent(context):
 
 def step_assert_version(context):
     assert context.results[0].exit_code == 0
-    assert context.results[0].stdout.strip() == "ZPP version 0.9.6"
+    assert context.results[0].stdout.strip() == f"ZPP version {__version__}"
 
 
 def step_assert_help(context):
@@ -669,12 +670,20 @@ def step_trust_unchanged(context):
 
 
 def step_claude_unchanged(context):
-    assert not agent_path(context, "claude").exists()
+    _assert_agent_has_no_global_surface(context, "claude")
 
 
 def step_pi_codex_unchanged(context):
-    assert not agent_path(context, "pi").exists()
-    assert not agent_path(context, "codex").exists()
+    _assert_agent_has_no_global_surface(context, "pi")
+    _assert_agent_has_no_global_surface(context, "codex")
+
+
+def _assert_agent_has_no_global_surface(context, agent):
+    assert not agent_path(context, agent).exists()
+    workflow = workflow_skill_root(context, agent, scope="global")
+    openspec = openspec_skill_root(context, agent, scope="global")
+    assert not (workflow / ".zpp-workflow-skills.json").exists()
+    assert not (openspec / ".zpp-openspec-skills.json").exists()
 
 
 def step_no_repo_agent(context):
@@ -2657,7 +2666,7 @@ def step_only_codex_global_updated(context):
     manifest = json.loads(
         (context.codex_global_root / ".zpp-workflow-skills.json").read_text(encoding="utf-8")
     )
-    assert manifest["bundle_version"] == "0.9.6"
+    assert manifest["bundle_version"] == __version__
 
 
 def step_codex_local_unchanged(context):
