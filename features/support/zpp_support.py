@@ -3927,6 +3927,34 @@ def step_no_zmem_dependency_graph(context):
     assert "do not require a dependency graph" in zmem
 
 
+def step_bounded_recall_empty(context):
+    install_change_lifecycle_policy(context)
+    context.bounded_recall_result = ()
+
+
+def step_clarification_investigates_history(context):
+    assert context.bounded_recall_result == ()
+
+
+def step_clarification_uses_bounded_recall(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "bounded `zmem recall` filters" in clarify
+
+
+def step_clarification_never_searches(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "Never invoke `zmem search` during clarification" in clarify
+
+
+def step_clarification_continues_without_history(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert (
+        "continue from canonical OpenSpec and current repository evidence"
+        in clarify
+    )
+    assert "without treating the missing history as a gate" in clarify
+
+
 def step_mixed_ownership_request(context):
     install_change_lifecycle_policy(context)
     context.request_ownership = {"repository-environment", "shipped-source"}

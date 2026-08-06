@@ -23,7 +23,7 @@ Treat canonical OpenSpec specifications as the long-standing authority for curre
 
 After the request nature preflight confirms shipped product work, list the active OpenSpec changes and keep a session-local related set containing the selected product change plus every change this workflow creates, selects, or consumes. Keep unrelated active changes outside that set. Never persist this lifecycle tracking in the product proposal or authored traits.
 
-Before writing the working artifacts, identify the affected canonical specifications and recall relevant zmem decisions and lessons by capability, path, and change language. Order relevant records temporally, distinguish later revisions from earlier directions, and compare the latest relevant direction with canonical OpenSpec. A later zmem record signals history that may require reconciliation; it does not silently replace current authority.
+Before writing the working artifacts, identify the affected canonical specifications and recall relevant zmem decisions and lessons with bounded `zmem recall` filters. Never invoke `zmem search` during clarification. Inspect a known relevant record with `zmem show` only when its detail is needed. If bounded recall yields no relevant history, continue from canonical OpenSpec and current repository evidence without treating the missing history as a gate. Order relevant records temporally, distinguish later revisions from earlier directions, and compare the latest relevant direction with canonical OpenSpec. A later zmem record signals history that may require reconciliation; it does not silently replace current authority.
 
 ## Authority boundary
 

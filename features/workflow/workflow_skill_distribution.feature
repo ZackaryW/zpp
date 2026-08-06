@@ -427,6 +427,14 @@ Feature: Install and maintain a complete ZPP workflow integration
     And it treats the active OpenSpec planning artifacts as temporary working state
     And no zmem dependency graph is required
 
+  Scenario: Clarification bounds temporal history discovery
+    Given canonical OpenSpec records the currently accepted product behavior
+    And bounded zmem recall yields no relevant temporal decision
+    When clarification investigates history for a shipped behavior change
+    Then it discovers temporal history only through bounded zmem recall filters
+    And it never invokes zmem search during clarification
+    And it continues from canonical OpenSpec and current repository evidence
+
   Scenario: Clarification classifies request ownership before product bootstrap
     Given a request combines repository-environment tooling and shipped source behavior
     When clarification determines whether product-change bootstrapping applies
