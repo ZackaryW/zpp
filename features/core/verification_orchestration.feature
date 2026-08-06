@@ -62,10 +62,10 @@ Feature: Run repository-owned affected verification
 
   Scenario: Use only an existing repository-owned Nx surface
     Given command "bdd" selects Nx projects and target "bdd"
-    And both a compatible repository-local Nx wrapper and a PATH Nx executable are available
+    And an official repository-root Nx wrapper backed by .nx installation and a PATH Nx executable are available
     And a repository-owned plugin exposes every declared project and target
     When the user runs zpp behave bdd --all
-    Then ZPP prefers the repository-local Nx wrapper
+    Then ZPP prefers the absolute repository-root Nx wrapper
     And ZPP validates and invokes only the declared project and target surface
     And ZPP does not install, migrate, download, connect, or interpret Nx or its plugins
 
