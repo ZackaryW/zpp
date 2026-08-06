@@ -1821,7 +1821,8 @@ def workflow_skill_root(
 ) -> Path:
     base = context.home if scope == "global" else (target or context.project)
     if agent == "codex":
-        return base / ".agents" / "skills"
+        relative = ".codex/skills" if scope == "global" else ".agents/skills"
+        return base / relative
     if agent == "pi":
         relative = ".pi/agent/skills" if scope == "global" else ".pi/skills"
         return base / relative
@@ -1881,6 +1882,74 @@ def assert_openspec_projection(
         OPENSPEC_CORE_SKILL_NAMES
     )
     assert all((root / name / "SKILL.md").is_file() for name in OPENSPEC_CORE_SKILL_NAMES)
+
+
+def step_record_historical_global_agents_skills(context):
+    root = context.home / ".agents" / "skills"
+    historical = root / "zpp-historical" / "SKILL.md"
+    historical.parent.mkdir(parents=True)
+    historical.write_text("historical Codex workflow content\n", encoding="utf-8")
+    (root / ".zpp-workflow-skills.json").write_text(
+        '{"historical": true}\n',
+        encoding="utf-8",
+    )
+    context.historical_global_agents_root = root
+    context.historical_global_agents_before = snapshot(root)
+
+
+def step_record_unrelated_global_codex_skill(context):
+    root = openspec_skill_root(context, "codex", scope="global")
+    unrelated = root / "third-party" / "SKILL.md"
+    unrelated.parent.mkdir(parents=True)
+    unrelated.write_text("unrelated global Codex skill π\n", encoding="utf-8")
+    context.unrelated_global_codex_bytes = {unrelated: unrelated.read_bytes()}
+
+
+def step_codex_global_bundles_coexist(context):
+    assert context.result.exit_code == 0, context.result.output
+    workflow_root = workflow_skill_root(context, "codex", scope="global")
+    openspec_root = openspec_skill_root(context, "codex", scope="global")
+    assert workflow_root == openspec_root == context.home / ".codex" / "skills"
+    assert_workflow_projection(context, workflow_root)
+    assert_openspec_projection(
+        openspec_root,
+        agent="codex",
+        version="1.7.0",
+    )
+    context.codex_global_after_install = snapshot(workflow_root)
+
+
+def step_global_agents_workflow_unchanged(context):
+    assert snapshot(context.historical_global_agents_root) == (
+        context.historical_global_agents_before
+    )
+
+
+def step_unrelated_global_codex_skill_unchanged(context):
+    assert all(
+        path.read_bytes() == content
+        for path, content in context.unrelated_global_codex_bytes.items()
+    )
+
+
+def step_codex_local_bundle_under_agents(context):
+    assert context.result.exit_code == 0, context.result.output
+    root = workflow_skill_root(context, "codex", scope="local")
+    assert root == context.project / ".agents" / "skills"
+    assert_workflow_projection(context, root)
+
+
+def step_no_local_codex_workflow_under_codex(context):
+    root = context.project / ".codex" / "skills"
+    assert not (root / ".zpp-workflow-skills.json").exists()
+    assert all(not (root / name).exists() for name in context.workflow_skill_names)
+
+
+def step_global_codex_skill_roots_unchanged(context):
+    assert snapshot(workflow_skill_root(context, "codex", scope="global")) == (
+        context.codex_global_after_install
+    )
+    step_global_agents_workflow_unchanged(context)
 
 
 def assert_current_agent_integration(context, agent: str) -> None:

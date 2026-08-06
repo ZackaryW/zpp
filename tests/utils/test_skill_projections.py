@@ -78,15 +78,6 @@ def test_skill_projection_roots_keep_pi_native_and_agent_families_independent(
         target / ".claude" / "skills",
     )
 
-    global_openspec = openspec_projection_roots(
-        home=home,
-        target=None,
-        scope="global",
-        agents=("codex",),
-    )
-    assert global_openspec[0].root == global_roots[0].root
-
-
 def test_skill_projection_roots_require_scope_appropriate_target(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="local"):
         skill_projection_roots(

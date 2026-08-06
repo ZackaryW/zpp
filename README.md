@@ -72,13 +72,17 @@ zpp workflow install --agent codex --agent claude --agent pi
 
 Global workflow skills use each agent's native global location:
 
-- Codex: `~/.agents/skills`
+- Codex: `~/.codex/skills`
 - Pi: `~/.pi/agent/skills`
 - Claude Code: `~/.claude/skills`
 
-Generated OpenSpec skills use `~/.codex/skills` for Codex and share the listed
-Pi and Claude Code roots. The two manifests retain separate ownership even when
+Generated OpenSpec skills share the same Codex, Pi, and Claude Code roots listed
+above. The workflow and OpenSpec manifests retain separate ownership even when
 their projections share one directory.
+
+Existing Codex workflow projections under `~/.agents/skills` are not migrated or
+removed automatically. After upgrading ZPP, rerun the global workflow install to
+create the managed bundle under `~/.codex/skills`.
 
 For a repository-local installation, select local scope explicitly and optionally
 provide its exact repository path:
