@@ -7,7 +7,7 @@ Feature: Bootstrap ZPP and configure agent applications
     Given ZPP is installed
     When the user requests the ZPP version
     And the user requests ZPP help
-    Then the product identifies itself as ZPP version 0.9.5
+    Then the product identifies itself as ZPP version 0.9.6
     And the help exposes the confirmed initial command surface
     And the help exposes the independent workflow lifecycle command group
     And the help exposes independent behavior initialization and named verification commands

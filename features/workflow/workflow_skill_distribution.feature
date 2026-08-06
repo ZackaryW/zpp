@@ -427,6 +427,14 @@ Feature: Install and maintain a complete ZPP workflow integration
     And it treats the active OpenSpec planning artifacts as temporary working state
     And no zmem dependency graph is required
 
+  Scenario: Clarification classifies request ownership before product bootstrap
+    Given a request combines repository-environment tooling and shipped source behavior
+    When clarification determines whether product-change bootstrapping applies
+    Then it classifies each outcome by observable ownership before listing, selecting, or creating product OpenSpec work
+    And it keeps environmental work outside product capability deltas, Gherkin, and canonical specifications
+    And it continues the product workflow only for the shipped source behavior
+    And it does not classify an outcome from its path or filename alone
+
   Scenario: Clarification preserves OpenSpec's multi-artifact proposal shape
     Given an OpenSpec proposal declares multiple new or modified capabilities
     When clarification settles behavior for the complete change
@@ -444,6 +452,15 @@ Feature: Install and maintain a complete ZPP workflow integration
     When mature green behavior later forms canonical specifications
     Then formation reconciles the existing capability deltas
     And formation does not create capability specifications for the first time
+
+  Scenario: Feature shaping preserves justified monorepo subproject ownership
+    Given a confirmed change affects public behavior in selected established monorepo subprojects
+    When the workflow shapes the complete Gherkin feature set
+    Then it identifies justifiably affected subprojects from established repository boundaries
+    And it places executable behavior in each affected subproject's native feature surface
+    And it does not require one root feature file, framework, runner, or uniform project structure
+    And it excludes unaffected subprojects from the feature contract
+    And it uses a cross-subproject scenario only for accepted behavior that crosses those boundaries
 
   Scenario: Memory validation is explicit rather than imposed on every commit
     Given a valid conventional commit message contains no zmem annotation
