@@ -1,7 +1,7 @@
 Feature: Bootstrap ZPP and configure agent applications
   ZPP users can initialize neutral global state, a reusable default profile, and
-  optional native lifecycle hooks without modifying projects or leaking trait
-  policy into agent setup.
+  optional complete global agent integrations without modifying projects or
+  leaking resolved trait policy into agent setup.
 
   Scenario: ZPP reports its identity and initial command surface
     Given ZPP is installed
@@ -29,6 +29,7 @@ Feature: Bootstrap ZPP and configure agent applications
     And no cache artifact exists
     And the project still has no local ZPP state
     And no agent application is configured
+    And no workflow or OpenSpec skill projection exists
 
   Scenario: Initialization completes missing state without rewriting valid state
     Given partially initialized valid user state with missing required entries
@@ -59,15 +60,17 @@ Feature: Bootstrap ZPP and configure agent applications
     And no missing user-state entry is created
     And the existing user state is unchanged
 
-  Scenario: Repeated explicit agent options configure exactly those agents
+  Scenario: Repeated explicit agent options completely configure exactly those agents
     Given a clean user home
     And the current project has no repository-local agent integration
-    And Pi, Codex, and Claude Code have no ZPP integration
+    And Pi, Codex, and Claude Code have no global ZPP workflow integration
     When the user runs zpp init with agents Pi and Codex
     Then initialization succeeds without offering agent selection
-    And Pi has one ZPP-managed native lifecycle hook
-    And Codex has one ZPP-managed native lifecycle hook
-    And neither agent receives a ZPP instruction paragraph or skill
+    And Pi has the complete current global ZPP workflow integration
+    And Codex has the complete current global ZPP workflow integration
+    And every generated OpenSpec projection records the detected version
+    And OpenSpec generation uses an isolated temporary project that is removed
+    And neither agent receives a ZPP instruction paragraph
     And their agent-owned hook trust and enablement state is unchanged
     And Claude Code is unchanged
     And the current project still has no repository-local agent integration
@@ -75,11 +78,11 @@ Feature: Bootstrap ZPP and configure agent applications
   Scenario: Interactive initialization offers agent selection for an existing root
     Given valid initialized user state
     And an interactive terminal is available
-    And Pi, Codex, and Claude Code have no ZPP integration
+    And Pi, Codex, and Claude Code have no global ZPP workflow integration
     When the user runs zpp init and selects Claude Code
     Then one selector offers Pi, Codex, and Claude Code
-    And Claude Code has one ZPP-managed native lifecycle hook
-    And Claude Code receives no ZPP instruction paragraph or skill
+    And Claude Code has the complete current global ZPP workflow integration
+    And Claude Code receives no ZPP instruction paragraph
     And the existing user state is unchanged
     And Pi and Codex are unchanged
 
@@ -90,6 +93,7 @@ Feature: Bootstrap ZPP and configure agent applications
     When the user runs zpp init and submits the selector with no checked agent
     Then initialization succeeds
     And no agent application is changed
+    And no workflow or OpenSpec skill projection is created or changed
     And the existing user state is unchanged
 
   Scenario: Cancelling interactive selection is distinct from submitting no agents
@@ -99,21 +103,48 @@ Feature: Bootstrap ZPP and configure agent applications
     When the user cancels zpp init from the agent selector
     Then initialization is cancelled
     And no agent application is changed
+    And no workflow or OpenSpec skill projection is created or changed
     And the existing user state is unchanged
 
-  Scenario: Reconfiguring an agent is idempotent and does not leak policy
+  Scenario: Reinitializing a complete compatible agent is idempotent and does not leak policy
     Given valid initialized user state contains an activatable authored trait
+    And the existing default profile has distinguishable user-authored content
     And no trait cache exists
-    And Pi has a ZPP integration surrounded by unmanaged content
+    And Pi has a complete compatible global ZPP workflow integration surrounded by unmanaged content
+    And Pi's complete global integration is recorded
     And Codex was previously configured by ZPP
     When the user runs zpp init with agent Pi twice
     Then both initializations succeed without offering agent selection
-    And Pi has exactly one valid ZPP integration
+    And Pi's complete global integration is byte-for-byte unchanged
     And Pi's unmanaged content is byte-for-byte unchanged
+    And the existing default profile is byte-for-byte unchanged
     And Codex remains installed and unchanged
     And no effective trait, workflow direction, or platform guidance is copied into Pi's installed hook
     And no trait cache is created
     And trait resolution is not invoked
+
+  Scenario: Initialization completes the observed partial Codex installation
+    Given valid initialized user state
+    And the existing default profile has distinguishable user-authored content
+    And Codex has compatible generated global OpenSpec skills but no ZPP workflow bundle or native hooks
+    And Codex's generated OpenSpec skills and repository-local projections are recorded
+    When the user runs zpp init with agent Codex
+    Then Codex has the complete current global ZPP workflow integration under its native locations
+    And Codex's generated OpenSpec skills are byte-for-byte unchanged
+    And Codex's repository-local projections are byte-for-byte unchanged
+    And the existing default profile is byte-for-byte unchanged
+
+  Scenario: Initialization refreshes an intact outdated selected integration
+    Given valid initialized user state
+    And the existing default profile has distinguishable user-authored content
+    And Pi has an intact outdated managed global ZPP workflow bundle
+    And Pi's OpenSpec projection records a different version from the detected OpenSpec version
+    And unrelated Pi content is recorded
+    When the user runs zpp init with agent Pi
+    Then Pi has the complete current global ZPP workflow integration
+    And Pi records the newly detected OpenSpec version
+    And unrelated Pi content is byte-for-byte unchanged
+    And the existing default profile is byte-for-byte unchanged
 
   Scenario: Workflow installation upgrades an exact historical Claude Code hook
     Given Claude Code has the exact historical ZPP-managed SessionStart hook invoking zpp resolve
@@ -205,22 +236,22 @@ Feature: Bootstrap ZPP and configure agent applications
   Scenario: An unmanaged adapter conflict is rejected without overwrite
     Given a clean user home
     And Claude Code has an unmanaged hook conflicting with ZPP integration
+    And every other Claude Code global integration destination is recorded
     When the user runs zpp init with agent Claude Code
     Then the neutral global user state is initialized
     And agent setup fails as a managed-state rejection
     And the diagnostic identifies the conflicting path
-    And the conflicting unmanaged hook is unchanged
-    And all other Claude Code content is unchanged
+    And every Claude Code global integration destination is byte-for-byte unchanged
 
   Scenario: Every selected agent is preflighted before any agent changes
     Given a clean user home
-    And Pi has no ZPP integration
-    And Codex has an unmanaged hook conflicting with ZPP integration
+    And Pi has no global ZPP workflow integration
+    And Codex has an unmanaged conflict at a required global OpenSpec skill destination
+    And every selected agent global integration destination is recorded
     When the user runs zpp init with agents Pi and Codex
     Then the neutral global user state is initialized
     And agent setup fails as a managed-state rejection
-    And Pi remains unchanged
-    And the conflicting Codex hook remains unchanged
+    And every selected agent global integration destination is byte-for-byte unchanged
 
   Scenario: Unsupported agent names are usage errors
     Given a clean user home
@@ -232,7 +263,7 @@ Feature: Bootstrap ZPP and configure agent applications
   Scenario: Initialization and global update expose distinct public help
     Given ZPP is installed
     When the user requests zpp init help and zpp update help
-    Then init help describes missing-state bootstrap and explicitly selected global hooks
+    Then init help describes missing-state bootstrap and complete global setup for selected agents
     And update help describes maintenance of initialized global state and installed integrations
     And update help exposes no agent, scope, target, force, or installation option
     And neither helper claims that ZPP upgrades its running executable
