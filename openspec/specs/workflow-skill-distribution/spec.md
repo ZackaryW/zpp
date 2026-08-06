@@ -55,7 +55,7 @@ ZPP SHALL expose independent `workflow install`, `workflow update`, and `workflo
 
 Repository-local scope SHALL target the current directory when no positional target is supplied or an exact existing directory inside a Git worktree when a target is supplied, and SHALL NOT create or modify an authored `.zpp` layer. A positional target without `--local` SHALL be rejected before changing managed or agent state. `--force` and `--with-openspec` SHALL be accepted only with `--local` and SHALL be rejected in global scope before changing managed or agent state. ZPP SHALL NOT accept `--global` as a workflow lifecycle option and SHALL NOT expose the former generic `skill` command group.
 
-Codex SHALL use `.agents/skills`. Pi SHALL use `.pi/skills` in repository-local scope and `.pi/agent/skills` in user-global scope. Claude Code SHALL use `.claude/skills`. Agent-specific destination rules SHALL remain outside the workflow-skill bodies.
+Codex SHALL use `.agents/skills` in repository-local scope and `.codex/skills` beneath the platform-native user home in user-global scope. Pi SHALL use `.pi/skills` in repository-local scope and `.pi/agent/skills` in user-global scope. Claude Code SHALL use `.claude/skills` in both scopes. Agent-specific destination rules SHALL remain outside the workflow-skill bodies. ZPP workflow and generated OpenSpec ownership manifests SHALL coexist independently when they share an agent's skill root.
 
 #### Scenario: Default lifecycle scope to global
 - **WHEN** a user invokes `workflow install`, `workflow update`, or `workflow remove` without `--local`
@@ -71,7 +71,11 @@ Codex SHALL use `.agents/skills`. Pi SHALL use `.pi/skills` in repository-local 
 
 #### Scenario: Keep Pi and Codex projections independent
 - **WHEN** a workflow lifecycle operation selects Pi, Codex, or both
-- **THEN** Pi's `.pi` projection and Codex's `.agents` projection are planned, owned, and maintained independently
+- **THEN** Pi's `.pi` projection and Codex's scope-specific projection are planned, owned, and maintained independently
+
+#### Scenario: Select Codex destinations by scope
+- **WHEN** a user installs or maintains Codex workflow skills globally and repository-locally
+- **THEN** the global bundle uses the active user's `.codex/skills` while the local bundle uses `.agents/skills`, with unrelated and independently managed skills preserved in each root on macOS, Windows, and Linux
 
 ### Requirement: Complete global workflow installation
 A global `workflow install` SHALL establish the complete ZPP workflow integration for every selected Pi, Codex, or Claude Code agent and SHALL compatibly upgrade the persistent default profile. Success SHALL leave each selected agent with the current managed ZPP workflow bundle, its current native ZPP lifecycle hooks, and the OpenSpec core operation skills emitted for that agent by the installed OpenSpec version in the agent's global skill location, while adding only standard-profile entries absent from the valid persistent default.
