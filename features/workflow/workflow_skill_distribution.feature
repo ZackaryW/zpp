@@ -39,6 +39,20 @@ Feature: Install and maintain a complete ZPP workflow integration
     And only the missing packaged standard entries are added to the persistent default profile
     And every recorded authored profile entry is unchanged
 
+  Scenario: Codex workflow skills use scope-specific native roots
+    Given valid initialized user state
+    And the current directory is the root of a Git worktree
+    And historical user content under global .agents skills is recorded
+    And unrelated global Codex skill content is recorded
+    When the user runs zpp workflow install with agent Codex
+    Then the Codex global workflow bundle and generated OpenSpec skills coexist under .codex skills
+    And no ZPP workflow projection is created or changed under global .agents skills
+    And unrelated global Codex skill content is unchanged
+    When the user runs zpp workflow install --local with agent Codex and --force
+    Then the Codex local workflow bundle is installed under repository .agents skills
+    And no Codex workflow bundle is installed under repository .codex skills
+    And the global Codex skill roots remain unchanged
+
   Scenario: Explicitly bootstrap OpenSpec operation skills in local scope
     Given the current directory is the root of a Git worktree
     And Codex, Pi, and Claude Code have no local workflow skills
