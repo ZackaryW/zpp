@@ -38,7 +38,7 @@ def skill_projection_roots(
     base = home if scope == "global" else target
     assert base is not None
     relatives = {
-        "codex": Path(".agents/skills"),
+        "codex": Path(".codex/skills") if scope == "global" else Path(".agents/skills"),
         "pi": Path(".pi/agent/skills") if scope == "global" else Path(".pi/skills"),
         "claude": Path(".claude/skills"),
     }

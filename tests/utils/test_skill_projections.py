@@ -48,7 +48,7 @@ def test_skill_projection_roots_keep_pi_native_and_agent_families_independent(
         agents=("codex", "claude", "pi"),
     )
     assert tuple(item.root for item in global_roots) == (
-        home / ".agents" / "skills",
+        home / ".codex" / "skills",
         home / ".claude" / "skills",
         home / ".pi" / "agent" / "skills",
     )
