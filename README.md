@@ -289,10 +289,15 @@ accepted, and a bare positional target is rejected.
 
 ```console
 uv sync --all-groups
+uv run scripts/bump_version.py <X.Y.Z>
 uv run pytest
 uv run zpp behave bdd
 uv run zpp behave bdd-audit --all
 ```
+
+The standalone bump script is repository maintenance tooling, not an installed
+ZPP command. It synchronizes `pyproject.toml` and `src/zpp/__init__.py`, then
+regenerates `uv.lock`; failures restore all three files.
 
 This repository's mapping exposes independent `features/core`,
 `features/workflow`, and `features/codespaces` roots. The audit command runs

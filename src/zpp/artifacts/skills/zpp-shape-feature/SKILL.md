@@ -15,18 +15,25 @@ Before running any OpenSpec command or reading, creating, updating, validating, 
 - Do not turn test convenience, diagnostics, exact serialization, filenames, ownership markers, adapter internals, or old interfaces into requirements.
 - Assert an exact representation only when the accepted proposal makes that representation part of the product outcome.
 - Keep utility edge cases in TDD and platform/runner policy in independent traits.
+- Do not shape repository-environment tooling or utility-only work into product Gherkin. Return misclassified work to `zpp-clarify-change` so it can be separated before feature shaping.
 
 1. Read the selected change's confirmed proposal and every status-reported capability delta before editing a feature file. Reject a declared new or modified capability without its own delta instead of inferring its contract from the overview.
 2. Inventory every accepted user-visible feature and fix obligation across the complete planning artifact set and map each to its real public entry point. Ignore incidental observability that those artifacts do not make contractual.
-3. Write the smallest sufficient Gherkin scenario set that covers all mapped obligations. Keep utility edge cases out of the scenarios and avoid duplicate examples.
-4. Create or edit only `.feature` files. Do not create step definitions, environment hooks, test harnesses, fixtures, product code, or utility code at this gate.
-5. Review the complete feature set for valid Gherkin structure, coherent public paths, coverage, and duplication without invoking the BDD runner or claiming RED/GREEN evidence. Undefined steps are expected until wiring and prove nothing about product behavior.
-6. Reconcile ownership immediately:
+3. For a monorepo:
+   - Identify justifiably affected subprojects from established repository evidence such as workspace manifests, package descriptors, build files, and native feature roots.
+   - Place executable behavior in each affected subproject's native feature surface.
+   - Do not require one root feature file, framework, runner, or uniform project structure.
+   - Exclude unaffected subprojects from the feature contract.
+   - Use a cross-subproject scenario only when accepted public behavior crosses subproject boundaries.
+4. Write the smallest sufficient Gherkin scenario set that covers all mapped obligations across those affected feature surfaces. Keep utility edge cases out of the scenarios and avoid duplicate examples.
+5. Create or edit only `.feature` files. Do not create step definitions, environment hooks, test harnesses, fixtures, product code, or utility code at this gate.
+6. Review the complete feature set for valid Gherkin structure, coherent public paths, coverage, and duplication without invoking the BDD runner or claiming RED/GREEN evidence. Undefined steps are expected until wiring and prove nothing about product behavior.
+7. Reconcile ownership immediately:
    - retain change-wide overview in the proposal and stable capability contracts in their owning deltas;
    - remove only duplicated executable examples now owned by the feature;
    - preserve intent, scope, constraints, invariants, and acceptance obligations;
    - never dissolve the underlying contract.
-7. Hand the accepted complete intent and feature/fix contract to `zpp-commit-zmem` for one checkpoint commit after initial acceptance and after every later reopening. Add zmem only when this pass contributes a new durable temporal highlight; do not repeat an unchanged decision merely because feature shaping completed. A prior feature checkpoint remains historical and cannot authorize downstream work against revised features.
+8. Hand the accepted complete intent and feature/fix contract to `zpp-commit-zmem` for one checkpoint commit after initial acceptance and after every later reopening. Add zmem only when this pass contributes a new durable temporal highlight; do not repeat an unchanged decision merely because feature shaping completed. A prior feature checkpoint remains historical and cannot authorize downstream work against revised features.
 
 Subagents may inspect or draft bounded feature text only when explicitly delegated. They must not run RED/GREEN verification, create bindings, declare a workflow gate satisfied, or create a checkpoint. Verification authority remains with the root agent.
 

@@ -5,13 +5,23 @@ description: Clarify a complete ZPP change against canonical OpenSpec and tempor
 
 # Clarify a change
 
+## Request nature preflight
+
+Before listing, selecting, or creating product OpenSpec work, classify each requested outcome by observable ownership:
+
+- **Repository-environment/tooling:** maintainer scripts, CI, release automation, editor or workspace configuration, and similar work that does not change shipped behavior. Keep it outside product capability deltas, Gherkin, and canonical specifications, and use its native implementation and verification surface. When the complete request is environmental, do not bootstrap a product change; hand the classified work to its native workflow.
+- **Shipped source/product:** runtime, library, CLI, or distributed workflow behavior. Continue through product clarification.
+- **Mixed:** split the outcomes before bootstrap so only shipped behavior enters the product change. Track and verify the environmental portion on its native surface without inventing a product capability for it.
+
+Never classify an outcome from its path or filename alone. Packaged skills under a source tree can be shipped behavior, while a repository script can remain environmental. If observable ownership is genuinely ambiguous and the answer changes whether product work exists, resolve that boundary before any OpenSpec command or artifact access.
+
 ## OpenSpec operation prerequisite
 
 Before running any OpenSpec command or reading, creating, updating, validating, syncing, discarding, or archiving an OpenSpec artifact, locate and read the complete installed `openspec-*` skill that owns that operation. Consult it before acting, never afterward. Use `openspec-propose` for change/proposal creation, `openspec-update-change` for artifact revision, `openspec-sync-specs` for promotion, and `openspec-archive-change` for finalization; consult another installed OpenSpec skill when it more precisely owns the operation. Apply its command, resolved-path, artifact-instruction, validation, and safety contracts without widening this ZPP stage. When an OpenSpec skill bundles later artifacts or operations, explicitly defer those later parts and perform only the operation this ZPP stage owns. Stop and report only when the current operation's contracts conflict.
 
 Treat canonical OpenSpec specifications as the long-standing authority for currently accepted product behavior. Treat the active proposal and capability delta specs as mutable working state for the current change. Treat zmem as chronological evidence of meaningful decision changes and temporal highlights, never as current product truth or a required dependency graph.
 
-At workflow entry, list the active OpenSpec changes and keep a session-local related set containing the selected product change plus every change this workflow creates, selects, or consumes. Keep unrelated active changes outside that set. Never persist this lifecycle tracking in the product proposal or authored traits.
+After the request nature preflight confirms shipped product work, list the active OpenSpec changes and keep a session-local related set containing the selected product change plus every change this workflow creates, selects, or consumes. Keep unrelated active changes outside that set. Never persist this lifecycle tracking in the product proposal or authored traits.
 
 Before writing the working artifacts, identify the affected canonical specifications and recall relevant zmem decisions and lessons by capability, path, and change language. Order relevant records temporally, distinguish later revisions from earlier directions, and compare the latest relevant direction with canonical OpenSpec. A later zmem record signals history that may require reconciliation; it does not silently replace current authority.
 

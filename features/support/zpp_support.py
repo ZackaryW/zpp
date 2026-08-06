@@ -549,7 +549,7 @@ def step_bad_agent(context):
 
 def step_assert_version(context):
     assert context.results[0].exit_code == 0
-    assert context.results[0].stdout.strip() == "ZPP version 0.9.5"
+    assert context.results[0].stdout.strip() == "ZPP version 0.9.6"
 
 
 def step_assert_help(context):
@@ -2657,7 +2657,7 @@ def step_only_codex_global_updated(context):
     manifest = json.loads(
         (context.codex_global_root / ".zpp-workflow-skills.json").read_text(encoding="utf-8")
     )
-    assert manifest["bundle_version"] == "0.9.5"
+    assert manifest["bundle_version"] == "0.9.6"
 
 
 def step_codex_local_unchanged(context):
@@ -3918,6 +3918,37 @@ def step_no_zmem_dependency_graph(context):
     assert "do not require a dependency graph" in zmem
 
 
+def step_mixed_ownership_request(context):
+    install_change_lifecycle_policy(context)
+    context.request_ownership = {"repository-environment", "shipped-source"}
+
+
+def step_classify_before_product_bootstrap(context):
+    assert context.request_ownership
+
+
+def step_classifies_observable_ownership_first(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "Before listing, selecting, or creating product OpenSpec work" in clarify
+    assert "classify each requested outcome by observable ownership" in clarify
+
+
+def step_environmental_work_stays_native(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "outside product capability deltas, Gherkin, and canonical specifications" in clarify
+    assert "native implementation and verification surface" in clarify
+
+
+def step_only_shipped_behavior_bootstraps(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "only shipped behavior enters the product change" in clarify
+
+
+def step_path_does_not_decide_ownership(context):
+    clarify = context.lifecycle_skills["zpp-clarify-change"]
+    assert "Never classify an outcome from its path or filename alone" in clarify
+
+
 def step_proposal_declares_capabilities(context):
     install_change_lifecycle_policy(context)
     context.declared_capabilities = ("first-capability", "second-capability")
@@ -3987,6 +4018,37 @@ def step_formation_reconciles_deltas(context):
 def step_formation_requires_existing_deltas(context):
     form = context.lifecycle_skills["zpp-form-specs"]
     assert "Do not create a declared capability's delta for the first time" in form
+
+
+def step_confirmed_monorepo_change(context):
+    install_change_lifecycle_policy(context)
+    context.monorepo_subprojects = ("app", "service")
+
+
+def step_identifies_justified_subprojects(context):
+    shape = context.lifecycle_skills["zpp-shape-feature"]
+    assert "Identify justifiably affected subprojects" in shape
+    assert "workspace manifests, package descriptors, build files, and native feature roots" in shape
+
+
+def step_uses_native_subproject_features(context):
+    shape = context.lifecycle_skills["zpp-shape-feature"]
+    assert "each affected subproject's native feature surface" in shape
+
+
+def step_rejects_monorepo_umbrella(context):
+    shape = context.lifecycle_skills["zpp-shape-feature"]
+    assert "Do not require one root feature file, framework, runner, or uniform project structure" in shape
+
+
+def step_excludes_unaffected_subprojects(context):
+    shape = context.lifecycle_skills["zpp-shape-feature"]
+    assert "Exclude unaffected subprojects from the feature contract" in shape
+
+
+def step_limits_cross_subproject_scenarios(context):
+    shape = context.lifecycle_skills["zpp-shape-feature"]
+    assert "only when accepted public behavior crosses subproject boundaries" in shape
 
 
 def step_unannotated_conventional_message(context):
