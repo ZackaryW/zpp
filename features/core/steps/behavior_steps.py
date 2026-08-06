@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import ExitStack
+import os
 from pathlib import Path
 import subprocess
 from unittest.mock import patch
@@ -354,9 +355,10 @@ def step_nx_behavior_command(context):
     context.record_behavior_processes = True
 
 
-@given("both a compatible repository-local Nx wrapper and a PATH Nx executable are available")
+@given("an official repository-root Nx wrapper backed by .nx installation and a PATH Nx executable are available")
 def step_two_nx_executables(context):
-    context.nx_executable = context.project / "node_modules" / ".bin" / "nx.cmd"
+    wrapper = "nx.bat" if os.name == "nt" else "nx"
+    context.nx_executable = (context.project / wrapper).resolve()
 
 
 @given("a repository-owned plugin exposes every declared project and target")
@@ -366,8 +368,9 @@ def step_nx_surface(context):
     )
 
 
-@then("ZPP prefers the repository-local Nx wrapper")
+@then("ZPP prefers the absolute repository-root Nx wrapper")
 def step_local_nx_used(context):
+    assert context.nx_executable.is_absolute()
     assert context.behavior_processes[-1][0][0] == str(context.nx_executable)
 
 

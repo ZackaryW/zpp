@@ -1,0 +1,23 @@
+{
+  "installation": {
+    "version": "23.1.1"
+  },
+  "$schema": "./.nx/installation/node_modules/nx/schemas/nx-schema.json",
+  "parallel": 3,
+  "namedInputs": {
+    "bddShared": [
+      "{workspaceRoot}/features/support/**/*",
+      "{workspaceRoot}/src/**/*",
+      "{workspaceRoot}/scripts/run_behave_roots.py",
+      "{workspaceRoot}/pyproject.toml",
+      "{workspaceRoot}/uv.lock",
+      "{workspaceRoot}/.python-version",
+      "{workspaceRoot}/.gitignore"
+    ]
+  },
+  "targetDefaults": {
+    "bdd": {
+      "cache": true
+    }
+  }
+}

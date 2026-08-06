@@ -1,0 +1,17 @@
+{
+  "name": "zpp-core-bdd",
+  "root": "features/core",
+  "projectType": "application",
+  "targets": {
+    "bdd": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["bddShared", "{projectRoot}/**/*"],
+      "outputs": [],
+      "options": {
+        "command": "uv run python scripts/run_behave_roots.py features/core --format progress",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

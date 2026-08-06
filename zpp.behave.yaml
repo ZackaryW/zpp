@@ -2,14 +2,24 @@ version: 1
 commands:
   bdd:
     provider:
-      kind: argv
-      argv: [uv, run, python, scripts/run_behave_roots.py, "{targets}", --format, progress]
+      kind: nx
+      target: bdd
+      args: [--outputStyle=stream]
     targets:
       core:
-        value: features/core
+        value: zpp-core-bdd
         paths:
           - features/core/**
           - features/support/**
+          - .nx/nxw.js
+          - .python-version
+          - nx
+          - nx.bat
+          - nx.json
+          - pyproject.toml
+          - scripts/run_behave_roots.py
+          - uv.lock
+          - zpp.behave.yaml
           - src/zpp/cli/application.py
           - src/zpp/cli/behavior.py
           - src/zpp/cli/global_commands.py
@@ -26,13 +36,25 @@ commands:
           - src/zpp/core/updating.py
           - src/zpp/utils/behavior_*.py
           - src/zpp/utils/default_profile_upgrade.py
+          - src/zpp/utils/nx_provider.py
+          - src/zpp/utils/processes.py
           - src/zpp/utils/trait_*.py
           - src/zpp/utils/plugin_*.py
       workflow:
-        value: features/workflow
+        value: zpp-workflow-bdd
         paths:
           - features/workflow/**
           - features/support/**
+          - .gitignore
+          - .nx/nxw.js
+          - .python-version
+          - nx
+          - nx.bat
+          - nx.json
+          - pyproject.toml
+          - scripts/run_behave_roots.py
+          - uv.lock
+          - zpp.behave.yaml
           - src/zpp/cli/updating.py
           - src/zpp/cli/workflow.py
           - src/zpp/core/skills.py
@@ -43,24 +65,34 @@ commands:
           - src/zpp/artifacts/skills/**
           - src/zpp/artifacts/profiles/default/**
       codespaces:
-        value: features/codespaces
+        value: zpp-codespaces-bdd
         paths:
           - features/codespaces/**
           - features/support/**
+          - .nx/nxw.js
+          - .python-version
+          - nx
+          - nx.bat
+          - nx.json
+          - pyproject.toml
+          - scripts/run_behave_roots.py
+          - uv.lock
+          - zpp.behave.yaml
           - src/zpp/cli/codespace.py
           - src/zpp/core/codespaces.py
           - src/zpp/utils/codespace_*.py
   bdd-audit:
     provider:
-      kind: argv
-      argv: [uv, run, python, scripts/run_behave_roots.py, "{targets}", --format, progress]
+      kind: nx
+      target: bdd
+      args: [--skip-nx-cache, --outputStyle=stream]
     targets:
       core:
-        value: features/core
+        value: zpp-core-bdd
         paths: ["**"]
       workflow:
-        value: features/workflow
+        value: zpp-workflow-bdd
         paths: ["**"]
       codespaces:
-        value: features/codespaces
+        value: zpp-codespaces-bdd
         paths: ["**"]

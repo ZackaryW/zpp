@@ -18,13 +18,16 @@ class NxSurface:
 
 
 def discover_nx_executable(root: Path) -> Path | None:
-    names = ("nx.cmd", "nx") if os.name == "nt" else ("nx", "nx.cmd")
-    for name in names:
-        candidate = root / "node_modules" / ".bin" / name
+    package_names = ("nx.cmd", "nx") if os.name == "nt" else ("nx", "nx.cmd")
+    candidates = [
+        *(root / "node_modules" / ".bin" / name for name in package_names),
+        root / ("nx.bat" if os.name == "nt" else "nx"),
+    ]
+    for candidate in candidates:
         if candidate.is_file() and not candidate.is_symlink():
             return candidate.resolve()
     available = shutil.which("nx")
-    return None if available is None else Path(available)
+    return None if available is None else Path(available).resolve()
 
 
 def inspect_nx_surface(executable: Path, root: Path) -> NxSurface:

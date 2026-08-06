@@ -15,6 +15,9 @@ from zpp.utils.nx_provider import (
 from zpp.utils.processes import ProcessResult
 
 
+ROOT_WRAPPER = "nx.bat" if os.name == "nt" else "nx"
+
+
 def test_discovery_prefers_repository_local_wrapper_over_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -23,17 +26,52 @@ def test_discovery_prefers_repository_local_wrapper_over_path(
     )
     local.parent.mkdir(parents=True)
     local.write_text("wrapper\n", encoding="utf-8")
+    (tmp_path / ROOT_WRAPPER).write_text("dot wrapper\n", encoding="utf-8")
     monkeypatch.setattr("zpp.utils.nx_provider.shutil.which", lambda _: "/path/nx")
 
     assert discover_nx_executable(tmp_path) == local.resolve()
 
 
-def test_discovery_uses_path_without_downloading(
+def test_discovery_uses_repository_root_wrapper_before_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("zpp.utils.nx_provider.shutil.which", lambda name: "/path/nx")
+    root_wrapper = tmp_path / ROOT_WRAPPER
+    root_wrapper.write_text("dot wrapper\n", encoding="utf-8")
+    path_nx = tmp_path / "path" / "nx"
+    monkeypatch.setattr(
+        "zpp.utils.nx_provider.shutil.which", lambda _name: str(path_nx)
+    )
 
-    assert discover_nx_executable(tmp_path) == Path("/path/nx")
+    assert discover_nx_executable(tmp_path) == root_wrapper.resolve()
+
+
+def test_discovery_rejects_symlinked_repository_root_wrapper(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "target-nx"
+    target.write_text("wrapper\n", encoding="utf-8")
+    root_wrapper = tmp_path / ROOT_WRAPPER
+    try:
+        root_wrapper.symlink_to(target)
+    except OSError:
+        pytest.skip("symlinks are unavailable")
+    path_nx = tmp_path / "path-nx"
+    monkeypatch.setattr(
+        "zpp.utils.nx_provider.shutil.which", lambda _name: str(path_nx)
+    )
+
+    assert discover_nx_executable(tmp_path) == path_nx.resolve()
+
+
+def test_discovery_normalizes_path_result_without_downloading(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "zpp.utils.nx_provider.shutil.which", lambda _name: f"relative-{ROOT_WRAPPER}"
+    )
+
+    assert discover_nx_executable(tmp_path) == (tmp_path / f"relative-{ROOT_WRAPPER}").resolve()
 
 
 def test_inspection_validates_project_target_surface(
