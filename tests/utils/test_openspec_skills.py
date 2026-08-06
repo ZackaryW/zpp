@@ -50,7 +50,14 @@ def test_generation_collects_exact_agent_bytes_and_cleans_temporary_project(
     )
     assert next(file.content for file in bundles[0].files if file.relative_path.endswith("SKILL.md")).startswith(b"codex:")
     assert len(calls) == 1
-    assert calls[0][0][:2] == ("openspec", "init")
+    assert calls[0][0] == (
+        "openspec",
+        "init",
+        ".",
+        "--tools",
+        "codex,pi,claude",
+        "--force",
+    )
     assert calls[0][2] is not None
     data_root = Path(calls[0][2]["XDG_DATA_HOME"])
     assert data_root.is_relative_to(tmp_path)

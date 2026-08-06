@@ -73,7 +73,6 @@ def generate_openspec_skill_bundles(
             "--tools",
             ",".join(selected),
             "--force",
-            "--no-animation",
         )
         try:
             result = run(
