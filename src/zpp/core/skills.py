@@ -56,6 +56,60 @@ class SkillLifecycleReport:
     coexisting_agents: tuple[tuple[str, ...], ...]
 
 
+@dataclass(frozen=True, slots=True)
+class SelectedGlobalIntegrationPlan:
+    mutation: FilesystemMutationPlan
+    actions: tuple[SkillLifecycleActionKind, ...]
+
+
+def plan_selected_global_integration(
+    *,
+    home: Path,
+    agents: Iterable[AgentName],
+    upgrade_default_profile: bool,
+) -> SelectedGlobalIntegrationPlan:
+    selected_agents = tuple(dict.fromkeys(agents))
+    if not selected_agents:
+        raise ZppDomainError("at least one agent must be selected")
+
+    bundle = load_packaged_skill_bundle(__version__)
+    selected = inspect_skill_scopes(
+        skill_projection_roots(
+            home=home,
+            target=None,
+            scope="global",
+            agents=selected_agents,
+        ),
+        bundle,
+    )
+    lifecycle = plan_skill_install(bundle, selected, (), force=False)
+    mutations = [
+        mutation_plan_for_skill_lifecycle(bundle, lifecycle),
+        plan_agent_integrations(home, selected_agents),
+    ]
+    if upgrade_default_profile:
+        default_upgrade = plan_persistent_default_upgrade_mutation(
+            home / ".zpp" / "profiles" / "default",
+            load_packaged_default_profile(),
+        )
+        if default_upgrade is not None:
+            mutations.append(default_upgrade)
+    mutations.extend(
+        _plan_openspec_mutations(
+            home=home,
+            target=None,
+            scope="global",
+            agents=selected_agents,
+            operation="install",
+            bootstrap_openspec=False,
+        )
+    )
+    return SelectedGlobalIntegrationPlan(
+        merge_mutation_plans(mutations),
+        tuple(action.kind for action in lifecycle.actions),
+    )
+
+
 def manage_workflow_skills(
     *,
     home: Path,
@@ -105,43 +159,53 @@ def manage_workflow_skills(
         )
         comparison_projections = (*selected_projections, *local_projections)
 
-    if operation == "install":
-        plan = plan_skill_install(bundle, selected, global_state, force=force)
-    elif operation == "update":
-        plan = plan_skill_update(bundle, selected)
+    if operation == "install" and scope == "global":
+        global_install = plan_selected_global_integration(
+            home=home,
+            agents=selected_agents,
+            upgrade_default_profile=True,
+        )
+        apply_mutation_plan(global_install.mutation)
+        action_kinds = global_install.actions
     else:
-        plan = plan_skill_remove(selected)
+        if operation == "install":
+            plan = plan_skill_install(bundle, selected, global_state, force=force)
+        elif operation == "update":
+            plan = plan_skill_update(bundle, selected)
+        else:
+            plan = plan_skill_remove(selected)
 
-    skill_mutation = mutation_plan_for_skill_lifecycle(bundle, plan)
-    if operation == "remove":
-        apply_mutation_plan(skill_mutation)
-    else:
-        mutations = [skill_mutation, plan_agent_integrations(home, selected_agents)]
-        default_upgrade = (
-            plan_persistent_default_upgrade_mutation(
-                home / ".zpp" / "profiles" / "default",
-                load_packaged_default_profile(),
+        skill_mutation = mutation_plan_for_skill_lifecycle(bundle, plan)
+        if operation == "remove":
+            apply_mutation_plan(skill_mutation)
+        else:
+            mutations = [skill_mutation, plan_agent_integrations(home, selected_agents)]
+            default_upgrade = (
+                plan_persistent_default_upgrade_mutation(
+                    home / ".zpp" / "profiles" / "default",
+                    load_packaged_default_profile(),
+                )
+                if scope == "global"
+                else None
             )
-            if scope == "global"
-            else None
-        )
-        if default_upgrade is not None:
-            mutations.append(default_upgrade)
-        mutations.extend(
-            _plan_openspec_mutations(
-                home=home,
-                target=local_target,
-                scope=scope,
-                agents=selected_agents,
-                operation=operation,
-                bootstrap_openspec=bootstrap_openspec,
+            if default_upgrade is not None:
+                mutations.append(default_upgrade)
+            mutations.extend(
+                _plan_openspec_mutations(
+                    home=home,
+                    target=local_target,
+                    scope=scope,
+                    agents=selected_agents,
+                    operation=operation,
+                    bootstrap_openspec=bootstrap_openspec,
+                )
             )
-        )
-        apply_mutation_plan(merge_mutation_plans(mutations))
+            apply_mutation_plan(merge_mutation_plans(mutations))
+        action_kinds = tuple(action.kind for action in plan.actions)
 
     current = inspect_skill_scopes(comparison_projections, bundle)
     return SkillLifecycleReport(
-        tuple(action.kind for action in plan.actions),
+        action_kinds,
         differing_managed_versions(current),
         _coexisting_agents(current),
     )
