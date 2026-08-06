@@ -7,11 +7,25 @@ Feature: Bootstrap ZPP and configure agent applications
     Given ZPP is installed
     When the user requests the ZPP version
     And the user requests ZPP help
-    Then the product identifies itself as ZPP version 0.9.5
+    Then the product identifies itself as ZPP version 0.9.6
     And the help exposes the confirmed initial command surface
     And the help exposes the independent workflow lifecycle command group
     And the help exposes independent behavior initialization and named verification commands
     And the help does not expose a generic skill command group
+
+  Scenario: Maintainer synchronizes an explicit release version
+    Given release files with different valid project and runtime versions
+    When the maintainer runs uv run zpp-bump-version 1.2.3
+    Then project metadata, runtime version, and uv lock identify version 1.2.3
+    When the maintainer repeats uv run zpp-bump-version 1.2.3
+    Then the version files are byte-for-byte unchanged
+
+  Scenario: Unsafe version synchronization preserves every owned file
+    Given valid release files are recorded
+    And uv lock refresh will fail
+    When the maintainer runs uv run zpp-bump-version 1.2.3
+    Then version synchronization fails
+    And every recorded version file is byte-for-byte unchanged
 
   Scenario: First noninteractive initialization creates required user state
     Given a clean user home
