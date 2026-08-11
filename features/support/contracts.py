@@ -56,6 +56,12 @@ def verify_workflow_contract() -> None:
         "Ignore retained ZPP 1.x stage skills",
         "already injected by the agent-native ZPP hook",
         "stage-neutral",
+        "Reconcile the complete agreement",
+        "A recommendation is not confirmation",
+        "Unresolved — Do Not Assume",
+        "supersede downstream checkpoints",
+        "skipped: not applicable",
+        "Clarification has not converged",
     ):
         assert phrase in text
     assert "zpp resolve" not in text
@@ -247,6 +253,8 @@ def verify_resolution_contract() -> None:
         assert "tdd" in families
         assert "dependencies" in families
         assert result.resolution.context.values["stage"] == "wire"
+        assert "stage" not in json.loads(result.context)["facets"]
+        assert result.explanation["context"]["members"]
         assert result.explanation["families"]
         assert result.context
 
@@ -295,6 +303,7 @@ def verify_automatic_hook_contract() -> None:
             f'"--agent", "{agent.value}"' in payload
         )
         assert "guard" not in payload
+        assert "UserPromptSubmit" not in payload
 
     with TemporaryDirectory() as directory:
         project = Path(directory)

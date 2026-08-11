@@ -77,6 +77,9 @@ def test_application_resolves_classified_sources_without_layout_assumptions(
     assert "artifacts/traits" not in str(result.explanation)
     assert result.resolution.context.values["stage"] == "wire"
     assert '"stage":"wire"' not in result.context
+    assert result.explanation["context"]["members"]["language"] == [
+        {"value": "python", "source": "invocation", "evidence": []}
+    ]
 
 
 def test_application_rejects_unknown_explicit_workflow_stage(

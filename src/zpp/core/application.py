@@ -207,6 +207,17 @@ class TraitApplication:
                 "provenance": dict(result.context.provenance),
                 "evidence": dict(result.context.evidence),
                 "fingerprints": dict(result.context.fingerprints),
+                "members": {
+                    key: [
+                        {
+                            "value": member.value,
+                            "source": member.source,
+                            "evidence": list(member.evidence),
+                        }
+                        for member in members
+                    ]
+                    for key, members in result.context.members.items()
+                },
             },
             "families": [
                 {

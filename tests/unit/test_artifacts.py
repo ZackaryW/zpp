@@ -87,6 +87,9 @@ def test_packaged_assets_keep_workflow_authority_out_of_traits() -> None:
     text = document.decode("utf-8")
     assert "Automatic progression" in text
     assert "Traits advise the selected stage" in text
+    assert "Reconcile the complete agreement" in text
+    assert "A recommendation is not confirmation" in text
+    assert "skipped: not applicable" in text
 
 
 def test_packaged_collection_has_precise_execution_activation_and_tools() -> None:
@@ -120,3 +123,4 @@ def test_packaged_workflow_hook_is_typed_and_resolves_for_its_agent(
         f"--agent {agent.value} ." in payload
     )
     assert "guard" not in payload
+    assert "UserPromptSubmit" not in payload

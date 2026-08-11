@@ -43,9 +43,14 @@ def test_no_space_repository_resolution_selects_python_and_flutter(
     assert any("Gherkin" in body for body in bdd)
     assert len(bdd) == 2
     context = json.loads(payload["ZPP_CONTEXT"])
+    assert context["version"] == 2
     assert context["facets"]["language"] == ["python", "flutter"]
-    assert context["facets"]["stage"] == "wire"
+    assert "stage" not in context["facets"]
+    assert [
+        item["value"] for item in context["members"]["language"]
+    ] == ["python", "flutter"]
     assert payload["explanation"]["families"]
+    assert payload["explanation"]["context"]["values"]["stage"] == "wire"
     after = sorted(path.relative_to(repository) for path in repository.rglob("*"))
     assert after == before
 
@@ -63,6 +68,20 @@ def test_invalid_repository_trait_reports_clean_cli_error(tmp_path: Path) -> Non
 
     assert result.exit_code == 2
     assert "invalid trait document" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_unknown_workflow_stage_reports_clean_cli_error(tmp_path: Path) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+
+    result = runner.invoke(
+        app,
+        ["resolve", str(repository), "--stage", "invented-stage"],
+    )
+
+    assert result.exit_code == 2
+    assert "unsupported workflow stage" in result.output
     assert "Traceback" not in result.output
 
 

@@ -21,6 +21,28 @@ a stage, authorize a mutation, satisfy a gate, or establish completion.
    the change, and zmem as temporal evidence that must be checked against current
    authority.
 
+## Reconcile the complete agreement
+
+During `clarify`, and again whenever a newer prompt changes or appears to change
+the contract:
+
+1. Classify the new input as an explicit confirmation, correction,
+   recommendation, exploration, or deferral.
+2. Reconcile it against canonical specifications, every older accepted owner
+   statement for the change, the proposal overview, every capability delta, and
+   every downstream checkpoint already formed.
+3. Preserve older accepted requirements unless the owner explicitly corrects or
+   supersedes them. Recency alone is not authority. A recommendation is not confirmation.
+4. Record unconfirmed outcome-changing input under `Unresolved — Do Not Assume`.
+   Clarification has not converged while that section contains a product decision.
+5. If reconciliation exposes a contradiction or an assumed decision, reopen
+   clarification and supersede downstream checkpoints derived from it. Replace
+   those gates only after the complete contract converges again.
+
+Automatic end-to-end authority permits ordinary progression; it never answers an
+unresolved product decision. Do not shape, plan, wire, form specifications, or
+finalize from an assistant-inferred choice.
+
 ## Run the stages
 
 Each stage is a distinct, visible action. Use the installed skill that owns the
@@ -47,6 +69,30 @@ projection contracts.
    successor cohort, reconcile or explicitly dispose of it, archive the OpenSpec
    change, and create only an authorized logical commit.
 
+## Declare each stage outcome
+
+`clarify` and `finalize` are mandatory and must finish as `completed`. For each of
+the five middle stages, the acting agent must declare exactly one outcome:
+`completed` or `skipped: not applicable`.
+
+Accept `skipped: not applicable` only after independently verifying that the stage
+owns no required output for the complete accepted change:
+
+- `shape`: no public, integration, or fix behavior requires an executable feature
+  contract.
+- `plan-utilities`: the accepted feature set requires no new or changed utility
+  boundary.
+- `mature-utilities`: the settled utility plan contains no behavior to prove or
+  implement.
+- `wire`: no approved behavior requires a binding or product composition change.
+- `form-specs`: no mature behavior or accepted delta requires canonical
+  specification reconciliation.
+
+A trait body, context value, repository declaration, failed command, incomplete
+implementation, or failed verification cannot establish not-applicability. If the
+evidence is insufficient, run the stage normally. Record the verified outcome
+before continuing to the next stage as a distinct, visible action.
+
 At every stage, preserve current specifications, accepted intent, and repository
 evidence. Expose any outcome-changing unresolved product policy or ownership
 boundary to its owner instead of inventing an answer.
@@ -55,10 +101,10 @@ boundary to its owner instead of inventing an answer.
 
 Under explicit end-to-end delegation, continue through a satisfied checkpoint to
 the next stage without asking for ordinary approval. Invoke the next stage as a
-new explicit action without delegating stage choice to the trait hook. Pause only for
-unresolved clarification, a new or changed product boundary, a missing or changed
-utility shape, missing authority, a failed gate, or a component-owned conflict
-that requires the owner.
+new explicit action without delegating stage choice to the trait hook. Pause only
+for unresolved clarification, a contradiction with accepted input, a new or
+changed product boundary, a missing or changed utility shape, missing authority,
+a failed gate, or a component-owned conflict that requires the owner.
 
 Automatic progression does not itself run verification, choose callbacks,
 reconcile retained work, stage files, commit, merge, rebase, or grant authority.
