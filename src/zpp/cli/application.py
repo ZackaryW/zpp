@@ -6,6 +6,7 @@ from typing import Annotated
 import typer
 
 from zpp import __version__
+from zpp.cli.behavior import behave
 from zpp.cli.initialization import initialize
 from zpp.cli.resolution import resolve
 from zpp.cli.shared import Runtime
@@ -19,6 +20,7 @@ app = typer.Typer(
 )
 app.command("init")(initialize)
 app.command("resolve")(resolve)
+app.command("behave")(behave)
 app.add_typer(trait_app, name="trait")
 app.add_typer(workflow_app, name="workflow")
 

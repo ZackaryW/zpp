@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -30,7 +33,11 @@ from zpp.utils.agent_selection import (
     select_many_agents,
     select_one_agent,
 )
-from zpp.utils.openlease import create_trait_documents
+from zpp.utils.openlease import (
+    behavior_extension,
+    create_trait_documents,
+    create_zpp_openlease,
+)
 
 
 def verify_workflow_contract() -> None:
@@ -86,9 +93,19 @@ def verify_workflow_contract() -> None:
         flavor.get("facet", {}).get("bdd_mode")
         for flavor in documents["bdd-execution"]["trait"]
     ] == ["manual", "disabled", "complete", "targeted", None]
-    assert [
-        flavor["facet"]["tool"] for flavor in documents["tooling"]["trait"]
-    ] == ["rg", "jq"]
+    execution_bodies = [
+        flavor["content"]["body"] for flavor in documents["bdd-execution"]["trait"]
+    ]
+    assert "zpp behave COMMAND --all" in text
+    assert "--gate zpp-workflow" in text
+    assert "--gate zpp-workflow" in execution_bodies[3]
+    assert "--gate zpp-workflow" in execution_bodies[4]
+    assert "zpp-flow-wire-feature" not in text
+    assert all("zpp-flow-" not in body for body in execution_bodies)
+    assert [flavor["facet"]["tool"] for flavor in documents["tooling"]["trait"]] == [
+        "rg",
+        "jq",
+    ]
 
 
 def verify_repository_contract() -> None:
@@ -97,7 +114,10 @@ def verify_repository_contract() -> None:
     workflow = runner.invoke(app, ["workflow", "--help"])
     trait = runner.invoke(app, ["trait", "--help"])
     assert root.exit_code == workflow.exit_code == trait.exit_code == 0
-    assert all(name in root.stdout for name in ("init", "resolve", "trait", "workflow"))
+    assert all(
+        name in root.stdout
+        for name in ("init", "resolve", "behave", "trait", "workflow")
+    )
     assert all(name in workflow.stdout for name in ("install", "update", "remove"))
     assert "space" not in root.stdout
     assert "install-workflow" not in root.stdout
@@ -151,6 +171,36 @@ def verify_repository_contract() -> None:
             for path in repository.rglob("*")
             if path.is_file()
         ) == [".zpp/traits/bdd.toml", ".zpp/zpp.toml"]
+        subprocess.run(("git", "init", "--quiet"), cwd=repository, check=True)
+        subprocess.run(
+            ("git", "config", "user.email", "test@example.invalid"),
+            cwd=repository,
+            check=True,
+        )
+        subprocess.run(
+            ("git", "config", "user.name", "Test"),
+            cwd=repository,
+            check=True,
+        )
+        subprocess.run(("git", "add", "."), cwd=repository, check=True)
+        subprocess.run(
+            ("git", "commit", "--quiet", "-m", "base"),
+            cwd=repository,
+            check=True,
+        )
+        prior = Path.cwd()
+        try:
+            os.chdir(repository)
+            behavior_state = base / "behavior-state"
+            initialized = runner.invoke(
+                app,
+                ["--path", str(behavior_state), "behave", "init"],
+            )
+        finally:
+            os.chdir(prior)
+        assert initialized.exit_code == 0, initialized.output
+        assert (repository / "zpp.behave.yaml").is_file()
+        assert create_zpp_openlease(behavior_state).snapshot().spaces == ()
         router = agent_router(Agent.CODEX, repository)
         assert router.environment.root == Path.home().resolve()
         assert router.environment.project_root == repository.resolve()
@@ -336,7 +386,142 @@ def verify_automatic_hook_contract() -> None:
         assert len(json.loads(removed.stdout)) == 2
 
 
+def verify_behavior_contract() -> None:
+    runner = CliRunner()
+    root_help = runner.invoke(app, ["--help"])
+    behavior_help = runner.invoke(app, ["behave", "--help"])
+    assert root_help.exit_code == behavior_help.exit_code == 0
+    assert "behave" in root_help.stdout
+    for option in ("--all", "--target", "--gate", "--base", "--head"):
+        assert option in behavior_help.stdout
+
+    registration = behavior_extension()
+    assert registration.manifest.identifier == "zpp.behave"
+    assert [item.name for item in registration.operations] == ["initialize", "run"]
+    assert len(registration.callbacks) == 3
+
+    with TemporaryDirectory() as directory:
+        base = Path(directory)
+        repository = base / "repository"
+        repository.mkdir()
+
+        def git(*arguments: str) -> None:
+            subprocess.run(
+                ("git", *arguments),
+                cwd=repository,
+                check=True,
+                capture_output=True,
+            )
+
+        git("init", "--quiet")
+        git("config", "user.email", "test@example.invalid")
+        git("config", "user.name", "Test")
+        (repository / "tracked.txt").write_text("base\n")
+        git("add", ".")
+        git("commit", "--quiet", "-m", "base")
+        state_root = base / "state"
+        prior = Path.cwd()
+        try:
+            os.chdir(repository)
+            initialized = runner.invoke(
+                app,
+                ["--path", str(state_root), "behave", "init"],
+            )
+            assert initialized.exit_code == 0, initialized.output
+            mapping = repository / "zpp.behave.yaml"
+            mapping.write_text(
+                "version: 1\n"
+                "commands:\n"
+                "  bdd:\n"
+                "    provider:\n"
+                "      kind: argv\n"
+                f"      argv: [{json.dumps(sys.executable)}, -c, "
+                '"import sys; print(\'|\'.join(sys.argv[1:]))", "{targets}"]\n'
+                "    targets:\n"
+                "      core: {value: features/core, paths: [src/core/**]}\n"
+                "      workflow: {value: features/workflow, paths: [src/workflow/**]}\n"
+                "    gates:\n"
+                "      zpp-workflow: [workflow, core]\n"
+            )
+            authored = mapping.read_text()
+            validated = runner.invoke(
+                app,
+                ["--path", str(state_root), "behave", "init"],
+            )
+            assert validated.exit_code == 0, validated.output
+            assert "Behavior mapping validated" in validated.stdout
+            assert mapping.read_text() == authored
+            git("add", "zpp.behave.yaml")
+            git("commit", "--quiet", "-m", "behavior")
+
+            clean = runner.invoke(
+                app,
+                ["--path", str(state_root), "behave", "bdd"],
+            )
+            assert clean.exit_code == 0, clean.output
+            assert "No targets are affected" in clean.stdout
+
+            changed = repository / "src" / "core" / "module.py"
+            changed.parent.mkdir(parents=True)
+            changed.write_text("changed\n")
+            affected = runner.invoke(
+                app,
+                ["--path", str(state_root), "behave", "bdd"],
+            )
+            assert affected.exit_code == 0, affected.output
+            assert affected.stdout == "features/core\n"
+
+            complete = runner.invoke(
+                app,
+                ["--path", str(state_root), "behave", "bdd", "--all"],
+            )
+            assert complete.exit_code == 0, complete.output
+            assert complete.stdout == "features/core|features/workflow\n"
+
+            exact = runner.invoke(
+                app,
+                [
+                    "--path",
+                    str(state_root),
+                    "behave",
+                    "bdd",
+                    "--target",
+                    "workflow",
+                    "--target",
+                    "workflow",
+                ],
+            )
+            assert exact.exit_code == 0, exact.output
+            assert exact.stdout == "features/workflow\n"
+
+            gate = runner.invoke(
+                app,
+                [
+                    "--path",
+                    str(state_root),
+                    "behave",
+                    "bdd",
+                    "--gate",
+                    "zpp-workflow",
+                ],
+            )
+            assert gate.exit_code == 0, gate.output
+            assert gate.stdout == "features/core|features/workflow\n"
+
+            ambiguous = runner.invoke(
+                app,
+                ["behave", "bdd", "--all", "--target", "core"],
+            )
+            assert ambiguous.exit_code == 2
+            assert "mutually exclusive" in ambiguous.output
+        finally:
+            os.chdir(prior)
+
+        assert create_zpp_openlease(state_root).snapshot().spaces == ()
+
+
 VERIFIERS = {
+    "behavior_verification": verify_behavior_contract,
     "consolidated_workflow_skill": verify_workflow_contract,
     "repository_trait_bootstrap": verify_repository_contract,
     "toml_trait_catalog": verify_catalog_contract,

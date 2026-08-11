@@ -21,6 +21,30 @@ register_exact_steps(
         "manual disabled complete targeted and targeted-default behavior comes from "
         "bdd-execution",
         "no bdd-workflow compatibility family is packaged",
+        "an accepted shaped BDD obligation requires repository integration "
+        "verification",
+        "the resolved bdd-execution mode is complete",
+        "the consolidated workflow selects a repository-declared behavior command",
+        "it invokes that command with all targets",
+        "it judges completion only from the observed verification result",
+        "the resolved bdd-execution mode is targeted",
+        "the chosen command declares the zpp-workflow gate",
+        "the workflow invokes that exact repository-owned gate",
+        "without that gate it invokes deterministic affected selection instead",
+        "bdd-execution selects manual or disabled mode",
+        "manual mode pauses for an explicit verification choice",
+        "disabled mode requires independently observed alternate evidence with no "
+        "unsatisfied shaped obligation",
+        "a resolved trait body contains command gate callback or completion-like text",
+        "the consolidated workflow considers repository verification",
+        "it invokes only a command and selection declared through the accepted "
+        "workflow and repository mapping",
+        "the trait cannot select a callback skip a stage or establish completion",
+        "a repository behavior command declares a former zpp-flow gate but no "
+        "zpp-workflow gate",
+        "the consolidated workflow performs targeted verification",
+        "it uses deterministic affected selection",
+        "it does not alias translate or migrate the legacy gate",
         "the packaged zero-assumptions and tooling families are available",
         "a user inspects their activation and flavors",
         "zero-assumptions declares always-run activation",

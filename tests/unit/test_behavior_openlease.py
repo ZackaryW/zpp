@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from openlease import (
     CallbackEvent,
     CallbackMode,
@@ -12,7 +13,7 @@ from openlease import (
 )
 from openlease.utils.processes import ProcessResult
 
-from zpp.core.behavior import BehaviorRunInput
+from zpp.core.behavior import BehaviorExecutionError, BehaviorRunInput
 from zpp.utils.openlease import (
     OpenLeaseBehaviorDocuments,
     behavior_extension,
@@ -188,3 +189,14 @@ commands:
 
     assert tuple(target.name for target in report.targets) == ("core",)
     assert runner.calls == [(("verify", "features/core"), repository.resolve())]
+
+    incomplete = ExtensionInvocation(
+        {"command": "bdd"},
+        context,
+        direct.config,
+        direct.data,
+        direct.cache,
+        invocation.event,
+    )
+    with pytest.raises(BehaviorExecutionError, match="selection mode"):
+        operation.handler(incomplete)

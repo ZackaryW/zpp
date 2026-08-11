@@ -164,6 +164,14 @@ def _run_behavior_invocation(
     runner: ProcessRunner | None,
     state_root: Path | None,
 ) -> object:
+    if (
+        invocation.event is not None
+        and isinstance(invocation.input, Mapping)
+        and "complete" not in invocation.input
+    ):
+        raise BehaviorExecutionError(
+            "behavior callback requires an explicit complete or affected selection mode"
+        )
     request = _behavior_run_input(invocation.input)
     root = _behavior_repository_root(invocation)
     process_runner = runner or SubprocessRunner()
@@ -315,13 +323,18 @@ class OpenLeaseBehaviorDocuments:
 
     def initialize(self, repository: Path) -> BehaviorInitializationReport:
         root = repository.resolve()
-        binding = self._binding(root, writable=True)
-        bound = self._lifecycle.initialize_extension_document(
-            binding,
-            initial={"version": 1, "commands": {}},
-            boundary=root,
-            create_parents=False,
-        )
+        path = root / "zpp.behave.yaml"
+        if path.is_file():
+            bound = self._lifecycle.bind_extension_document(
+                self._binding(root, writable=False)
+            )
+        else:
+            bound = self._lifecycle.initialize_extension_document(
+                self._binding(root, writable=True),
+                initial={"version": 1, "commands": {}},
+                boundary=root,
+                create_parents=False,
+            )
         result = bound.invoke("initialize")
         if not isinstance(result.value, BehaviorInitializationReport):
             raise ValueError("behavior initialization returned an invalid report")

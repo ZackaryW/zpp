@@ -74,6 +74,8 @@ to `.zpp/zpp.toml` only through an explicit user operation.
 ```text
 zpp init [--agent AGENT ...]
 zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--explain]
+zpp behave init
+zpp behave COMMAND [--all | --target TARGET ... | --gate GATE | --base REV --head REV]
 zpp trait init context|FAMILY [TARGET]
 zpp workflow install|update|remove [--agent AGENT ...] [--target PATH | --global]
 ```
@@ -93,8 +95,17 @@ Default `resolve` output is the selected complete trait bodies, ready for prompt
 injection. `--explain` emits the structured bodies, context, and deterministic
 selection decisions instead.
 
-OpenLease owns direct TOML binding, provenance, selected-space configuration,
-and bounded writes. Existing repository documents can be read from an
+Repository verification is declared in a dedicated root `zpp.behave.yaml`
+version-1 document. `zpp behave COMMAND` uses affected selection by default;
+exact targets, a repository-owned gate, complete selection, and a paired revision
+range are explicit mutually exclusive modes. Commands select one configured
+`argv`, `nx`, or `go-task` provider, and ZPP executes only validated shell-free
+arguments. `zpp behave init` and direct execution use invocation-scoped
+OpenLease bindings and require no registered repository or space. Reconciliation
+callbacks remain inactive unless OpenLease explicitly selects one.
+
+OpenLease owns direct TOML and YAML binding, provenance, selected-space
+configuration, and bounded writes. Existing repository documents can be read from an
 unregistered repository without creating or selecting a space. Agent Router owns
 plugin discovery and every workflow skill and native hook destination mutation.
 The installed SessionStart hook invokes `resolve` automatically for Codex,

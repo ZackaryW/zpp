@@ -15,12 +15,24 @@ runner = CliRunner()
 
 def test_public_cli_preserves_grouped_shape() -> None:
     root = runner.invoke(app, ["--help"])
+    behavior = runner.invoke(app, ["behave", "--help"])
     workflow = runner.invoke(app, ["workflow", "--help"])
     trait = runner.invoke(app, ["trait", "--help"])
 
-    assert root.exit_code == workflow.exit_code == trait.exit_code == 0
+    assert (
+        root.exit_code
+        == behavior.exit_code
+        == workflow.exit_code
+        == trait.exit_code
+        == 0
+    )
     assert all(
-        command in root.stdout for command in ("init", "resolve", "trait", "workflow")
+        command in root.stdout
+        for command in ("init", "resolve", "behave", "trait", "workflow")
+    )
+    assert all(
+        option in behavior.stdout
+        for option in ("COMMAND", "--all", "--target", "--gate", "--base", "--head")
     )
     assert all(
         command in workflow.stdout for command in ("install", "update", "remove")

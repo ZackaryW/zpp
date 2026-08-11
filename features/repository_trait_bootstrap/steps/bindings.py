@@ -44,11 +44,17 @@ register_exact_steps(
         "no ZPP-owned configuration coordination discovery or projection fallback runs",
         "the ZPP command application is installed",
         "a user requests its root and command-group help",
-        "init and resolve remain root commands",
+        "init resolve and behave remain root commands",
+        "behave accepts a command or reserved init argument with its execution "
+        "selection options",
         "trait init owns exact repository document initialization",
         "workflow install update and remove remain grouped commands",
         "no flat init-trait install-workflow standalone explain or mirrored space "
         "command exists",
+        "an unregistered Git worktree has a dedicated root behavior mapping",
+        "a user invokes zpp behave against that worktree",
+        "OpenLease supplies one invocation-scoped dedicated YAML binding to zpp.behave",
+        "ZPP creates no registration topology persistent source or space",
         "a workflow command receives Codex Pi and Codex agent selections in that order",
         "ZPP normalizes the Agent Router agent values",
         "Codex and Pi are selected once in first-requested order",

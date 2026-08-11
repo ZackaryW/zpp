@@ -90,6 +90,10 @@ def test_packaged_assets_keep_workflow_authority_out_of_traits() -> None:
     assert "Reconcile the complete agreement" in text
     assert "A recommendation is not confirmation" in text
     assert "skipped: not applicable" in text
+    assert "zpp behave" in text
+    assert "bdd-execution" in text
+    assert "zpp-workflow" in text
+    assert "zpp-flow-wire-feature" not in text
 
 
 def test_packaged_collection_has_precise_execution_activation_and_tools() -> None:
@@ -103,9 +107,16 @@ def test_packaged_collection_has_precise_execution_activation_and_tools() -> Non
         flavor.get("facet", {}).get("bdd_mode")
         for flavor in documents["bdd-execution"]["trait"]
     ] == ["manual", "disabled", "complete", "targeted", None]
-    assert [
-        flavor["facet"]["tool"] for flavor in documents["tooling"]["trait"]
-    ] == ["rg", "jq"]
+    bodies = [
+        flavor["content"]["body"] for flavor in documents["bdd-execution"]["trait"]
+    ]
+    assert "--gate zpp-workflow" in bodies[3]
+    assert "--gate zpp-workflow" in bodies[4]
+    assert all("zpp-flow-" not in body for body in bodies)
+    assert [flavor["facet"]["tool"] for flavor in documents["tooling"]["trait"]] == [
+        "rg",
+        "jq",
+    ]
 
 
 @pytest.mark.parametrize("agent", tuple(Agent))

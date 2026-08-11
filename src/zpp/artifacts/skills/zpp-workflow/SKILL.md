@@ -69,6 +69,25 @@ projection contracts.
    successor cohort, reconcile or explicitly dispose of it, archive the OpenSpec
    change, and create only an authorized logical commit.
 
+## Verify repository behavior
+
+When an accepted shaped BDD obligation requires integration verification, apply
+the complete injected `bdd-execution` body as advisory selection policy and use
+only a command declared by the repository's root `zpp.behave.yaml`:
+
+- `manual`: pause for an explicit command and selection choice.
+- `disabled`: omit `zpp behave` only when independently observed alternate
+  relevant verification exists and no shaped BDD obligation remains unsatisfied.
+- `complete`: invoke `zpp behave COMMAND --all`.
+- `targeted`, including the default: when the chosen command declares the
+  `zpp-workflow` gate, invoke `zpp behave COMMAND --gate zpp-workflow`; otherwise
+  invoke `zpp behave COMMAND` for deterministic affected selection.
+
+The trait never supplies the command, targets, gate binding, process arguments,
+callback selection, stage skip, or completion result. A failed or insufficient
+behavior command leaves verification unsatisfied. Do not alias or migrate a
+former `zpp-flow-*` gate identity.
+
 ## Declare each stage outcome
 
 `clarify` and `finalize` are mandatory and must finish as `completed`. For each of
