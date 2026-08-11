@@ -66,6 +66,53 @@ Feature: Run the ZPP workflow through one explicit authority
     Then it invokes the next stage as a distinct explicit action
     And it does not delegate stage choice to the trait hook
 
+  Scenario: Reconcile newer input against the complete accepted change
+    Given the active change contains older accepted owner requirements
+    And a newer prompt recommends a conflicting design without confirming it
+    When the consolidated skill clarifies the change
+    Then it retains the older accepted requirements
+    And records the recommendation under unresolved do not assume
+    And it does not form a downstream feature contract
+
+  Scenario: Refuse automatic progression as decision authority
+    Given the user authorized automatic end-to-end workflow progression
+    And one public product decision remains unresolved
+    When the consolidated skill evaluates clarification convergence
+    Then clarification remains open
+    And the skill does not choose the decision to continue automatically
+
+  Scenario: Invalidate a downstream gate formed from an assumption
+    Given a feature checkpoint was formed from an assistant-inferred decision
+    And the owner did not confirm that decision
+    When the consolidated skill reconciles the complete agreement history
+    Then the prior feature gate is superseded
+    And a replacement checkpoint is required after clarification converges
+
+  Scenario: Declare and enforce a conditional stage skip
+    Given the agent declares shape skipped as not applicable
+    And the accepted change has no public or integration behavior requiring a feature contract
+    When the consolidated skill verifies the shape outcome
+    Then it records skipped not applicable
+    And it continues through a distinct explicit plan-utilities action
+
+  Scenario: Run a conditional stage when skip evidence is insufficient
+    Given the agent proposes skipping wire
+    And approved behavior still requires public bindings
+    When the consolidated skill verifies the wire outcome
+    Then it runs wire normally
+    And no trait body or context value establishes the skip
+
+  Scenario: Refuse to relabel failure as not applicable
+    Given a conditional stage command or verification failed
+    When the agent evaluates the stage outcome
+    Then the consolidated skill keeps the gate unsatisfied
+    And it does not record a skip
+
+  Scenario: Keep clarification and finalization mandatory
+    Given the workflow enters clarify or finalize
+    When the agent proposes skipped not applicable
+    Then the consolidated skill rejects that outcome
+
   Scenario: Delegate operations to their owning components
     Given a workflow stage requires OpenSpec OpenLease and Agent Router operations
     When the consolidated skill dispatches those operations

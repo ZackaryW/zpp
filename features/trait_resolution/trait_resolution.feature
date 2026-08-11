@@ -36,12 +36,20 @@ Feature: Resolve complete trait flavors from explicit context and evidence
     Then both complete flavors are retained
     And neither facet constraint set contains the other
 
-  Scenario: Combine distinct evidence-derived values
-    Given compatible selected evidence flavors derive Python and Flutter
-    And language was not already known
-    When ZPP backfills the resolution context
-    Then language contains Python followed by Flutter without duplicates
-    And resolution does not run again
+  Scenario: Enrich context before final family selection
+    Given no language is known and Cucumber workspace evidence identifies TypeScript
+    And another family has a TypeScript flavor without its own evidence
+    When ZPP resolves all active families
+    Then language is derived before final family selection
+    And both TypeScript complete bodies are returned in the same resolution
+    And a facet-only match does not start another enrichment pass
+
+  Scenario: Extend list-valued context with distinct evidence
+    Given repository language context contains Python followed by Rust
+    And compatible evidence derives Python and TypeScript
+    When ZPP enriches the resolution context
+    Then language contains Python Rust and TypeScript once each in that order
+    And each evidence-derived member retains its own provenance
 
   Scenario: Preserve higher-authority context
     Given invocation context repository context and stored context provide facet values
@@ -56,6 +64,29 @@ Feature: Resolve complete trait flavors from explicit context and evidence
     Then the stored context is ignored
     When evidence used by a stored value has changed
     Then that evidence-derived value is invalidated
+
+  Scenario: Invalidate only one evidence-derived list member
+    Given stored language context contains authored Python and evidence-derived TypeScript
+    When only the TypeScript evidence fingerprint changes
+    Then TypeScript is removed from stored language context
+    And authored Python remains available
+
+  Scenario: Upgrade prior stored context representation
+    Given a valid version one ZPP_CONTEXT value
+    When ZPP restores and completes the context
+    Then compatible values remain available
+    And the returned context uses member-level provenance
+
+  Scenario: Protect explicit workflow stage context
+    Given repository and stored context attempt to provide workflow stages
+    When an invocation explicitly requests the shape stage
+    Then only the validated explicit stage participates in matching
+    And the protected stage is not persisted as descriptive context
+
+  Scenario: Reject an unknown explicit workflow stage
+    Given an invocation names a stage outside the consolidated workflow
+    When ZPP builds its resolution context
+    Then resolution fails visibly
 
   Scenario: Evaluate the initial observable evidence predicates
     Given a flavor checks a root-anchored workspace path literal file content and uv availability
