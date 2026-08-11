@@ -1,0 +1,3 @@
+[[hooks]]
+event = "SessionStart"
+command = "zpp resolve --agent kimi ."

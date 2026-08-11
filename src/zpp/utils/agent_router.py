@@ -11,6 +11,7 @@ from agent_router import (
     ArtifactEffectiveState,
     ArtifactManifest,
     ArtifactStatus,
+    Hook,
     LifecycleResult,
     PluginArtifactContext,
     Scope,
@@ -54,7 +55,31 @@ class _WorkflowRouter(Protocol):
         project_root: str | Path | None = None,
     ) -> LifecycleResult: ...
 
+    def update_skill(
+        self,
+        skill: Skill,
+        *,
+        scope: Scope,
+        project_root: str | Path | None = None,
+    ) -> LifecycleResult: ...
+
     def uninstall_skill(
+        self,
+        name: str,
+        *,
+        scope: Scope,
+        project_root: str | Path | None = None,
+    ) -> LifecycleResult: ...
+
+    def install_hook(
+        self,
+        hook: Hook,
+        *,
+        scope: Scope,
+        project_root: str | Path | None = None,
+    ) -> LifecycleResult: ...
+
+    def uninstall_hook(
         self,
         name: str,
         *,
@@ -108,12 +133,24 @@ def project_workflow_skill(
     skill: Skill,
     scope: Scope,
     project_root: Path | None,
+    *,
+    replace_project: bool = False,
 ) -> LifecycleResult:
-    return router.install_skill(
+    operation = router.update_skill if replace_project else router.install_skill
+    return operation(
         skill,
         scope=scope,
         project_root=project_root,
     )
+
+
+def project_workflow_hook(
+    router: AgentRouter | _WorkflowRouter,
+    hook: Hook,
+    scope: Scope,
+    project_root: Path | None,
+) -> LifecycleResult:
+    return router.install_hook(hook, scope=scope, project_root=project_root)
 
 
 def remove_workflow_skill(
@@ -127,3 +164,12 @@ def remove_workflow_skill(
         scope=scope,
         project_root=project_root,
     )
+
+
+def remove_workflow_hook(
+    router: AgentRouter | _WorkflowRouter,
+    name: str,
+    scope: Scope,
+    project_root: Path | None,
+) -> LifecycleResult:
+    return router.uninstall_hook(name, scope=scope, project_root=project_root)

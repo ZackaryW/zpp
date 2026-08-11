@@ -13,6 +13,7 @@ from pydantic import (
 )
 
 from zpp.core.models import (
+    ActivationMode,
     CompositionMode,
     EvidenceBranch,
     FacetContext,
@@ -53,6 +54,7 @@ class _StrictModel(BaseModel):
 
 class _MetaInput(_StrictModel):
     selection: SelectionPolicy
+    activation: ActivationMode = ActivationMode.AUTOMATIC
     mode: CompositionMode = CompositionMode.LAYERED
 
 
@@ -193,6 +195,7 @@ def decode_trait_document(
     return TraitDocument(
         family=family,
         selection=decoded.meta.selection,
+        activation=decoded.meta.activation,
         mode=decoded.meta.mode,
         flavors=flavors,
         source=source,

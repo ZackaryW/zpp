@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -16,7 +17,9 @@ from zpp.utils.agent_router import (
     ZPP_TRAITS_ARTIFACT_ID,
     ZppTraitArtifactExtension,
     active_trait_sources,
+    project_workflow_hook,
     project_workflow_skill,
+    remove_workflow_hook,
     remove_workflow_skill,
 )
 
@@ -67,6 +70,48 @@ def test_project_workflow_skill_preserves_router_conflict() -> None:
         project_workflow_skill(Router(), object(), Scope.USER, None)
 
 
+def test_project_workflow_skill_uses_explicit_project_update() -> None:
+    expected = object()
+
+    class Router:
+        def update_skill(self, skill, *, scope, project_root):
+            self.call = (skill, scope, project_root)
+            return expected
+
+    router = Router()
+    skill = object()
+    project = Path("/repository")
+
+    result = project_workflow_skill(
+        router,
+        skill,
+        Scope.PROJECT,
+        project,
+        replace_project=True,
+    )
+
+    assert result is expected
+    assert router.call == (skill, Scope.PROJECT, project)
+
+
+def test_project_workflow_hook_delegates_exact_arguments() -> None:
+    expected = object()
+
+    class Router:
+        def install_hook(self, hook, *, scope, project_root):
+            self.call = (hook, scope, project_root)
+            return expected
+
+    router = Router()
+    hook = object()
+    project = Path("/repository")
+
+    result = project_workflow_hook(router, hook, Scope.PROJECT, project)
+
+    assert result is expected
+    assert router.call == (hook, Scope.PROJECT, project)
+
+
 def test_remove_workflow_skill_delegates_exact_arguments() -> None:
     expected = object()
 
@@ -82,6 +127,23 @@ def test_remove_workflow_skill_delegates_exact_arguments() -> None:
 
     assert result is expected
     assert router.call == ("zpp-workflow", Scope.PROJECT, project)
+
+
+def test_remove_workflow_hook_delegates_exact_arguments() -> None:
+    expected = object()
+
+    class Router:
+        def uninstall_hook(self, name, *, scope, project_root):
+            self.call = (name, scope, project_root)
+            return expected
+
+    router = Router()
+    project = Path("/repository")
+
+    result = remove_workflow_hook(router, "zpp-session", Scope.PROJECT, project)
+
+    assert result is expected
+    assert router.call == ("zpp-session", Scope.PROJECT, project)
 
 
 def test_active_trait_sources_use_only_router_selected_toml(tmp_path: Path) -> None:
@@ -128,6 +190,12 @@ def test_real_agent_router_owns_project_install_update_and_remove(
     project = tmp_path / "project"
     home.mkdir()
     project.mkdir()
+    subprocess.run(
+        ["git", "init"],
+        cwd=project,
+        check=True,
+        capture_output=True,
+    )
     router = AgentRouter(
         Agent.CODEX,
         home=home,
@@ -147,7 +215,13 @@ def test_real_agent_router_owns_project_install_update_and_remove(
         return Skill.from_path(source)
 
     installed = project_workflow_skill(router, skill("first"), Scope.PROJECT, project)
-    updated = project_workflow_skill(router, skill("second"), Scope.PROJECT, project)
+    updated = project_workflow_skill(
+        router,
+        skill("second"),
+        Scope.PROJECT,
+        project,
+        replace_project=True,
+    )
     removed = remove_workflow_skill(router, "zpp-workflow", Scope.PROJECT, project)
 
     assert installed.status == "installed"

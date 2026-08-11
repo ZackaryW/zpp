@@ -4,8 +4,8 @@ requires-python = ">=3.12"
 
 [[package]]
 name = "agent-router"
-version = "0.1.1"
-source = { git = "https://github.com/ZackaryW/agent-router.git?rev=1449a589f012305f47c594211bbaba6ab28eb8ba#1449a589f012305f47c594211bbaba6ab28eb8ba" }
+version = "0.1.2"
+source = { git = "https://github.com/ZackaryW/agent-router.git?rev=a9ac2d37e79ef0af9d47a72d06ce74381e8896eb#a9ac2d37e79ef0af9d47a72d06ce74381e8896eb" }
 dependencies = [
     { name = "pyyaml" },
     { name = "tomlkit" },
@@ -487,7 +487,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agent-router", git = "https://github.com/ZackaryW/agent-router.git?rev=1449a589f012305f47c594211bbaba6ab28eb8ba" },
+    { name = "agent-router", git = "https://github.com/ZackaryW/agent-router.git?rev=a9ac2d37e79ef0af9d47a72d06ce74381e8896eb" },
     { name = "openlease", git = "https://github.com/ZackaryW/openlease.git?rev=f9416008fa2d2d6413288d3644fc1345060c75b7" },
     { name = "pydantic", specifier = ">=2.13,<3" },
     { name = "questionary", specifier = ">=2.1,<3" },

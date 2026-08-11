@@ -13,6 +13,12 @@ class SelectionPolicy(StrEnum):
     EXTEND = "extend"
 
 
+class ActivationMode(StrEnum):
+    AUTOMATIC = "automatic"
+    MANUAL = "manual"
+    ALWAYS_RUN = "always-run"
+
+
 class CompositionMode(StrEnum):
     LAYERED = "layered"
     REPOSITORY_OVERWRITE = "repository-overwrite"
@@ -62,6 +68,7 @@ class TraitFlavor:
 class TraitDocument:
     family: str
     selection: SelectionPolicy
+    activation: ActivationMode
     mode: CompositionMode
     flavors: tuple[TraitFlavor, ...]
     source: SourceRef
@@ -78,6 +85,7 @@ class EffectiveFlavor:
 class EffectiveTraitFamily:
     family: str
     selection: SelectionPolicy
+    activation: ActivationMode
     policy_source: SourceRef
     mode: CompositionMode
     flavors: tuple[EffectiveFlavor, ...]

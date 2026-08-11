@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+from agent_router import Agent
+
 import zpp.artifacts
 from zpp.artifacts import (
     packaged_trait_source,
     packaged_traits,
+    packaged_workflow_hook,
     packaged_workflow_skill,
 )
 from zpp.core.models import SourceKind
@@ -85,3 +89,20 @@ def test_packaged_assets_keep_workflow_authority_out_of_traits() -> None:
     text = document.decode("utf-8")
     assert "Automatic progression" in text
     assert "Traits advise the selected stage" in text
+
+
+@pytest.mark.parametrize("agent", tuple(Agent))
+def test_packaged_workflow_hook_is_typed_and_resolves_for_its_agent(
+    agent: Agent,
+) -> None:
+    hook = packaged_workflow_hook(agent)
+    payload = repr(hook.fragment) + "".join(
+        item.content.decode("utf-8") for item in hook.files
+    )
+
+    assert hook.name == "zpp-session"
+    assert hook.compatible_agents == frozenset({agent})
+    assert f'"--agent", "{agent.value}"' in payload or (
+        f"--agent {agent.value} ." in payload
+    )
+    assert "guard" not in payload

@@ -4,6 +4,7 @@ from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 
 from zpp.core.models import (
+    ActivationMode,
     EffectiveFlavor,
     EffectiveTraitFamily,
     EvidenceRef,
@@ -15,6 +16,10 @@ from zpp.core.models import (
     ResolutionResult,
     SelectionPolicy,
 )
+
+
+class UnknownTraitFamilyError(ValueError):
+    pass
 
 
 def evidence_ref(
@@ -117,14 +122,20 @@ def resolve_trait_family(
     family: EffectiveTraitFamily,
     context: ResolutionContext,
     evidence: Mapping[EvidenceRef, EvidenceResult],
+    *,
+    activate_all: bool = False,
 ) -> FamilyResolution:
-    direct = [flavor for flavor in family.flavors if _matches(flavor, context)]
+    direct = (
+        list(family.flavors)
+        if activate_all
+        else [flavor for flavor in family.flavors if _matches(flavor, context)]
+    )
     evidence_selected: dict[int, EvidenceRef] = {}
 
     if family.selection is SelectionPolicy.FIRST_WIN:
         if direct:
             retained = (direct[0],)
-        else:
+        elif not activate_all:
             retained = ()
             for flavor in family.flavors:
                 if not _compatible(flavor, context):
@@ -162,7 +173,10 @@ def resolve_trait_family(
             flavor=flavor,
             selected=flavor.effective_position in retained_positions,
             reason=(
-                "selected-evidence"
+                "selected-always-run"
+                if activate_all
+                and flavor.effective_position in retained_positions
+                else "selected-evidence"
                 if flavor.effective_position in retained_positions
                 and flavor.effective_position in evidence_selected
                 else "selected-direct"
@@ -191,16 +205,27 @@ def resolve_traits(
     families: Sequence[EffectiveTraitFamily],
     context: ResolutionContext,
     evidence: Mapping[EvidenceRef, EvidenceResult],
+    *,
+    requested: Sequence[str] | None = None,
 ) -> ResolutionResult:
+    selected_families = select_trait_families(families, requested)
     resolutions = tuple(
-        resolve_trait_family(family, context, evidence) for family in families
+        resolve_trait_family(
+            family,
+            context,
+            evidence,
+            activate_all=family.activation is ActivationMode.ALWAYS_RUN,
+        )
+        for family in selected_families
     )
     merged_values = dict(context.values)
     merged_provenance = dict(context.provenance)
     merged_evidence = dict(context.evidence)
     merged_fingerprints = dict(context.fingerprints)
 
-    for family in families:
+    for family in selected_families:
+        if family.activation is ActivationMode.ALWAYS_RUN:
+            continue
         for flavor in family.flavors:
             for branch_position, _ in enumerate(flavor.flavor.when):
                 ref = evidence_ref(family, flavor, branch_position)
@@ -241,3 +266,23 @@ def resolve_traits(
             fingerprints=MappingProxyType(merged_fingerprints),
         ),
     )
+
+
+def select_trait_families(
+    families: Sequence[EffectiveTraitFamily],
+    requested: Sequence[str] | None,
+) -> tuple[EffectiveTraitFamily, ...]:
+    if requested is None:
+        return tuple(
+            family
+            for family in families
+            if family.activation is not ActivationMode.MANUAL
+        )
+
+    by_name = {family.family: family for family in families}
+    names = tuple(dict.fromkeys(requested))
+    unknown = tuple(name for name in names if name not in by_name)
+    if unknown:
+        rendered = ", ".join(unknown)
+        raise UnknownTraitFamilyError(f"unknown trait family: {rendered}")
+    return tuple(by_name[name] for name in names)

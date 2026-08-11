@@ -2,7 +2,13 @@ import pytest
 
 from zpp.core.catalog import decode_trait_document
 from zpp.core.composition import CompositionError, compose_trait_family
-from zpp.core.models import CompositionMode, SelectionPolicy, SourceKind, SourceRef
+from zpp.core.models import (
+    ActivationMode,
+    CompositionMode,
+    SelectionPolicy,
+    SourceKind,
+    SourceRef,
+)
 
 
 def _document(
@@ -12,11 +18,14 @@ def _document(
     body: str,
     *,
     mode: str | None = None,
+    activation: str | None = None,
     order: int = 0,
 ):
     meta = {"selection": selection}
     if mode is not None:
         meta["mode"] = mode
+    if activation is not None:
+        meta["activation"] = activation
     return decode_trait_document(
         "bdd",
         {
@@ -56,6 +65,30 @@ def test_compose_trait_family_preserves_order_inside_each_category() -> None:
         "first",
         "second",
     ]
+
+
+def test_compose_trait_family_uses_highest_precedence_activation() -> None:
+    effective = compose_trait_family(
+        "bdd",
+        [
+            _document(
+                SourceKind.GLOBAL,
+                "global",
+                "all",
+                "global",
+                activation="always-run",
+            ),
+            _document(
+                SourceKind.REPOSITORY,
+                "repository",
+                "all",
+                "repository",
+                activation="manual",
+            ),
+        ],
+    )
+
+    assert effective.activation is ActivationMode.MANUAL
 
 
 def test_repository_overwrite_excludes_space_and_global_contributions() -> None:

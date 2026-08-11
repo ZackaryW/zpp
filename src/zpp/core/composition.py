@@ -76,6 +76,7 @@ def compose_trait_family(
     return EffectiveTraitFamily(
         family=family,
         selection=policy_document.selection,
+        activation=policy_document.activation,
         policy_source=policy_document.source,
         mode=(
             CompositionMode.REPOSITORY_OVERWRITE

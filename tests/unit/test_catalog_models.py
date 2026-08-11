@@ -5,7 +5,7 @@ from zpp.core.catalog import (
     decode_repository_context,
     decode_trait_document,
 )
-from zpp.core.models import SelectionPolicy, SourceKind, SourceRef
+from zpp.core.models import ActivationMode, SelectionPolicy, SourceKind, SourceRef
 
 
 def test_decode_trait_document_returns_ordered_immutable_flavors() -> None:
@@ -31,11 +31,39 @@ def test_decode_trait_document_returns_ordered_immutable_flavors() -> None:
 
     assert document.family == "bdd"
     assert document.selection is SelectionPolicy.EXTEND
+    assert document.activation is ActivationMode.AUTOMATIC
     assert [flavor.content.body for flavor in document.flavors] == [
         "Python guidance.",
         "Flutter guidance.",
     ]
     assert document.source == source
+
+
+def test_decode_trait_document_accepts_explicit_activation() -> None:
+    document = decode_trait_document(
+        "bdd",
+        {
+            "meta": {"selection": "all", "activation": "manual"},
+            "trait": [{"content": {"body": "Manual guidance."}}],
+        },
+        SourceRef(kind=SourceKind.GLOBAL, identifier="global"),
+    )
+
+    assert document.activation is ActivationMode.MANUAL
+
+
+def test_decode_trait_document_rejects_unsupported_activation() -> None:
+    with pytest.raises(TraitValidationError) as caught:
+        decode_trait_document(
+            "bdd",
+            {
+                "meta": {"selection": "all", "activation": "sometimes"},
+                "trait": [{"content": {"body": "Invalid."}}],
+            },
+            SourceRef(kind=SourceKind.GLOBAL, identifier="global"),
+        )
+
+    assert caught.value.location == ("meta", "activation")
 
 
 def test_decode_repository_context_accepts_scalar_and_distinct_string_lists() -> None:

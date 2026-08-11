@@ -8,7 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "agent-router @ git+https://github.com/ZackaryW/agent-router.git@1449a589f012305f47c594211bbaba6ab28eb8ba",
+    "agent-router @ git+https://github.com/ZackaryW/agent-router.git@a9ac2d37e79ef0af9d47a72d06ce74381e8896eb",
     "openlease @ git+https://github.com/ZackaryW/openlease.git@f9416008fa2d2d6413288d3644fc1345060c75b7",
     "pydantic>=2.13,<3",
     "questionary>=2.1,<3",

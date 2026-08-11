@@ -1,18 +1,35 @@
 from types import MappingProxyType
 
+import pytest
+
 from zpp.core.catalog import decode_trait_document
 from zpp.core.composition import compose_trait_family
 from zpp.core.models import EvidenceResult, ResolutionContext, SourceKind, SourceRef
-from zpp.core.resolution import evidence_ref, resolve_trait_family, resolve_traits
+from zpp.core.rendering import render_prompt_bodies
+from zpp.core.resolution import (
+    UnknownTraitFamilyError,
+    evidence_ref,
+    resolve_trait_family,
+    resolve_traits,
+)
 
 
-def _family(selection: str, flavors: list[dict[str, object]]):
+def _family(
+    selection: str,
+    flavors: list[dict[str, object]],
+    *,
+    family: str = "bdd",
+    activation: str | None = None,
+):
+    meta = {"selection": selection}
+    if activation is not None:
+        meta["activation"] = activation
     return compose_trait_family(
-        "bdd",
+        family,
         [
             decode_trait_document(
-                "bdd",
-                {"meta": {"selection": selection}, "trait": flavors},
+                family,
+                {"meta": meta, "trait": flavors},
                 SourceRef(SourceKind.REPOSITORY, "repository"),
             )
         ],
@@ -287,3 +304,82 @@ def test_resolve_traits_does_not_replace_explicit_fact_with_evidence() -> None:
     assert result.context.values["has_uv"] is True
     assert result.context.provenance["has_uv"] == "invocation"
     assert "has_uv" not in result.context.evidence
+
+
+def test_unfiltered_resolution_excludes_manual_families() -> None:
+    automatic = _family("all", [_flavor("automatic")], family="automatic")
+    manual = _family(
+        "all",
+        [_flavor("manual")],
+        family="manual",
+        activation="manual",
+    )
+
+    result = resolve_traits([automatic, manual], _context(), {})
+
+    assert [family.family for family in result.families] == ["automatic"]
+
+
+def test_requested_manual_family_uses_normal_activation_in_request_order() -> None:
+    manual = _family(
+        "all",
+        [
+            _flavor("python", language="python"),
+            _flavor("flutter", language="flutter"),
+        ],
+        family="manual",
+        activation="manual",
+    )
+    automatic = _family("all", [_flavor("automatic")], family="automatic")
+
+    result = resolve_traits(
+        [automatic, manual],
+        _context(language="python"),
+        {},
+        requested=("manual", "automatic", "manual"),
+    )
+
+    assert [family.family for family in result.families] == [
+        "manual",
+        "automatic",
+    ]
+    assert result.families[0].bodies == ("python",)
+
+
+def test_requested_unknown_family_is_rejected() -> None:
+    family = _family("all", [_flavor("automatic")])
+
+    with pytest.raises(UnknownTraitFamilyError, match="unknown"):
+        resolve_traits([family], _context(), {}, requested=("unknown",))
+
+
+def test_always_run_bypasses_activation_but_preserves_extend_without_backfill() -> None:
+    family = _family(
+        "extend",
+        [
+            _flavor("generic python", language="python"),
+            _flavor("python uv", language="python", build_tool="uv"),
+            _flavor("flutter", language="flutter"),
+        ],
+        activation="always-run",
+    )
+
+    result = resolve_traits([family], _context(), {})
+
+    assert result.families[0].bodies == ("python uv", "flutter")
+    assert result.context.values == {}
+
+
+def test_render_prompt_bodies_preserves_complete_bodies_in_resolution_order() -> None:
+    first = _family("all", [_flavor("first\nbody")], family="first")
+    second = _family("all", [_flavor("second body")], family="second")
+    result = resolve_traits([first, second], _context(), {})
+
+    assert render_prompt_bodies(result) == "first\nbody\n\n---\n\nsecond body"
+
+
+def test_render_prompt_bodies_returns_empty_string_without_selected_bodies() -> None:
+    family = _family("all", [_flavor("python", language="python")])
+    result = resolve_traits([family], _context(language="flutter"), {})
+
+    assert render_prompt_bodies(result) == ""
