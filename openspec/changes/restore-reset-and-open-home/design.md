@@ -47,6 +47,12 @@ Reset requires `--yes` before inspection. It validates the selected home and exa
 
 If preflight or preparation fails, nothing is removed. If a runtime projection removal fails, reset attempts the remaining preflighted removals, reports every result, leaves the prior OpenLease state untouched, and supports an idempotent retry. State swap failure reports recovery state without claiming reset completion.
 
+### Keep native BDD execution independent
+
+The consolidated workflow selects an established native BDD command from repository evidence or an explicit owner choice. A repository may additionally configure `zpp.behave.yaml` for deterministic affected targets and command-local gates, but that optional mapping is not a prerequisite for running native Behave, Cucumber, or another established BDD surface.
+
+When `zpp behave` is explicitly selected, its mapping remains complete runtime authority for that command and selection. When it is absent or not selected, the workflow runs the established native BDD surface directly and judges completion from the observed result. Traits remain advisory and cannot author executable command text.
+
 ## Risks / Trade-offs
 
 - **Changing `--path` semantics can surprise preview users** → Document the breaking path boundary and provide `zpp reset --yes` as the explicit current-state recovery operation.
@@ -54,6 +60,7 @@ If preflight or preparation fails, nothing is removed. If a runtime projection r
 - **Projection removal is not transactionally reversible** → Complete preflight and state preparation happen first; runtime failures are aggregated and leave state unchanged for retry.
 - **A broad or symlinked custom home could escape ownership** → Resolve and validate exact boundaries before preparation or deletion and never recursively delete the selected home.
 - **Agent Router status vocabulary may evolve** → Interpret removability through an adapter-level predicate covered against the pinned Agent Router contract and surface unknown results as conflicts.
+- **Native BDD runners differ across repositories** → Require established repository evidence or an explicit owner choice; never infer executable text from a trait body.
 
 ## Migration Plan
 

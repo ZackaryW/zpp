@@ -10,6 +10,7 @@ ZPP 2.0 omitted the confirmed reset boundary while retaining mutable OpenLease s
 - Make `~/.zpp` the default ZPP home and place OpenLease state under `<home>/openlease`; root `--path` selects an alternate ZPP home for both commands and other OpenLease-backed operations.
 - Preserve repository `.zpp` documents, `zpp.behave.yaml`, project-scope projections, plugins, external worktrees, and unrelated agent assets across reset.
 - Keep the former global authored-trait collection and `--overwrite-global-traits` option removed.
+- Correct the consolidated workflow so native BDD verification remains runnable without `zpp.behave.yaml`; use `zpp behave` only as optional repository-configured selection coordination.
 - **BREAKING** relative to the incomplete ZPP 2.0 preview: the default OpenLease state moves from `~/.openlease` to `~/.zpp/openlease`, and `--path` identifies the ZPP home rather than the OpenLease state directory itself.
 
 ## Capabilities
@@ -22,6 +23,7 @@ ZPP 2.0 omitted the confirmed reset boundary while retaining mutable OpenLease s
 
 - `repository-trait-bootstrap`: Adds root `open` and `reset` to the stable command hierarchy and routes OpenLease-backed operations through the selected home's `openlease` child.
 - `automatic-trait-hooks`: Adds ownership-safe removal of every supported agent's user-scope ZPP workflow hook during confirmed reset without broadening ordinary workflow removal.
+- `consolidated-workflow-skill`: Removes the incorrect requirement that every BDD run pass through `zpp.behave.yaml` while preserving its optional affected-selection and gate behavior.
 
 ## Impact
 
@@ -30,6 +32,7 @@ ZPP 2.0 omitted the confirmed reset boundary while retaining mutable OpenLease s
 - Agent integration: reset inspects and removes current `zpp-workflow` skills and `zpp-session` hooks in user scope through Agent Router.
 - Runtime utilities: platform folder opening, destructive-path validation, staged state replacement, and complete preflight reporting require focused adapters and tests.
 - Documentation and packaging: README command and state-path guidance must describe the restored lifecycle.
+- Workflow verification: the packaged skill and BDD execution trait must distinguish native BDD execution from optional `zpp.behave` coordination.
 
 ## Unresolved — Do Not Assume
 

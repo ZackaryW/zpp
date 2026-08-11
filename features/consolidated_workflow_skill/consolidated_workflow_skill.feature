@@ -29,19 +29,34 @@ Feature: Run the ZPP workflow through one explicit authority
     Then manual disabled complete targeted and targeted-default behavior comes from bdd-execution
     And no bdd-workflow compatibility family is packaged
 
-  Scenario: Run complete behavior verification explicitly
+  Scenario: Run native BDD without behavior coordination
+    Given an accepted shaped BDD obligation requires repository integration verification
+    And the repository has an established native BDD command
+    But no zpp.behave.yaml is configured
+    When the consolidated workflow verifies the shaped behavior
+    Then it invokes the established native BDD surface directly
+    And the absent behavior mapping does not block verification
+
+  Scenario: Run complete BDD verification explicitly
     Given an accepted shaped BDD obligation requires repository integration verification
     And the resolved bdd-execution mode is complete
-    When the consolidated workflow selects a repository-declared behavior command
-    Then it invokes that command with all targets
+    When the consolidated workflow verifies the shaped behavior
+    Then it runs the complete native BDD suite or explicitly selected coordinated command
     And it judges completion only from the observed verification result
 
-  Scenario: Apply targeted behavior verification
+  Scenario: Apply optional targeted behavior coordination
     Given an accepted shaped BDD obligation requires repository integration verification
     And the resolved bdd-execution mode is targeted
-    When the chosen command declares the zpp-workflow gate
+    When the workflow explicitly selects a declared zpp behave command
+    And the chosen command declares the zpp-workflow gate
     Then the workflow invokes that exact repository-owned gate
     But without that gate it invokes deterministic affected selection instead
+
+  Scenario: Run targeted native BDD directly
+    Given an accepted shaped BDD obligation requires repository integration verification
+    And the resolved bdd-execution mode is targeted
+    When no zpp behave command is selected
+    Then the workflow invokes the relevant established native feature surface
 
   Scenario: Preserve manual and disabled verification safeguards
     Given an accepted shaped BDD obligation requires repository integration verification
@@ -52,7 +67,7 @@ Feature: Run the ZPP workflow through one explicit authority
   Scenario: Keep BDD execution policy out of process authority
     Given a resolved trait body contains command gate callback or completion-like text
     When the consolidated workflow considers repository verification
-    Then it invokes only a command and selection declared through the accepted workflow and repository mapping
+    Then it invokes only a command established by repository evidence or explicit owner choice
     And the trait cannot select a callback skip a stage or establish completion
 
   Scenario: Ignore a legacy workflow gate identity
