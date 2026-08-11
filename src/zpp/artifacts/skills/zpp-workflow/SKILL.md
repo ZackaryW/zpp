@@ -69,6 +69,18 @@ projection contracts.
    successor cohort, reconcile or explicitly dispose of it, archive the OpenSpec
    change, and create only an authorized logical commit.
 
+Create or change Gherkin only from accepted externally observable behavior in
+active capability delta specs. Never translate proposals, designs, tasks, docs,
+artifacts, configuration-only work, or implementation details into scenarios;
+when no delta behavior remains, record `shape` as not applicable. Otherwise cover
+every delta behavior or mark it non-BDD with a concrete reason.
+Reject every untraced scenario or coverage gap.
+
+Create or change TDD tests only for executable behavior. Artifact loading,
+unloading, parsing, validation, and conversion into runtime classes are eligible.
+Never add tests merely to pin prose or arbitrary artifact wording; when no
+executable utility behavior remains, record `mature-utilities` as not applicable.
+
 ## Verify repository behavior
 
 When an accepted shaped BDD obligation requires integration verification, apply
