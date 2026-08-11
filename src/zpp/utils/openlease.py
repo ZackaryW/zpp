@@ -8,23 +8,43 @@ from types import MappingProxyType
 from typing import Protocol
 
 from openlease import (
+    CallbackEvent,
+    CallbackMode,
     ConfigurationLayout,
     ConfigurationTarget,
+    DirectDocumentTarget,
+    ExtensionCallback,
     ExtensionDocumentBinding,
+    ExtensionInvocation,
     ExtensionManifest,
+    ExtensionOperation,
     ExtensionRegistration,
     OpenLease,
     WriteDisposition,
     to_plain_managed_value,
 )
+from openlease.utils.git_adapter import GitAdapter
+from openlease.utils.processes import ProcessRunner, SubprocessRunner
 
 from zpp.core.application import (
     BoundTraitDocument,
     BoundTraitSource,
 )
+from zpp.core.behavior import (
+    BehaviorAdapterRegistry,
+    BehaviorExecutionError,
+    BehaviorExecutionReport,
+    BehaviorInitializationReport,
+    BehaviorProviderAdapter,
+    BehaviorRunInput,
+    parse_behavior_mapping,
+    select_behavior_targets,
+)
 from zpp.core.models import SourceKind
+from zpp.utils.behavior_providers import default_behavior_adapters
 
 _EXTENSION_ID = "zpp.traits"
+_BEHAVIOR_EXTENSION_ID = "zpp.behave"
 _FAMILY = re.compile(r"^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$")
 
 
@@ -34,6 +54,306 @@ def create_trait_documents(state_root: Path) -> OpenLeaseTraitDocuments:
         extensions=(ExtensionRegistration(ExtensionManifest(_EXTENSION_ID)),),
     )
     return OpenLeaseTraitDocuments(lifecycle)
+
+
+def create_zpp_openlease(
+    state_root: Path,
+    *,
+    behavior_adapters: Sequence[BehaviorProviderAdapter] | None = None,
+    behavior_git: GitAdapter | None = None,
+    behavior_runner: ProcessRunner | None = None,
+) -> OpenLease:
+    return OpenLease(
+        state_root,
+        extensions=(
+            ExtensionRegistration(ExtensionManifest(_EXTENSION_ID)),
+            behavior_extension(
+                behavior_adapters,
+                git=behavior_git,
+                runner=behavior_runner,
+                state_root=state_root,
+            ),
+        ),
+    )
+
+
+def behavior_extension(
+    adapters: Sequence[BehaviorProviderAdapter] | None = None,
+    *,
+    git: GitAdapter | None = None,
+    runner: ProcessRunner | None = None,
+    state_root: Path | None = None,
+) -> ExtensionRegistration:
+    selected = tuple(
+        default_behavior_adapters(runner) if adapters is None else adapters
+    )
+
+    def validate(configuration: Mapping[str, object]) -> None:
+        plain = to_plain_managed_value(configuration)
+        if not isinstance(plain, dict):
+            raise ValueError("behavior configuration is not a mapping")
+        parse_behavior_mapping(
+            plain,
+            registry=BehaviorAdapterRegistry(selected),
+        )
+
+    def initialize(invocation: ExtensionInvocation) -> object:
+        return _initialize_behavior_invocation(invocation, selected)
+
+    def run(invocation: ExtensionInvocation) -> object:
+        return _run_behavior_invocation(
+            invocation,
+            selected,
+            git=git,
+            runner=runner,
+            state_root=state_root,
+        )
+
+    return ExtensionRegistration(
+        manifest=ExtensionManifest(_BEHAVIOR_EXTENSION_ID),
+        operations=(
+            ExtensionOperation("initialize", initialize, target_kinds=("direct",)),
+            ExtensionOperation(
+                "run", run, target_kinds=("direct", "repository", "cohort")
+            ),
+        ),
+        callbacks=(
+            ExtensionCallback(
+                CallbackEvent.RECONCILE_BEFORE_REPOSITORY,
+                "run",
+                (CallbackMode.GATE, CallbackMode.OBSERVE),
+            ),
+            ExtensionCallback(
+                CallbackEvent.RECONCILE_AFTER_REPOSITORY,
+                "run",
+                (CallbackMode.OBSERVE,),
+            ),
+            ExtensionCallback(
+                CallbackEvent.RECONCILE_AFTER_COHORT,
+                "run",
+                (CallbackMode.OBSERVE,),
+            ),
+        ),
+        validator=validate,
+    )
+
+
+def _initialize_behavior_invocation(
+    invocation: ExtensionInvocation,
+    adapters: Sequence[BehaviorProviderAdapter],
+) -> object:
+    root = _behavior_repository_root(invocation)
+    mapping = parse_behavior_mapping(
+        _plain_behavior_configuration(invocation),
+        registry=BehaviorAdapterRegistry(adapters),
+    )
+    from zpp.utils.behavior_providers import behavior_provider_diagnostics
+
+    return BehaviorInitializationReport(
+        root,
+        tuple(mapping.commands),
+        behavior_provider_diagnostics(root),
+    )
+
+
+def _run_behavior_invocation(
+    invocation: ExtensionInvocation,
+    adapters: Sequence[BehaviorProviderAdapter],
+    *,
+    git: GitAdapter | None,
+    runner: ProcessRunner | None,
+    state_root: Path | None,
+) -> object:
+    request = _behavior_run_input(invocation.input)
+    root = _behavior_repository_root(invocation)
+    process_runner = runner or SubprocessRunner()
+    selected = tuple(adapters)
+    configuration = _plain_behavior_configuration(invocation)
+    if invocation.event is not None:
+        if state_root is None:
+            raise BehaviorExecutionError(
+                "callback behavior requires the selected OpenLease state root"
+            )
+        callback_host = OpenLease(
+            state_root,
+            extensions=(
+                behavior_extension(
+                    selected,
+                    git=git,
+                    runner=process_runner,
+                    state_root=state_root,
+                ),
+            ),
+        )
+        bound = callback_host.bind_extension_document(
+            ExtensionDocumentBinding(
+                extension_id=_BEHAVIOR_EXTENSION_ID,
+                path=root / "zpp.behave.yaml",
+                codec="yaml",
+                layout=ConfigurationLayout.DEDICATED,
+                repository_path=root,
+            )
+        )
+        plain = to_plain_managed_value(bound.config.snapshot())
+        if not isinstance(plain, dict):
+            raise BehaviorExecutionError("behavior configuration is not a mapping")
+        configuration = plain
+    mapping = parse_behavior_mapping(
+        configuration,
+        registry=BehaviorAdapterRegistry(selected),
+    )
+    command = mapping.commands.get(request.command)
+    if command is None:
+        raise BehaviorExecutionError(
+            f"behavior command is not declared: {request.command}"
+        )
+    changed_paths: tuple[str, ...] = ()
+    if not (request.complete or request.targets or request.gate is not None):
+        git_adapter = git or GitAdapter()
+        checkout = git_adapter.inspect(root)
+        changed = (
+            git_adapter.worktree_changed_paths(checkout, checkout.head)
+            if request.base is None
+            else git_adapter.changed_paths(checkout, request.base, request.head or "")
+        )
+        changed_paths = tuple(item.path for item in changed)
+    targets = select_behavior_targets(
+        command,
+        request,
+        changed_paths=changed_paths,
+    )
+    if not targets:
+        return BehaviorExecutionReport(root, request.command, (), None)
+    values = tuple(target.value for target in targets)
+    arguments = command.provider.adapter.argv(root, command.provider.settings, values)
+    if not arguments or not arguments[0]:
+        raise BehaviorExecutionError("behavior adapter returned an empty executable")
+    result = process_runner.run(tuple(arguments), cwd=root)
+    return BehaviorExecutionReport(root, request.command, targets, result)
+
+
+def _plain_behavior_configuration(
+    invocation: ExtensionInvocation,
+) -> Mapping[str, object]:
+    plain = to_plain_managed_value(invocation.config.snapshot())
+    if not isinstance(plain, dict):
+        raise ValueError("behavior configuration is not a mapping")
+    return plain
+
+
+def _behavior_repository_root(invocation: ExtensionInvocation) -> Path:
+    target = invocation.context.target
+    if isinstance(target, DirectDocumentTarget):
+        return (target.repository_path or target.path.parent).resolve()
+    if isinstance(target, ConfigurationTarget):
+        repository_id = (
+            invocation.event.repository_id
+            if invocation.event is not None
+            and invocation.event.repository_id is not None
+            else target.identifier
+        )
+        member = next(
+            (
+                member
+                for member in invocation.context.members
+                if member.repository_id == repository_id
+            ),
+            None,
+        )
+        if member is not None:
+            return member.effective_path.resolve()
+    raise ValueError("OpenLease did not supply an exact repository target")
+
+
+def _behavior_run_input(value: object) -> BehaviorRunInput:
+    if isinstance(value, BehaviorRunInput):
+        request = value
+    elif isinstance(value, Mapping):
+        allowed = {"command", "complete", "base", "head", "targets", "gate"}
+        unknown = set(value).difference(allowed)
+        if unknown:
+            raise BehaviorExecutionError(
+                "unknown behavior run input: " + ", ".join(sorted(unknown))
+            )
+        targets = value.get("targets", ())
+        if isinstance(targets, str) or not isinstance(targets, Sequence):
+            raise BehaviorExecutionError("behavior targets must be a sequence")
+        request = BehaviorRunInput(
+            command=value.get("command"),  # type: ignore[arg-type]
+            complete=value.get("complete", False),  # type: ignore[arg-type]
+            base=value.get("base"),  # type: ignore[arg-type]
+            head=value.get("head"),  # type: ignore[arg-type]
+            targets=tuple(targets),
+            gate=value.get("gate"),  # type: ignore[arg-type]
+        )
+    else:
+        raise BehaviorExecutionError("behavior run input is invalid")
+    if not isinstance(request.command, str) or not request.command:
+        raise BehaviorExecutionError("behavior run input requires a command")
+    if not isinstance(request.complete, bool):
+        raise BehaviorExecutionError("behavior complete mode must be boolean")
+    if request.base is not None and not isinstance(request.base, str):
+        raise BehaviorExecutionError("behavior base must be a string")
+    if request.head is not None and not isinstance(request.head, str):
+        raise BehaviorExecutionError("behavior head must be a string")
+    if any(not isinstance(item, str) or not item for item in request.targets):
+        raise BehaviorExecutionError(
+            "behavior target identities must be non-empty strings"
+        )
+    if request.gate is not None and (
+        not isinstance(request.gate, str) or not request.gate
+    ):
+        raise BehaviorExecutionError(
+            "behavior gate identity must be a non-empty string"
+        )
+    return request
+
+
+class OpenLeaseBehaviorDocuments:
+    def __init__(self, lifecycle: OpenLease | _OpenLeasePort) -> None:
+        self._lifecycle = lifecycle
+
+    def initialize(self, repository: Path) -> BehaviorInitializationReport:
+        root = repository.resolve()
+        binding = self._binding(root, writable=True)
+        bound = self._lifecycle.initialize_extension_document(
+            binding,
+            initial={"version": 1, "commands": {}},
+            boundary=root,
+            create_parents=False,
+        )
+        result = bound.invoke("initialize")
+        if not isinstance(result.value, BehaviorInitializationReport):
+            raise ValueError("behavior initialization returned an invalid report")
+        return result.value
+
+    def run(
+        self,
+        repository: Path,
+        request: BehaviorRunInput,
+    ) -> BehaviorExecutionReport:
+        root = repository.resolve()
+        bound = self._lifecycle.bind_extension_document(
+            self._binding(root, writable=False)
+        )
+        result = bound.invoke("run", request)
+        if result.value is None:
+            diagnostic = getattr(result.outcome, "diagnostic", None)
+            raise BehaviorExecutionError(diagnostic or "behavior execution failed")
+        if not isinstance(result.value, BehaviorExecutionReport):
+            raise ValueError("behavior execution returned an invalid report")
+        return result.value
+
+    @staticmethod
+    def _binding(repository: Path, *, writable: bool) -> ExtensionDocumentBinding:
+        return ExtensionDocumentBinding(
+            extension_id=_BEHAVIOR_EXTENSION_ID,
+            path=repository / "zpp.behave.yaml",
+            codec="yaml",
+            layout=ConfigurationLayout.DEDICATED,
+            writable=writable,
+            repository_path=repository,
+        )
 
 
 @dataclass(frozen=True, slots=True)
