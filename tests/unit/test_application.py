@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import MappingProxyType
 
+import pytest
+
 from zpp.core.application import (
     BoundTraitDocument,
     BoundTraitSource,
@@ -73,4 +75,25 @@ def test_application_resolves_classified_sources_without_layout_assumptions(
         "selected-repository"
     )
     assert "artifacts/traits" not in str(result.explanation)
-    assert '"stage":"wire"' in result.context
+    assert result.resolution.context.values["stage"] == "wire"
+    assert '"stage":"wire"' not in result.context
+
+
+def test_application_rejects_unknown_explicit_workflow_stage(
+    tmp_path: Path,
+) -> None:
+    application = TraitApplication(
+        lambda target: EvidenceRuntime(target, Path.read_bytes, lambda _tool: None)
+    )
+
+    with pytest.raises(ValueError, match="unsupported workflow stage"):
+        application.resolve(
+            TraitInvocation(
+                target=tmp_path,
+                stage="invented-stage",
+                facets=MappingProxyType({}),
+                stored_context=None,
+                repository_context=None,
+                sources=(),
+            )
+        )

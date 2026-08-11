@@ -45,6 +45,41 @@ def test_restore_session_context_invalidates_only_drifted_evidence_values() -> N
     assert set(restored.provenance) == {"build_tool"}
 
 
+def test_restore_session_context_invalidates_only_drifted_list_member() -> None:
+    raw = json.dumps(
+        {
+            "version": 2,
+            "target": {"repository": "/repo"},
+            "facets": {"language": ["python", "typescript"]},
+            "members": {
+                "language": [
+                    {
+                        "value": "python",
+                        "source": "repository",
+                        "evidence": [],
+                    },
+                    {
+                        "value": "typescript",
+                        "source": "evidence",
+                        "evidence": ["workspace:/cucumber.js"],
+                    },
+                ]
+            },
+            "fingerprints": {"workspace:/cucumber.js": "old"},
+        }
+    )
+
+    restored = restore_session_context(
+        raw,
+        TargetIdentity(repository="/repo"),
+        {"workspace:/cucumber.js": "new"},
+    )
+
+    assert restored.values == {"language": "python"}
+    assert restored.provenance["language"].source == "repository"
+    assert restored.provenance["language"].evidence == ()
+
+
 def test_restore_session_context_ignores_another_target() -> None:
     raw = json.dumps(
         {
@@ -108,6 +143,12 @@ def test_encode_session_context_is_deterministic_and_round_trips_lists() -> None
     encoded = encode_session_context(restored)
 
     assert encoded == encode_session_context(restored)
+    decoded = json.loads(encoded)
+    assert decoded["version"] == 2
+    assert decoded["members"]["language"] == [
+        {"value": "python", "source": "evidence", "evidence": []},
+        {"value": "flutter", "source": "evidence", "evidence": []},
+    ]
     assert restore_session_context(encoded, TargetIdentity("/repo"), {}) == restored
 
 

@@ -13,6 +13,7 @@ from pydantic import (
 )
 
 from zpp.core.models import (
+    PROTECTED_CONTEXT_KEYS,
     ActivationMode,
     CompositionMode,
     EvidenceBranch,
@@ -109,6 +110,8 @@ class _ContextInput(_StrictModel):
         for key, item in value.items():
             if not isinstance(key, str) or not key:
                 raise ValueError("facet names must be non-empty strings")
+            if key in PROTECTED_CONTEXT_KEYS:
+                raise ValueError(f"protected context key is not allowed: {key}")
             if isinstance(item, str):
                 if not item:
                     raise ValueError("facet values must not be empty")

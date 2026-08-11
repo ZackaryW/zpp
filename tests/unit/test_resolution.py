@@ -218,6 +218,180 @@ def test_unmatched_family_is_inactive_and_families_stack() -> None:
     assert result.families[1].bodies == ("uv",)
 
 
+def test_evidence_enriches_context_before_cross_family_selection() -> None:
+    detector = _family(
+        "first-win",
+        [
+            _flavor(
+                "typescript evidence",
+                when=[{"workspace_contains": "/cucumber.js"}],
+                language="typescript",
+            )
+        ],
+        family="bdd",
+    )
+    consumer = _family(
+        "first-win",
+        [_flavor("typescript consumer", language="typescript")],
+        family="build",
+    )
+    ref = evidence_ref(detector, detector.flavors[0], 0)
+
+    result = resolve_traits(
+        [detector, consumer],
+        _context(),
+        {ref: EvidenceResult(matched=True)},
+    )
+
+    assert result.context.values["language"] == "typescript"
+    assert result.families[0].bodies == ("typescript evidence",)
+    assert result.families[1].bodies == ("typescript consumer",)
+    assert result.families[0].decisions[0].reason == "selected-evidence"
+    assert result.families[0].decisions[0].evidence == ref
+
+
+def test_first_win_direct_match_blocks_evidence_enrichment() -> None:
+    family = _family(
+        "first-win",
+        [
+            _flavor("python", language="python"),
+            _flavor(
+                "typescript evidence",
+                when=[{"workspace_contains": "/cucumber.js"}],
+                language="typescript",
+            ),
+        ],
+    )
+    ref = evidence_ref(family, family.flavors[1], 0)
+
+    result = resolve_traits(
+        [family],
+        _context(language="python"),
+        {ref: EvidenceResult(matched=True)},
+    )
+
+    assert result.families[0].bodies == ("python",)
+    assert result.context.values["language"] == "python"
+
+
+@pytest.mark.parametrize("selection", ["all", "extend"])
+def test_multi_match_policies_enrich_from_each_evidence_candidate(
+    selection: str,
+) -> None:
+    family = _family(
+        selection,
+        [
+            _flavor(
+                "python",
+                when=[{"workspace_contains": "/pyproject.toml"}],
+                language="python",
+            ),
+            _flavor(
+                "typescript",
+                when=[{"workspace_contains": "/cucumber.js"}],
+                language="typescript",
+            ),
+        ],
+    )
+    evidence = {
+        evidence_ref(family, flavor, 0): EvidenceResult(matched=True)
+        for flavor in family.flavors
+    }
+
+    result = resolve_traits([family], _context(), evidence)
+
+    assert result.context.values["language"] == ("python", "typescript")
+    assert result.families[0].bodies == ("python", "typescript")
+
+
+def test_repository_list_context_extends_with_unique_evidence_values() -> None:
+    family = _family(
+        "all",
+        [
+            _flavor(
+                "python",
+                when=[{"workspace_contains": "/pyproject.toml"}],
+                language="python",
+            ),
+            _flavor(
+                "typescript",
+                when=[{"workspace_contains": "/cucumber.js"}],
+                language="typescript",
+            ),
+        ],
+    )
+    evidence = {
+        evidence_ref(family, flavor, 0): EvidenceResult(matched=True)
+        for flavor in family.flavors
+    }
+    context = ResolutionContext(
+        values=MappingProxyType({"language": ("python", "rust")}),
+        provenance=MappingProxyType({"language": "repository"}),
+    )
+
+    result = resolve_traits([family], context, evidence)
+
+    assert result.context.values["language"] == (
+        "python",
+        "rust",
+        "typescript",
+    )
+    assert [member.source for member in result.context.members["language"]] == [
+        "repository",
+        "repository",
+        "evidence",
+    ]
+
+
+def test_invocation_list_context_is_not_extended_by_evidence() -> None:
+    family = _family(
+        "all",
+        [
+            _flavor(
+                "typescript",
+                when=[{"workspace_contains": "/cucumber.js"}],
+                language="typescript",
+            )
+        ],
+    )
+    ref = evidence_ref(family, family.flavors[0], 0)
+
+    result = resolve_traits(
+        [family],
+        _context(language=("python", "rust")),
+        {ref: EvidenceResult(matched=True)},
+    )
+
+    assert result.context.values["language"] == ("python", "rust")
+    assert result.families[0].bodies == ()
+
+
+def test_evidence_owned_scalar_extends_with_distinct_evidence_value() -> None:
+    family = _family(
+        "all",
+        [
+            _flavor(
+                "typescript",
+                when=[{"workspace_contains": "/cucumber.js"}],
+                language="typescript",
+            )
+        ],
+    )
+    ref = evidence_ref(family, family.flavors[0], 0)
+    context = ResolutionContext(
+        values=MappingProxyType({"language": "python"}),
+        provenance=MappingProxyType({"language": "evidence"}),
+    )
+
+    result = resolve_traits(
+        [family],
+        context,
+        {ref: EvidenceResult(matched=True)},
+    )
+
+    assert result.context.values["language"] == ("python", "typescript")
+
+
 def test_resolve_traits_publishes_false_evaluated_fact_with_fingerprint() -> None:
     family = _family(
         "first-win",

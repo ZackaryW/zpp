@@ -4,7 +4,9 @@ from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 
 from zpp.core.models import (
+    PROTECTED_CONTEXT_KEYS,
     ActivationMode,
+    ContextMember,
     EffectiveFlavor,
     EffectiveTraitFamily,
     EvidenceRef,
@@ -50,6 +52,22 @@ def _compatible(flavor: EffectiveFlavor, context: ResolutionContext) -> bool:
         key not in context.values or _contains(context.values[key], expected)
         for key, expected in flavor.flavor.facets.items()
     )
+
+
+def _enrichment_compatible(
+    flavor: EffectiveFlavor,
+    context: ResolutionContext,
+) -> bool:
+    for key, expected in flavor.flavor.facets.items():
+        if key not in context.values or _contains(context.values[key], expected):
+            continue
+        if context.provenance.get(key) == "evidence" or (
+            isinstance(context.values[key], tuple)
+            and context.provenance.get(key) != "invocation"
+        ):
+            continue
+        return False
+    return True
 
 
 def _successful_evidence(
@@ -118,19 +136,149 @@ def _backfill(
     )
 
 
+def _enrich_resolution_context(
+    families: Sequence[EffectiveTraitFamily],
+    context: ResolutionContext,
+    evidence: Mapping[EvidenceRef, EvidenceResult],
+) -> tuple[ResolutionContext, Mapping[tuple[str, int], EvidenceRef]]:
+    """Publish observed facts and one bounded pass of evidence-derived facets."""
+    merged_values = dict(context.values)
+    merged_provenance = dict(context.provenance)
+    merged_evidence = dict(context.evidence)
+    merged_fingerprints = dict(context.fingerprints)
+    merged_members = {
+        key: list(
+            context.members.get(
+                key,
+                tuple(
+                    ContextMember(
+                        value,
+                        context.provenance[key],
+                        context.evidence.get(key, ()),
+                    )
+                    for value in (
+                        item if isinstance(item, tuple) else (item,)
+                    )
+                ),
+            )
+        )
+        for key, item in context.values.items()
+    }
+    contributors: list[tuple[EffectiveFlavor, EvidenceRef]] = []
+
+    for family in families:
+        if family.activation is ActivationMode.ALWAYS_RUN:
+            continue
+
+        direct_positions = {
+            flavor.effective_position
+            for flavor in family.flavors
+            if _matches(flavor, context)
+        }
+        if family.selection is SelectionPolicy.FIRST_WIN and direct_positions:
+            candidates: Sequence[EffectiveFlavor] = ()
+        else:
+            candidates = tuple(
+                flavor
+                for flavor in family.flavors
+                if flavor.effective_position not in direct_positions
+                and _enrichment_compatible(flavor, context)
+            )
+
+        for flavor in family.flavors:
+            for branch_position, _ in enumerate(flavor.flavor.when):
+                ref = evidence_ref(family, flavor, branch_position)
+                evidence_result = evidence.get(ref)
+                if evidence_result is None:
+                    continue
+                keys = tuple(evidence_result.fingerprints)
+                for key, value in evidence_result.facts.items():
+                    if key in PROTECTED_CONTEXT_KEYS:
+                        continue
+                    if key in merged_values:
+                        continue
+                    merged_values[key] = value
+                    merged_provenance[key] = "evidence"
+                    merged_evidence[key] = keys
+                    merged_members[key] = [ContextMember(value, "evidence", keys)]
+                    merged_fingerprints.update(evidence_result.fingerprints)
+
+        for flavor in candidates:
+            selected = _successful_evidence(family, flavor, evidence)
+            if selected is None:
+                continue
+            contributors.append((flavor, selected))
+            if family.selection is SelectionPolicy.FIRST_WIN:
+                break
+
+    for flavor, selected in contributors:
+        evidence_result = evidence[selected]
+        keys = tuple(evidence_result.fingerprints)
+        merged_fingerprints.update(evidence_result.fingerprints)
+        for key, value in flavor.flavor.facets.items():
+            if key in PROTECTED_CONTEXT_KEYS:
+                continue
+            if key in context.values:
+                existing = context.values[key]
+                source = context.provenance.get(key)
+                if source == "invocation" or (
+                    not isinstance(existing, tuple) and source != "evidence"
+                ):
+                    continue
+            members = merged_members.setdefault(key, [])
+            if any(member.value == value for member in members):
+                continue
+            members.append(ContextMember(value, "evidence", keys))
+            values = tuple(member.value for member in members)
+            merged_values[key] = values[0] if len(values) == 1 else values
+            merged_provenance.setdefault(key, "evidence")
+            evidence_keys: list[str] = []
+            for member in members:
+                evidence_keys.extend(
+                    item for item in member.evidence if item not in evidence_keys
+                )
+            if evidence_keys:
+                merged_evidence[key] = tuple(evidence_keys)
+
+    enriched = ResolutionContext(
+        values=MappingProxyType(merged_values),
+        provenance=MappingProxyType(merged_provenance),
+        evidence=MappingProxyType(merged_evidence),
+        fingerprints=MappingProxyType(merged_fingerprints),
+        members=MappingProxyType(
+            {key: tuple(members) for key, members in merged_members.items()}
+        ),
+    )
+    references = {
+        (selected.family, flavor.effective_position): selected
+        for flavor, selected in contributors
+    }
+    return enriched, MappingProxyType(references)
+
+
+def enrich_resolution_context(
+    families: Sequence[EffectiveTraitFamily],
+    context: ResolutionContext,
+    evidence: Mapping[EvidenceRef, EvidenceResult],
+) -> ResolutionContext:
+    enriched, _ = _enrich_resolution_context(families, context, evidence)
+    return enriched
+
+
 def resolve_trait_family(
     family: EffectiveTraitFamily,
     context: ResolutionContext,
     evidence: Mapping[EvidenceRef, EvidenceResult],
     *,
     activate_all: bool = False,
+    preselected_evidence: Mapping[int, EvidenceRef] | None = None,
 ) -> FamilyResolution:
     direct = (
         list(family.flavors)
         if activate_all
         else [flavor for flavor in family.flavors if _matches(flavor, context)]
     )
-    evidence_selected: dict[int, EvidenceRef] = {}
+    evidence_selected = dict(preselected_evidence or {})
 
     if family.selection is SelectionPolicy.FIRST_WIN:
         if direct:
@@ -209,62 +357,28 @@ def resolve_traits(
     requested: Sequence[str] | None = None,
 ) -> ResolutionResult:
     selected_families = select_trait_families(families, requested)
+    enriched_context, enrichment_evidence = _enrich_resolution_context(
+        selected_families,
+        context,
+        evidence,
+    )
     resolutions = tuple(
         resolve_trait_family(
             family,
-            context,
+            enriched_context,
             evidence,
             activate_all=family.activation is ActivationMode.ALWAYS_RUN,
+            preselected_evidence={
+                position: selected
+                for (family_name, position), selected in enrichment_evidence.items()
+                if family_name == family.family
+            },
         )
         for family in selected_families
     )
-    merged_values = dict(context.values)
-    merged_provenance = dict(context.provenance)
-    merged_evidence = dict(context.evidence)
-    merged_fingerprints = dict(context.fingerprints)
-
-    for family in selected_families:
-        if family.activation is ActivationMode.ALWAYS_RUN:
-            continue
-        for flavor in family.flavors:
-            for branch_position, _ in enumerate(flavor.flavor.when):
-                ref = evidence_ref(family, flavor, branch_position)
-                evidence_result = evidence.get(ref)
-                if evidence_result is None:
-                    continue
-                keys = tuple(evidence_result.fingerprints)
-                for key, value in evidence_result.facts.items():
-                    if key in merged_values:
-                        continue
-                    merged_values[key] = value
-                    merged_provenance[key] = "evidence"
-                    merged_evidence[key] = keys
-                    merged_fingerprints.update(evidence_result.fingerprints)
-
-    for resolution in resolutions:
-        for key, value in resolution.backfill.values.items():
-            merged_values[key] = value
-            merged_provenance[key] = resolution.backfill.provenance[key]
-        for decision in resolution.decisions:
-            if not decision.selected or decision.evidence is None:
-                continue
-            evidence_result = evidence[decision.evidence]
-            keys = tuple(evidence_result.fingerprints)
-            for key in decision.flavor.flavor.facets:
-                if key not in resolution.backfill.values:
-                    continue
-                existing = list(merged_evidence.get(key, ()))
-                existing.extend(item for item in keys if item not in existing)
-                merged_evidence[key] = tuple(existing)
-            merged_fingerprints.update(evidence_result.fingerprints)
     return ResolutionResult(
         families=resolutions,
-        context=ResolutionContext(
-            values=MappingProxyType(merged_values),
-            provenance=MappingProxyType(merged_provenance),
-            evidence=MappingProxyType(merged_evidence),
-            fingerprints=MappingProxyType(merged_fingerprints),
-        ),
+        context=enriched_context,
     )
 
 

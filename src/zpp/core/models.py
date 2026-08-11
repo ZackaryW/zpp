@@ -24,6 +24,28 @@ class CompositionMode(StrEnum):
     REPOSITORY_OVERWRITE = "repository-overwrite"
 
 
+class WorkflowStage(StrEnum):
+    CLARIFY = "clarify"
+    SHAPE = "shape"
+    PLAN_UTILITIES = "plan-utilities"
+    MATURE_UTILITIES = "mature-utilities"
+    WIRE = "wire"
+    FORM_SPECS = "form-specs"
+    FINALIZE = "finalize"
+
+
+PROTECTED_CONTEXT_KEYS = frozenset({"stage"})
+
+
+def normalize_workflow_stage(value: str | None) -> WorkflowStage | None:
+    if value is None:
+        return None
+    try:
+        return WorkflowStage(value)
+    except ValueError as error:
+        raise ValueError(f"unsupported workflow stage: {value}") from error
+
+
 class SourceKind(StrEnum):
     REPOSITORY = "repository"
     SPACE = "space"
@@ -103,6 +125,13 @@ class FacetContext:
 
 
 @dataclass(frozen=True, slots=True)
+class ContextMember:
+    value: str | bool
+    source: str
+    evidence: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ResolutionContext:
     values: Mapping[str, str | tuple[str, ...] | bool]
     provenance: Mapping[str, str]
@@ -110,6 +139,9 @@ class ResolutionContext:
         default_factory=lambda: MappingProxyType({})
     )
     fingerprints: Mapping[str, str] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    members: Mapping[str, tuple[ContextMember, ...]] = field(
         default_factory=lambda: MappingProxyType({})
     )
 
@@ -172,6 +204,9 @@ class StoredContext:
     values: Mapping[str, str | tuple[str, ...] | bool]
     provenance: Mapping[str, FacetProvenance]
     fingerprints: Mapping[str, str]
+    members: Mapping[str, tuple[ContextMember, ...]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
 
 def frozen_mapping(values: Mapping[str, object]) -> Mapping[str, object]:

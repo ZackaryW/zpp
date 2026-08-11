@@ -10,6 +10,7 @@ from zpp.core.catalog import decode_repository_context, decode_trait_document
 from zpp.core.composition import compose_trait_family
 from zpp.core.evidence import EvidenceRuntime, collect_evidence, evidence_requests
 from zpp.core.models import (
+    PROTECTED_CONTEXT_KEYS,
     ActivationMode,
     FacetContext,
     ResolutionResult,
@@ -17,6 +18,7 @@ from zpp.core.models import (
     SourceRef,
     TargetIdentity,
     frozen_mapping,
+    normalize_workflow_stage,
 )
 from zpp.core.resolution import resolve_traits, select_trait_families
 from zpp.core.session import (
@@ -103,8 +105,9 @@ class TraitApplication:
             invocation.stored_context, identity, fingerprints
         )
         invocation_values = self._normalize_facets(invocation.facets)
-        if invocation.stage is not None:
-            invocation_values["stage"] = invocation.stage
+        stage = normalize_workflow_stage(invocation.stage)
+        if stage is not None:
+            invocation_values["stage"] = stage.value
         direct = FacetContext(
             values=frozen_mapping(invocation_values),
             provenance=frozen_mapping(
@@ -178,6 +181,10 @@ class TraitApplication:
         for key, value in facets.items():
             if not key:
                 raise ValueError("facet names must not be empty")
+            if key in PROTECTED_CONTEXT_KEYS:
+                raise ValueError(
+                    f"protected context key requires its explicit option: {key}"
+                )
             if isinstance(value, str):
                 if not value:
                     raise ValueError(f"facet value must not be empty: {key}")

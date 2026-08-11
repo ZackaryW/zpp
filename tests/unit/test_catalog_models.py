@@ -83,6 +83,14 @@ def test_decode_repository_context_accepts_scalar_and_distinct_string_lists() ->
     }
 
 
+def test_decode_repository_context_rejects_protected_stage() -> None:
+    with pytest.raises(TraitValidationError, match="protected"):
+        decode_repository_context(
+            {"facet": {"stage": "shape"}},
+            SourceRef(kind=SourceKind.REPOSITORY, identifier="repository"),
+        )
+
+
 def test_decode_trait_document_reports_atomic_flavor_location() -> None:
     source = SourceRef(kind=SourceKind.GLOBAL, identifier="packaged")
 
