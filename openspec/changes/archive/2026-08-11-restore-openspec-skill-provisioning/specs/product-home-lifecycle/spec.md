@@ -24,7 +24,7 @@ Before any reset mutation, ZPP SHALL inspect every supported agent's user-scope 
 
 After successful preflight, ZPP SHALL attempt the standard preflighted removals and forced canonical OpenSpec skill removals in deterministic supported-agent and within-agent asset order and SHALL aggregate runtime failures. Forced OpenSpec removal SHALL treat a wholly absent skill and ownership record as an eligible no-op, remove modified content only with valid matching Agent Router ownership, and reject a present unmanaged target or invalid ownership. Any removal failure SHALL leave the prior OpenLease state unchanged. Earlier successful removals MAY remain removed; a retry SHALL treat already absent assets as eligible and SHALL converge without adopting or directly deleting native assets.
 
-#### Scenario: Abort on a standard projection conflict
+#### Scenario: Abort on one projection conflict
 - **WHEN** any selected user-scope workflow skill or hook is not absent or ownership-safe removable during preflight
 - **THEN** reset identifies the agent and asset and changes no selected projection or OpenLease state
 

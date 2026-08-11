@@ -3,9 +3,7 @@
 ## Purpose
 
 Define the single ZPP workflow authority and its boundary with contextual traits and component-owned operations.
-
 ## Requirements
-
 ### Requirement: One distributed ZPP workflow skill
 ZPP SHALL distribute one consolidated workflow skill instead of the seven former `zpp-flow-*` stage skills. The consolidated skill SHALL cover product clarification, feature shaping, utility planning and maturation, feature wiring and verification, specification formation and finalization, and logical checkpoint handling through one workflow entry point. ZPP SHALL NOT distribute a `workflow` trait family or use trait content as a second workflow definition.
 
@@ -162,3 +160,14 @@ The packaged consolidated workflow skill identity SHALL be `zpp-workflow`, and r
 #### Scenario: Encounter only a legacy gate
 - **WHEN** a repository declares a former `zpp-flow-*` gate but not `zpp-workflow`
 - **THEN** ZPP applies the targeted affected-selection fallback and performs no legacy gate migration
+
+### Requirement: Ready installed workflow operation set
+A complete user-scope ZPP workflow integration SHALL include the one consolidated `zpp-workflow` authority, the agent-native `zpp-session` trait hook, and the six component-owned OpenSpec operation skills required by that authority. The generated OpenSpec skills SHALL remain separate operation owners and SHALL NOT become additional ZPP workflow stage skills.
+
+#### Scenario: Use OpenSpec operations after initialization
+- **WHEN** an agent begins the consolidated workflow after successful root initialization
+- **THEN** the agent has the generated OpenSpec operation skills required for proposal, application, synchronization, and archival without a separate ZPP setup step
+
+#### Scenario: Preserve one ZPP workflow authority
+- **WHEN** the complete integration contains six OpenSpec operation skills
+- **THEN** `zpp-workflow` remains the only ZPP workflow authority and the generated skills remain component operation integrations

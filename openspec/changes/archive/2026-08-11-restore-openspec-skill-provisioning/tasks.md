@@ -21,5 +21,5 @@
 
 - [x] 4.1 Add focused CLI, reset, integration, and capability verification
 - [x] 4.2 Update README initialization and reset guidance
-- [ ] 4.3 Run complete tests, BDD, lint, build, and strict validation
-- [ ] 4.4 Archive the completed change after successor reconciliation
+- [x] 4.3 Run complete tests, BDD, lint, build, and strict validation
+- [x] 4.4 Archive the completed change after successor reconciliation
