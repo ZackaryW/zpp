@@ -32,11 +32,28 @@ Feature: Use repository traits through bounded component-owned integration
     When no explicit mutation command was requested
     Then ZPP performs no initialization or managed write
 
-  Scenario: Delegate workflow projection to Agent Router
+  Scenario: Delegate complete workflow projection to Agent Router
     Given a user requests the ZPP workflow integration for a supported agent
-    When ZPP supplies its consolidated workflow asset
-    Then Agent Router owns discovery destination selection installation update and removal
+    When ZPP supplies its consolidated skill and native hook assets
+    Then Agent Router owns discovery destination selection installation update and removal for both assets
     And ZPP does not write an agent destination directly
+
+  Scenario: Resolve only the invoking agent plugin traits
+    Given Codex and Claude Code have different active plugins providing ZPP traits
+    When a user resolves a repository with Codex as the invoking agent
+    Then the router uses the real user home and that repository as project context
+    And only Codex effective active ZPP trait artifacts contribute
+
+  Scenario: Update a project integration explicitly
+    Given a project workflow integration is selected for update
+    When ZPP updates the consolidated skill and native hook
+    Then Agent Router explicitly replaces the selected project skill
+    And Agent Router reconciles its owned hook through native hook installation
+
+  Scenario: Maintain a user integration safely
+    Given a user-scoped workflow integration is selected for install or update
+    When ZPP projects the consolidated skill and native hook
+    Then Agent Router uses ownership-safe installation for both assets
 
   Scenario: Preserve component rejection without a compatibility fallback
     Given OpenLease rejects a document operation or Agent Router rejects a projection

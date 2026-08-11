@@ -12,6 +12,22 @@ Feature: Author one complete trait family per TOML document
     And the flavors retain their authored order and complete bodies
     And no flavor inherits or generates content from another flavor
 
+  Scenario: Default a family to automatic activation
+    Given a trait document omits activation metadata
+    When ZPP loads the trait document
+    Then the family activation is automatic
+
+  Scenario: Load an explicit family activation mode
+    Given a trait document declares manual activation
+    When ZPP loads the trait document
+    Then the family activation is manual
+
+  Scenario: Reject an unsupported activation mode
+    Given a trait document declares an unsupported activation mode
+    When ZPP validates the document
+    Then the complete document is rejected
+    And the failure identifies meta activation
+
   Scenario: Reject an invalid document atomically
     Given one flavor in a trait document has no content body
     When ZPP validates the document
@@ -32,7 +48,7 @@ Feature: Author one complete trait family per TOML document
     Then repository flavors precede space flavors
     And space flavors precede global flavors
     And each document retains its authored flavor order
-    And the repository document supplies the effective selection policy
+    And the repository document supplies the effective selection and activation policies
 
   Scenario: Explicitly replace inherited family contributions
     Given a repository bdd document declares repository-overwrite mode

@@ -75,3 +75,49 @@ Feature: Resolve complete trait flavors from explicit context and evidence
     Given no flavor directly matches or has successful compatible evidence
     When ZPP resolves the family
     Then the family contributes no body
+
+  Scenario: Exclude manual families from common resolution
+    Given a manual family has a flavor with successful activation evidence
+    When ZPP resolves all commonly active families
+    Then the manual family contributes no body
+
+  Scenario: Query a manual family with normal activation
+    Given a manual family has one matching flavor and one unmatched flavor
+    When a user resolves that family directly
+    Then only the normally selected matching flavor contributes its complete body
+    And unrelated always-run families do not contribute
+
+  Scenario: Return no forced body for an unmatched manual query
+    Given a manual family has no matching facet or evidence flavor
+    When a user resolves that family directly
+    Then the requested family contributes no body
+
+  Scenario: Resolve repeated named families in first-requested order
+    Given several known trait families are available
+    When a user requests two families and repeats the first family
+    Then each requested family is considered once in first-requested order
+
+  Scenario: Reject an unknown named family
+    Given an always-run family is available
+    When a user directly requests an unknown family
+    Then resolution fails visibly
+    And the unrelated always-run family contributes no body
+
+  Scenario: Apply selection after always-run activation bypass
+    Given an always-run extend family has generic Python Python with uv and Flutter flavors
+    And no flavor has matching context or evidence
+    When ZPP resolves all commonly active families
+    Then Python with uv and Flutter are retained in effective order
+    And generic Python is removed as dominated
+    And bypass-selected facets do not backfill the context
+
+  Scenario: Render complete bodies for prompt injection by default
+    Given resolution retains several complete trait bodies
+    When a user resolves without explanation
+    Then standard output contains only those complete bodies in deterministic order
+    And no diagnostic envelope is emitted
+
+  Scenario: Render structured diagnostics only when requested
+    Given resolution retains several complete trait bodies and recomputes stored context
+    When a user resolves with explanation
+    Then structured output contains the same bodies effective context and deterministic decisions

@@ -28,18 +28,24 @@ Feature: Run the ZPP workflow through one explicit authority
     Then the consolidated skill requests the stage
     And it does not infer a stage from those inputs
 
-  Scenario: Apply retained trait bodies without granting authority
-    Given an explicit workflow stage resolves several contextual trait bodies
-    When the consolidated skill applies those bodies in returned order
+  Scenario: Apply automatically injected trait bodies without granting authority
+    Given the native ZPP hook injected several complete contextual trait bodies
+    When the consolidated skill applies those bodies in injected order
     Then the bodies may specialize repository language framework test and build guidance
     But they cannot authorize mutation advance a stage or establish completion
+
+  Scenario: Keep trait bootstrap out of the workflow skill
+    Given the packaged consolidated workflow skill is available
+    When a user inspects its workflow instructions
+    Then the skill does not instruct the agent to run trait resolution
+    And the skill does not instruct the agent to publish ZPP_CONTEXT
 
   Scenario: Continue automatically through visible stage actions
     Given the user authorized end-to-end workflow progression
     And the current stage has independently verified completion
     When the workflow continues
     Then it invokes the next stage as a distinct explicit action
-    And supplies that stage to trait resolution
+    And it does not delegate stage choice to the trait hook
 
   Scenario: Delegate operations to their owning components
     Given a workflow stage requires OpenSpec OpenLease and Agent Router operations
