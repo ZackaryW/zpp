@@ -92,17 +92,18 @@ selected home when absent and opens that exact directory in the native file
 manager without initializing OpenLease or interpreting the other contents.
 
 `zpp reset --yes` preflights every supported agent's ZPP-owned user-scope
-`zpp-workflow` skill and `zpp-session` hook through Agent Router. If that
-preflight succeeds, reset removes those assets and force-deletes the six
+`zpp-workflow`, `zpp-configure-behave`, and `zpp-author-trait` skills and
+`zpp-session` hook through Agent Router. If that preflight succeeds, reset
+removes those intact packaged assets normally and force-deletes the six
 canonical Agent Router-owned OpenSpec skills for each agent by stable name. A
-modified generated skill is removed with its ownership state and no retained
-history; an unmanaged same-named skill is preserved as a conflict. Reset never
-regenerates OpenSpec. Only after all removals succeed does it replace the
-selected home's `openlease` child. It preserves the home itself, repository
-`.zpp` documents, `zpp.behave.yaml`, project-scope projections, plugins,
-worktrees, and unrelated files. A removal failure leaves prior OpenLease state
-unchanged and a retry accepts assets already removed. Reset has no global-trait
-overwrite mode.
+modified packaged authoring skill remains a conflict. A modified generated
+skill is removed with its ownership state and no retained history; an unmanaged
+same-named skill is preserved as a conflict. Reset never regenerates OpenSpec.
+Only after all removals succeed does it replace the selected home's `openlease`
+child. It preserves the home itself, repository `.zpp` documents,
+`zpp.behave.yaml`, project-scope projections, plugins, worktrees, and unrelated
+files. A removal failure leaves prior OpenLease state unchanged and a retry
+accepts assets already removed. Reset has no global-trait overwrite mode.
 
 `resolve --space` adds one explicitly selected OpenLease space;
 `OPENLEASE_SPACE` may supply the same selection. `--authority` narrows that
@@ -123,10 +124,19 @@ agent's effective plugin artifacts.
 `zpp init` requires the local `openspec` executable. For every selected agent it
 freshly generates and validates the six core OpenSpec operation skills before
 projecting anything, then Agent Router installs or safely reconciles those
-skills together with `zpp-workflow` and `zpp-session` in user scope. Re-running
-`init` is the only OpenSpec regeneration operation. The grouped `workflow`
-commands continue to manage only the consolidated workflow skill and native
-hook; they expose no OpenSpec update option.
+skills together with `zpp-workflow`, `zpp-session`, `zpp-configure-behave`, and
+`zpp-author-trait` in user scope. Re-running `init` is the only OpenSpec
+regeneration operation and also reconciles the two packaged authoring skills.
+The grouped `workflow` commands continue to manage only the consolidated
+workflow skill and native hook; they expose no authoring-skill or OpenSpec
+option.
+
+`zpp-configure-behave` is a manual authoring skill for repository-backed
+verification providers, stable segmented targets, conservative path rules,
+gates, and validation of `zpp.behave.yaml`. `zpp-author-trait` is a manual
+authoring skill for one-family TOML documents, activation, selection, facets,
+evidence, complete bodies, and explained resolution. Neither skill runs from a
+hook or workflow transition, and neither introduces another CLI command.
 
 Default `resolve` output is the selected complete trait bodies, ready for prompt
 injection. `--explain` emits the structured bodies, context, and deterministic

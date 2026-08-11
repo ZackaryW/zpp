@@ -1,0 +1,4 @@
+interface:
+  display_name: "Configure ZPP Behavior"
+  short_description: "Author optimized repository behavior mappings"
+  default_prompt: "Use $zpp-configure-behave to configure this repository's segmented verification mapping."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Author ZPP Trait"
+  short_description: "Author precise repository trait families"
+  default_prompt: "Use $zpp-author-trait to author a repository trait family for this project."

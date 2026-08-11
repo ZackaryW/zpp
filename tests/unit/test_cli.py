@@ -112,6 +112,15 @@ def test_init_preflights_every_generated_inventory_before_projection(
     )
     monkeypatch.setattr(
         initialization_cli,
+        "packaged_authoring_skills",
+        lambda: (
+            SimpleNamespace(name="zpp-configure-behave"),
+            SimpleNamespace(name="zpp-author-trait"),
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        initialization_cli,
         "packaged_workflow_hook",
         lambda agent: SimpleNamespace(name="zpp-session", agent=agent),
     )
@@ -135,10 +144,12 @@ def test_init_preflights_every_generated_inventory_before_projection(
     assert result.exit_code == 0, result.output
     assert events[0] == "generated:codex,pi"
     assert events[-1] == "generation-cleanup"
-    assert len(json.loads(result.stdout)) == 16
-    assert events[1:9] == [
+    assert len(json.loads(result.stdout)) == 20
+    assert events[1:11] == [
         "skill:codex:zpp-workflow",
         "hook:codex:zpp-session",
+        "skill:codex:zpp-configure-behave",
+        "skill:codex:zpp-author-trait",
         *(f"skill:codex:openspec-{index}" for index in range(6)),
     ]
 
@@ -165,6 +176,30 @@ def test_init_generation_failure_precedes_every_projection(monkeypatch) -> None:
 
     assert result.exit_code == 2
     assert "generation failed" in result.output
+
+
+def test_init_packaged_authoring_failure_precedes_generation(monkeypatch) -> None:
+    def fail_packaged():
+        raise ValueError("invalid authoring skill")
+
+    monkeypatch.setattr(
+        initialization_cli,
+        "packaged_authoring_skills",
+        fail_packaged,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "generated_openspec_skill_sets",
+        lambda *args, **kwargs: pytest.fail(
+            f"generated after invalid package: {args} {kwargs}"
+        ),
+    )
+
+    result = runner.invoke(app, ["init", "--agent", "codex"])
+
+    assert result.exit_code == 2
+    assert "invalid authoring skill" in result.output
 
 
 def test_open_creates_and_opens_selected_home_without_openlease(
@@ -249,6 +284,46 @@ def test_reset_help_omits_obsolete_global_trait_overwrite_option() -> None:
     assert result.exit_code == 0
     assert "--yes" in result.stdout
     assert "overwrite-global-traits" not in result.stdout
+
+
+def test_reset_catalog_preflights_packaged_authoring_skills_before_generated(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(reset_cli, "agent_router", lambda agent, target: agent)
+    monkeypatch.setattr(
+        reset_cli,
+        "packaged_workflow_skill",
+        lambda: SimpleNamespace(name="zpp-workflow"),
+    )
+    monkeypatch.setattr(
+        reset_cli,
+        "packaged_workflow_hook",
+        lambda agent: SimpleNamespace(name="zpp-session", agent=agent),
+    )
+    monkeypatch.setattr(
+        reset_cli,
+        "packaged_authoring_skills",
+        lambda: (
+            SimpleNamespace(name="zpp-configure-behave"),
+            SimpleNamespace(name="zpp-author-trait"),
+        ),
+        raising=False,
+    )
+
+    projections = reset_cli.reset_projections()
+
+    for position, agent in enumerate(reset_cli.SUPPORTED_AGENTS):
+        selected = projections[position * 10 : (position + 1) * 10]
+        assert [item.agent for item in selected] == [agent.value] * 10
+        assert [item.kind for item in selected] == [
+            "hook",
+            "skill",
+            "skill:zpp-configure-behave",
+            "skill:zpp-author-trait",
+            *(f"skill:{name}" for name in reset_cli.OPENSPEC_CORE_SKILL_NAMES),
+        ]
+        assert all(item.inspect is not None for item in selected[:4])
+        assert all(item.inspect is None for item in selected[4:])
 
 
 def test_prompt_uses_exact_agent_router_agent_order(monkeypatch) -> None:

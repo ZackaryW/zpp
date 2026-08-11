@@ -8,7 +8,11 @@ from typing import Annotated, Protocol
 import typer
 from agent_router import Agent, Scope
 
-from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skill
+from zpp.artifacts import (
+    packaged_authoring_skills,
+    packaged_workflow_hook,
+    packaged_workflow_skill,
+)
 from zpp.cli.shared import agent_router, emit_json, runtime, user_action
 from zpp.utils.agent_router import (
     inspect_workflow_hook,
@@ -82,6 +86,7 @@ def reset(
 def reset_projections() -> tuple[_ResetProjection, ...]:
     target = Path.cwd().resolve()
     skill = packaged_workflow_skill()
+    authoring_skills = packaged_authoring_skills()
     projections: list[_ResetProjection] = []
     for agent in SUPPORTED_AGENTS:
         router = agent_router(agent, target)
@@ -125,6 +130,29 @@ def reset_projections() -> tuple[_ResetProjection, ...]:
                     ),
                 ),
             )
+        )
+        projections.extend(
+            _ResetProjection(
+                agent.value,
+                f"skill:{authoring_skill.name}",
+                lambda selected_router=router, selected_skill=authoring_skill: (
+                    inspect_workflow_skill(
+                        selected_router,
+                        selected_skill,
+                        Scope.USER,
+                        None,
+                    )
+                ),
+                lambda selected_router=router, selected_skill=authoring_skill: (
+                    remove_workflow_skill(
+                        selected_router,
+                        selected_skill.name,
+                        Scope.USER,
+                        None,
+                    )
+                ),
+            )
+            for authoring_skill in authoring_skills
         )
         projections.extend(
             _ResetProjection(

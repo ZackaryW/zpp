@@ -4,10 +4,11 @@ import tomllib
 from pathlib import Path
 
 import pytest
-from agent_router import Agent
+from agent_router import Agent, InvalidAssetError
 
 import zpp.artifacts
 from zpp.artifacts import (
+    packaged_authoring_skills,
     packaged_trait_source,
     packaged_traits,
     packaged_workflow_hook,
@@ -40,6 +41,103 @@ def test_packaged_assets_are_loaded_before_resource_lifetime_ends(
         b"a-content",
         b"z-content",
     ]
+
+
+def test_packaged_authoring_skills_are_detached_in_stable_order(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    skills = tmp_path / "skills"
+    for name in ("zpp-configure-behave", "zpp-author-trait"):
+        source = skills / name
+        source.mkdir(parents=True)
+        (source / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: Author with ZPP.\n---\n{name}\n"
+        )
+    monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
+
+    loaded = packaged_authoring_skills()
+    for source in skills.iterdir():
+        (source / "SKILL.md").unlink()
+        source.rmdir()
+
+    assert tuple(skill.name for skill in loaded) == (
+        "zpp-configure-behave",
+        "zpp-author-trait",
+    )
+    assert [
+        next(
+            item.content
+            for item in skill.files
+            if item.relative_path == "SKILL.md"
+        )
+        for skill in loaded
+    ] == [
+        b"---\nname: zpp-configure-behave\ndescription: Author with ZPP.\n---\n"
+        b"zpp-configure-behave\n",
+        b"---\nname: zpp-author-trait\ndescription: Author with ZPP.\n---\n"
+        b"zpp-author-trait\n",
+    ]
+
+
+def test_packaged_authoring_skills_fail_as_one_invalid_set(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source = tmp_path / "skills" / "zpp-configure-behave"
+    source.mkdir(parents=True)
+    (source / "SKILL.md").write_text(
+        "---\nname: zpp-configure-behave\ndescription: Author with ZPP.\n---\n"
+    )
+    monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
+
+    with pytest.raises(InvalidAssetError):
+        packaged_authoring_skills()
+
+
+def test_packaged_authoring_skill_guidance_is_complete_and_cross_agent() -> None:
+    configure, trait = packaged_authoring_skills()
+
+    assert configure.compatible_agents == trait.compatible_agents == frozenset(Agent)
+    configure_text = next(
+        item.content.decode("utf-8")
+        for item in configure.files
+        if item.relative_path == "SKILL.md"
+    )
+    trait_text = next(
+        item.content.decode("utf-8")
+        for item in trait.files
+        if item.relative_path == "SKILL.md"
+    )
+    assert all(
+        marker in configure_text
+        for marker in (
+            "zpp behave init",
+            "`argv`, `nx`, or `go-task`",
+            "{targets}",
+            "zpp-workflow",
+            "Never invent executable",
+            "false-negative exclusion",
+        )
+    )
+    assert all(
+        marker in trait_text
+        for marker in (
+            "zpp trait init",
+            "zpp resolve TARGET --trait FAMILY",
+            "`first-win`",
+            "`all`",
+            "`extend`",
+            "`automatic`",
+            "`manual`",
+            "`always-run`",
+            "repository-overwrite",
+            "[[trait.when]]",
+            "complete `[trait.content].body`",
+        )
+    )
+    assert "TODO" not in configure_text
+    assert "TODO" not in trait_text
 
 
 def test_packaged_toml_becomes_a_detached_global_bound_source(

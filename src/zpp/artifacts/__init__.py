@@ -18,10 +18,25 @@ class PackagedTrait:
     content: bytes
 
 
+PACKAGED_AUTHORING_SKILL_NAMES = (
+    "zpp-configure-behave",
+    "zpp-author-trait",
+)
+
+
 def packaged_workflow_skill() -> Skill:
     resource = files("zpp.artifacts").joinpath("skills", "zpp-workflow")
     with as_file(resource) as path:
         return Skill.from_path(path)
+
+
+def packaged_authoring_skills() -> tuple[Skill, ...]:
+    root = files("zpp.artifacts").joinpath("skills")
+    loaded: list[Skill] = []
+    for name in PACKAGED_AUTHORING_SKILL_NAMES:
+        with as_file(root.joinpath(name)) as path:
+            loaded.append(Skill.from_path(path))
+    return tuple(loaded)
 
 
 def packaged_workflow_hook(agent: Agent) -> Hook:
@@ -71,7 +86,9 @@ def packaged_trait_source() -> BoundTraitSource:
 
 
 __all__ = [
+    "PACKAGED_AUTHORING_SKILL_NAMES",
     "PackagedTrait",
+    "packaged_authoring_skills",
     "packaged_trait_source",
     "packaged_traits",
     "packaged_workflow_hook",

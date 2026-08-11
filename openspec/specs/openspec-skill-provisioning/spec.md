@@ -1,7 +1,9 @@
 # openspec-skill-provisioning Specification
 
 ## Purpose
-TBD - created by archiving change restore-openspec-skill-provisioning. Update Purpose after archive.
+
+Define how ZPP generates, validates, identifies, projects, and regenerates the OpenSpec operation skills required by an initialized agent integration.
+
 ## Requirements
 ### Requirement: Canonical generated OpenSpec skill set
 ZPP SHALL obtain the OpenSpec CLI version from the locally available `openspec` executable and generate, for each selected supported agent, exactly `openspec-apply-change`, `openspec-archive-change`, `openspec-explore`, `openspec-propose`, `openspec-sync-specs`, and `openspec-update-change` through that CLI's forced repository initialization contract. ZPP SHALL generate into disposable temporary repositories, validate the exact per-agent inventory as Agent Router skills, and remove the temporary repositories after use. ZPP SHALL NOT install the OpenSpec executable or package a stale snapshot of its generated skills.
@@ -26,25 +28,25 @@ ZPP SHALL add deterministic machine-readable provenance to each generated operat
 - **THEN** Agent Router observes a changed ZPP-owned source and safely reconciles the selected user projection
 
 ### Requirement: Initialization-only OpenSpec provisioning
-Root `zpp init` SHALL be the only ZPP command that generates or projects OpenSpec operation skills. Every invocation with selected agents SHALL freshly detect OpenSpec and regenerate the exact operation inventory for every selected agent before projecting any selected workflow skill, hook, or generated skill. After complete generation succeeds, Agent Router SHALL install or safely reconcile the consolidated skill, native hook, and six generated OpenSpec skills in each selected agent's user scope.
+Root `zpp init` SHALL be the only ZPP command that generates or projects OpenSpec operation skills. Every invocation with selected agents SHALL freshly detect OpenSpec and regenerate the exact operation inventory for every selected agent before projecting any selected workflow skill, native hook, packaged authoring skill, or generated skill. ZPP SHALL also load the complete packaged `zpp-configure-behave` and `zpp-author-trait` source set before projection. After complete preparation succeeds, Agent Router SHALL install or safely reconcile the consolidated skill, native hook, two packaged authoring skills, and six generated OpenSpec skills in each selected agent's user scope.
 
-Grouped `zpp workflow install|update|remove` SHALL continue to manage only `zpp-workflow` and `zpp-session` in their selected scope. ZPP SHALL expose no `--with-openspec`, generated-skill update command, or other OpenSpec lifecycle control on that command group.
+Within each selected agent, result and projection order SHALL be `zpp-workflow`, `zpp-session`, `zpp-configure-behave`, `zpp-author-trait`, then the canonical OpenSpec operation skill order. Grouped `zpp workflow install|update|remove` SHALL continue to manage only `zpp-workflow` and `zpp-session` in their selected scope. ZPP SHALL expose no authoring-skill or OpenSpec lifecycle option on that command group.
 
 #### Scenario: Initialize a ready workflow integration
 - **WHEN** root initialization succeeds for one or more selected agents
-- **THEN** Agent Router installs or safely reconciles the consolidated skill, native hook, and all six freshly generated OpenSpec skills in each selected agent's user scope
+- **THEN** Agent Router installs or safely reconciles the consolidated skill, native hook, two packaged authoring skills, and all six freshly generated OpenSpec skills in each selected agent's user scope
 
 #### Scenario: Abort multi-agent initialization before projection
-- **WHEN** generation or validation fails for any selected agent during root initialization
-- **THEN** ZPP projects no workflow skill, hook, or OpenSpec skill for any selected agent in that request
+- **WHEN** packaged skill loading, generation, or validation fails for any selected agent during root initialization
+- **THEN** ZPP projects no workflow skill, hook, authoring skill, or OpenSpec skill for any selected agent in that request
 
 #### Scenario: Regenerate on repeated initialization
-- **WHEN** a caller runs root initialization after the local OpenSpec generator or generated content changes
-- **THEN** ZPP freshly generates all selected inventories and lets Agent Router reconcile changed owned projections
+- **WHEN** a caller runs root initialization after a packaged authoring skill, local OpenSpec generator, or generated content changes
+- **THEN** ZPP reloads the packaged skills, freshly generates all selected inventories, and lets Agent Router safely reconcile changed owned projections
 
 #### Scenario: Keep grouped workflow lifecycle unchanged
 - **WHEN** a caller installs, updates, or removes the grouped workflow integration in user or project scope
-- **THEN** ZPP manages only the consolidated skill and native hook and exposes no OpenSpec option
+- **THEN** ZPP manages only the consolidated skill and native hook and exposes no authoring-skill or OpenSpec option
 
 ### Requirement: Agent Router projection authority
 ZPP SHALL use Agent Router's public skill and hook lifecycle for every consolidated, generated, and native integration asset. ZPP SHALL preserve selected-agent order and deterministic within-agent asset order in result reporting and SHALL expose component rejections without adopting, overwriting, or directly deleting native destinations.
@@ -52,4 +54,3 @@ ZPP SHALL use Agent Router's public skill and hook lifecycle for every consolida
 #### Scenario: Preserve a generated skill conflict during initialization
 - **WHEN** Agent Router rejects one generated operation skill as conflicting or unmanaged
 - **THEN** ZPP reports that lifecycle result and performs no direct native mutation or compatibility fallback
-

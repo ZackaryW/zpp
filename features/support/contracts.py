@@ -16,6 +16,7 @@ from agent_router import Agent
 from typer.testing import CliRunner
 
 from zpp.artifacts import (
+    PACKAGED_AUTHORING_SKILL_NAMES,
     packaged_trait_source,
     packaged_traits,
     packaged_workflow_hook,
@@ -410,6 +411,10 @@ def verify_product_home_contract() -> None:
             (agent, "skill"),
             *(
                 (agent, f"skill:{name}")
+                for name in PACKAGED_AUTHORING_SKILL_NAMES
+            ),
+            *(
+                (agent, f"skill:{name}")
                 for name in OPENSPEC_CORE_SKILL_NAMES
             ),
         )
@@ -464,7 +469,7 @@ def verify_openspec_skill_provisioning_contract() -> None:
         ):
             initialized = runner.invoke(app, ["init", "--agent", "codex"])
             assert initialized.exit_code == 0, initialized.output
-            assert len(json.loads(initialized.stdout)) == 8
+            assert len(json.loads(initialized.stdout)) == 10
             generated = user_home / ".codex/skills/openspec-apply-change"
             provenance = generated / ".zpp-openspec.json"
             assert json.loads(provenance.read_text())["generator"] == "zpp"

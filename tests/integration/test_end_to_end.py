@@ -6,7 +6,11 @@ from pathlib import Path
 from agent_router import AgentEnvironment, AgentRouter, Scope
 from typer.testing import CliRunner
 
-from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skill
+from zpp.artifacts import (
+    packaged_authoring_skills,
+    packaged_workflow_hook,
+    packaged_workflow_skill,
+)
 from zpp.cli import app
 from zpp.cli.reset import SUPPORTED_AGENTS
 
@@ -23,6 +27,7 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
     project.mkdir()
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: user_home))
     skill = packaged_workflow_skill()
+    authoring_skills = packaged_authoring_skills()
     routers = {}
     for agent in SUPPORTED_AGENTS:
         router = AgentRouter(
@@ -31,6 +36,8 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
             environment=AgentEnvironment(user_home, project),
         )
         router.install_skill(skill, scope=Scope.USER)
+        for authoring_skill in authoring_skills:
+            router.install_skill(authoring_skill, scope=Scope.USER)
         router.install_hook(packaged_workflow_hook(agent), scope=Scope.USER)
         routers[agent] = router
 
@@ -47,6 +54,11 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
     assert list(state.iterdir()) == []
     for agent, router in routers.items():
         assert router.inspect_skill(skill, scope=Scope.USER).status == "absent"
+        assert all(
+            router.inspect_skill(authoring_skill, scope=Scope.USER).status
+            == "absent"
+            for authoring_skill in authoring_skills
+        )
         assert (
             router.inspect_hook(
                 packaged_workflow_hook(agent),
@@ -68,8 +80,10 @@ def test_init_regenerates_and_reset_force_removes_openspec_skills(
     second = runner.invoke(app, ["init", "--agent", "codex"])
 
     assert first.exit_code == second.exit_code == 0
-    assert len(json.loads(first.stdout)) == 8
-    assert len(json.loads(second.stdout)) == 8
+    assert len(json.loads(first.stdout)) == 10
+    assert len(json.loads(second.stdout)) == 10
+    for name in ("zpp-configure-behave", "zpp-author-trait"):
+        assert (user_home / ".codex/skills" / name / "SKILL.md").is_file()
     generated = user_home / ".codex/skills/openspec-apply-change"
     provenance = generated / ".zpp-openspec.json"
     assert provenance.is_file()
@@ -84,7 +98,38 @@ def test_init_regenerates_and_reset_force_removes_openspec_skills(
 
     assert reset.exit_code == 0, reset.output
     assert not generated.exists()
+    assert not (user_home / ".codex/skills/zpp-configure-behave").exists()
+    assert not (user_home / ".codex/skills/zpp-author-trait").exists()
     assert (zpp_home / "openlease").is_dir()
+
+
+def test_reset_preserves_modified_packaged_authoring_skill_and_state(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    user_home = tmp_path / "user"
+    user_home.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: user_home))
+    initialized = runner.invoke(app, ["init", "--agent", "codex"])
+    assert initialized.exit_code == 0, initialized.output
+
+    skill = user_home / ".codex/skills/zpp-author-trait/SKILL.md"
+    skill.write_text(skill.read_text() + "\nlocal modification\n")
+    zpp_home = tmp_path / "zpp-home"
+    state = zpp_home / "openlease"
+    state.mkdir(parents=True)
+    marker = state / "old.json"
+    marker.write_text("old")
+
+    reset = runner.invoke(
+        app,
+        ["--path", str(zpp_home), "reset", "--yes"],
+    )
+
+    assert reset.exit_code == 2
+    assert "zpp-author-trait" in reset.output
+    assert skill.is_file()
+    assert marker.read_text() == "old"
 
 
 def test_no_space_repository_resolution_selects_python_and_flutter(

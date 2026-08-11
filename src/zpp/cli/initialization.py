@@ -6,7 +6,11 @@ from typing import Annotated
 import typer
 from agent_router import Agent, Scope
 
-from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skill
+from zpp.artifacts import (
+    packaged_authoring_skills,
+    packaged_workflow_hook,
+    packaged_workflow_skill,
+)
 from zpp.cli.shared import (
     abort_cancelled,
     agent_router,
@@ -47,6 +51,7 @@ def initialize(
 
 def _initialize_selected(agents: tuple[Agent, ...], root: Path) -> list[dict]:
     skill = packaged_workflow_skill()
+    authoring_skills = packaged_authoring_skills()
     results: list[dict] = []
     with generated_openspec_skill_sets(agents, cwd=root) as generated:
         generated_by_agent = dict(generated)
@@ -66,6 +71,15 @@ def _initialize_selected(agents: tuple[Agent, ...], root: Path) -> list[dict]:
                 None,
             )
             results.extend((skill_result.to_dict(), hook_result.to_dict()))
+            results.extend(
+                project_workflow_skill(
+                    router,
+                    authoring_skill,
+                    Scope.USER,
+                    None,
+                ).to_dict()
+                for authoring_skill in authoring_skills
+            )
             results.extend(
                 project_workflow_skill(
                     router,
