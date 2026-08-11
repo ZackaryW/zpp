@@ -63,22 +63,30 @@ evidence-owned values extend in deterministic first-seen order; explicit
 invocation values and repository scalars remain authoritative. `which = "uv"`
 also publishes a typed `has_uv` runtime fact.
 
-The returned `ZPP_CONTEXT` is compact version-2 JSON with member-level source
-and evidence provenance. ZPP still accepts version 1 and upgrades it on the next
-successful resolution. When an evidence fingerprint changes, only members
-owned by that evidence are removed. Context is target-bound and may be exported
-to `.zpp/zpp.toml` only through an explicit user operation.
+`resolve --explain` returns the recomputed `ZPP_CONTEXT` as compact version-2
+JSON with member-level source and evidence provenance; normal `resolve` output
+contains only selected bodies. ZPP still accepts version 1 from the environment
+and upgrades it on the next successful resolution. When an evidence fingerprint
+changes, only members owned by that evidence are removed. Context is
+target-bound. Persisting selected values in `.zpp/zpp.toml` remains an explicit
+repository-authoring operation rather than a resolution side effect.
 
 ## Commands
 
 ```text
+zpp [--path OPENLEASE_STATE_ROOT] COMMAND
 zpp init [--agent AGENT ...]
-zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--explain]
+zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--space SPACE [--authority AUTHORITY]] [--explain]
 zpp behave init
 zpp behave COMMAND [--all | --target TARGET ... | --gate GATE | --base REV --head REV]
 zpp trait init context|FAMILY [TARGET]
 zpp workflow install|update|remove [--agent AGENT ...] [--target PATH | --global]
 ```
+
+The root `--path` option selects ZPP's OpenLease state root. `resolve --space`
+adds one explicitly selected OpenLease space; `OPENLEASE_SPACE` may supply the
+same selection. `--authority` narrows that selected-space resolution and
+therefore requires either `--space` or `OPENLEASE_SPACE`.
 
 `--stage` accepts only `clarify`, `shape`, `plan-utilities`,
 `mature-utilities`, `wire`, `form-specs`, or `finalize`. Stage is protected
@@ -102,16 +110,20 @@ range are explicit mutually exclusive modes. Commands select one configured
 `argv`, `nx`, or `go-task` provider, and ZPP executes only validated shell-free
 arguments. `zpp behave init` and direct execution use invocation-scoped
 OpenLease bindings and require no registered repository or space. Reconciliation
-callbacks remain inactive unless OpenLease explicitly selects one.
+callbacks remain inactive unless OpenLease explicitly selects one. When selected,
+the callback uses real repository or cohort context to locate the target, then
+reopens that repository's exact `zpp.behave.yaml` through the same direct binding;
+it requires no managed callback configuration or additional temporary space.
 
 OpenLease owns direct TOML and YAML binding, provenance, selected-space
 configuration, and bounded writes. Existing repository documents can be read from an
 unregistered repository without creating or selecting a space. Agent Router owns
 plugin discovery and every workflow skill and native hook destination mutation.
-The installed SessionStart hook invokes `resolve` automatically for Codex,
-Claude Code, Pi, or Kimi; there is no invocation command, resolver skill, or
-UserPromptSubmit resolution hook. The consolidated skill contains workflow
-policy and does not bootstrap trait resolution.
+The installed native context hook invokes `resolve` automatically: Codex and
+Claude Code use JSON SessionStart hooks, Kimi uses a TOML SessionStart hook, and
+Pi uses a TypeScript `before_agent_start` extension. There is no invocation
+command, resolver skill, or UserPromptSubmit resolution hook. The consolidated
+skill contains workflow policy and does not bootstrap trait resolution.
 
 Packaged defaults are source assets under `zpp/artifacts/traits`; this is not a
 required runtime collection layout. The standard families are `bdd`,
