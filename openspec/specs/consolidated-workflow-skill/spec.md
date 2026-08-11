@@ -36,11 +36,23 @@ For a selected workflow stage and repository target, the consolidated skill SHAL
 - **THEN** it contains no instruction to run trait resolution or manage stored trait context
 
 ### Requirement: Complete standard behavior reauthoring
-ZPP SHALL reauthor the applicable standard workflow trait behavior from the separate reference repository into one-family TOML source documents under `artifacts/traits`. The packaged source path SHALL NOT be imposed as the runtime collection path. Related language or framework variants SHALL become ordered, self-contained flavors without content inheritance. Automatic workflow progression and workflow authority behavior SHALL move into the consolidated skill, and every other reference behavior SHALL be represented or explicitly excluded with a product-grounded reason.
+ZPP SHALL package applicable repository environment behavior as one-family TOML source documents under `artifacts/traits`. The packaged source path SHALL NOT be imposed as the runtime collection path. Related language or framework variants SHALL remain ordered, self-contained flavors without content inheritance. The standard collection SHALL contain BDD operation, BDD structure, BDD execution modes, TDD, build, dependency, available-tool, and zero-assumption behavior. OpenLease lease/conflict coordination and workflow finalization/reconciliation policy SHALL remain with their owning component or consolidated workflow skill and SHALL NOT be duplicated as packaged traits. The universal zero-assumption family SHALL declare always-run activation explicitly.
 
-#### Scenario: Package the standard collection
+#### Scenario: Package the reconciled standard collection
 - **WHEN** ZPP builds its distributed workflow assets
-- **THEN** the collection includes the reauthored BDD structure, BDD operation, TDD, build, dependency, tool, lease, reconciliation, and zero-assumption behavior rather than one generic BDD replacement
+- **THEN** the collection includes `bdd`, `bdd-structure`, `bdd-execution`, `tdd`, `build`, `dependencies`, `tooling`, and `zero-assumptions` without packaged lease or reconciliation families
+
+#### Scenario: Keep BDD execution separate from workflow authority
+- **WHEN** a user inspects the packaged BDD execution family
+- **THEN** its manual, disabled, complete, targeted, and targeted-default flavors are available under `bdd-execution` and no `bdd-workflow` compatibility family is packaged
+
+#### Scenario: Keep component operations out of traits
+- **WHEN** a workflow encounters an OpenLease conflict or reaches final reconciliation
+- **THEN** the owning component or consolidated workflow skill supplies the operational contract without relying on a packaged trait body
+
+#### Scenario: Package only direct available-tool guidance
+- **WHEN** a user inspects the packaged tooling family
+- **THEN** it contains evidence-backed `rg` and `jq` guidance while dedicated zmem skills retain zmem workflow policy
 
 ### Requirement: Explicit stage actions
 The consolidated workflow skill SHALL require an explicit requested stage for each workflow invocation and SHALL NOT infer the stage from OpenSpec status, repository files, stored environment context, or trait output. When automatic continuation is separately authorized, the skill SHALL expose and execute each next stage as a distinct stage action. Automatic hook resolution SHALL remain stage-neutral and SHALL NOT select or advance a workflow stage.
