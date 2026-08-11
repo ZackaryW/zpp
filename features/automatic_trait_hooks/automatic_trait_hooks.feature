@@ -27,6 +27,18 @@ Feature: Inject repository traits through agent-native hooks
     When a user removes that workflow integration
     Then Agent Router removes both assets from the selected scope
 
+  Scenario: Reset every supported user hook through Agent Router
+    Given every supported agent user hook is absent or ownership-safe removable
+    When a user confirms a complete ZPP reset
+    Then Agent Router removes every present selected user hook
+    And ZPP does not inspect or change any project hook
+
+  Scenario: Preserve every hook when reset preflight conflicts
+    Given one supported agent user hook cannot be inspected or ownership-safe removed
+    When a user confirms a complete ZPP reset
+    Then reset stops before removing any selected hook
+    And OpenLease state remains unchanged
+
   Scenario: Inject successful prompt-ready trait output
     Given an installed native hook starts in a repository with active traits
     When its public resolver command succeeds

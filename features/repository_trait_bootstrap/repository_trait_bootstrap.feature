@@ -64,11 +64,17 @@ Feature: Use repository traits through bounded component-owned integration
   Scenario: Preserve the established command hierarchy
     Given the ZPP command application is installed
     When a user requests its root and command-group help
-    Then init resolve and behave remain root commands
+    Then init open reset resolve and behave remain root commands
     And behave accepts a command or reserved init argument with its execution selection options
     And trait init owns exact repository document initialization
     And workflow install update and remove remain grouped commands
     And no flat init-trait install-workflow standalone explain or mirrored space command exists
+
+  Scenario: Select one product home for component-backed commands
+    Given the ZPP command application is installed
+    When a caller supplies root path for an OpenLease-backed command
+    Then ZPP treats that path as the product home
+    And OpenLease receives only its openlease child as state
 
   Scenario: Run direct repository behavior without a space
     Given an unregistered Git worktree has a dedicated root behavior mapping
