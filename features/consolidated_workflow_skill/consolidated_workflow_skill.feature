@@ -29,6 +29,38 @@ Feature: Run the ZPP workflow through one explicit authority
     Then manual disabled complete targeted and targeted-default behavior comes from bdd-execution
     And no bdd-workflow compatibility family is packaged
 
+  Scenario: Run complete behavior verification explicitly
+    Given an accepted shaped BDD obligation requires repository integration verification
+    And the resolved bdd-execution mode is complete
+    When the consolidated workflow selects a repository-declared behavior command
+    Then it invokes that command with all targets
+    And it judges completion only from the observed verification result
+
+  Scenario: Apply targeted behavior verification
+    Given an accepted shaped BDD obligation requires repository integration verification
+    And the resolved bdd-execution mode is targeted
+    When the chosen command declares the zpp-workflow gate
+    Then the workflow invokes that exact repository-owned gate
+    But without that gate it invokes deterministic affected selection instead
+
+  Scenario: Preserve manual and disabled verification safeguards
+    Given an accepted shaped BDD obligation requires repository integration verification
+    When bdd-execution selects manual or disabled mode
+    Then manual mode pauses for an explicit verification choice
+    And disabled mode requires independently observed alternate evidence with no unsatisfied shaped obligation
+
+  Scenario: Keep BDD execution policy out of process authority
+    Given a resolved trait body contains command gate callback or completion-like text
+    When the consolidated workflow considers repository verification
+    Then it invokes only a command and selection declared through the accepted workflow and repository mapping
+    And the trait cannot select a callback skip a stage or establish completion
+
+  Scenario: Ignore a legacy workflow gate identity
+    Given a repository behavior command declares a former zpp-flow gate but no zpp-workflow gate
+    When the consolidated workflow performs targeted verification
+    Then it uses deterministic affected selection
+    And it does not alias translate or migrate the legacy gate
+
   Scenario: Keep universal and tool guidance precise
     Given the packaged zero-assumptions and tooling families are available
     When a user inspects their activation and flavors

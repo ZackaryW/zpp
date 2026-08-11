@@ -64,10 +64,17 @@ Feature: Use repository traits through bounded component-owned integration
   Scenario: Preserve the established command hierarchy
     Given the ZPP command application is installed
     When a user requests its root and command-group help
-    Then init and resolve remain root commands
+    Then init resolve and behave remain root commands
+    And behave accepts a command or reserved init argument with its execution selection options
     And trait init owns exact repository document initialization
     And workflow install update and remove remain grouped commands
     And no flat init-trait install-workflow standalone explain or mirrored space command exists
+
+  Scenario: Run direct repository behavior without a space
+    Given an unregistered Git worktree has a dedicated root behavior mapping
+    When a user invokes zpp behave against that worktree
+    Then OpenLease supplies one invocation-scoped dedicated YAML binding to zpp.behave
+    And ZPP creates no registration topology persistent source or space
 
   Scenario: Preserve explicit multi-agent selection order
     Given a workflow command receives Codex Pi and Codex agent selections in that order
