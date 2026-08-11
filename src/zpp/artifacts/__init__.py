@@ -53,7 +53,7 @@ def packaged_trait_source() -> BoundTraitSource:
     return BoundTraitSource(
         kind=SourceKind.GLOBAL,
         identifier="zpp:packaged",
-        order=0,
+        order=10_000,
         documents=documents,
     )
 

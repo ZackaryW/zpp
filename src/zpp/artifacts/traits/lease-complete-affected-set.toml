@@ -1,0 +1,6 @@
+[meta]
+selection = "first-win"
+
+[[trait]]
+[trait.content]
+body = """Before mutating OpenSpec authorities, declare and verify the complete affected repository and authority set in the selected OpenLease space. Acquire or confirm the corresponding logical leases before writing. Treat selected-space read-only context as non-writable. Current native guards can block supported direct-write events and cooperatively verify a supported shell event's working-directory association. They do not infer arbitrary shell effects or protect unsupported tools, manual edits, other processes, or cross-machine writes. Trait activation neither installs nor disables a guard. An OpenSpec workset is a view; it is never ownership evidence by itself."""

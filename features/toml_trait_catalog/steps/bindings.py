@@ -1,0 +1,35 @@
+from features.support.bindings import register_exact_steps
+
+register_exact_steps(
+    (
+        "a bdd trait document declares extend selection",
+        "it contains ordered Python, Python with uv, and Flutter flavors",
+        "every flavor has its own complete content body",
+        "ZPP loads the trait document",
+        "the document basename identifies the bdd family",
+        "the flavors retain their authored order and complete bodies",
+        "no flavor inherits or generates content from another flavor",
+        "one flavor in a trait document has no content body",
+        "ZPP validates the document",
+        "the complete document is rejected",
+        "the failure identifies the source family flavor position and invalid field",
+        "no partial family is made available",
+        "a trait document has an unsupported selection policy",
+        "one flavor declares a non-string categorical constraint",
+        "the complete document is rejected without a stack trace",
+        "repository space and global sources contribute bdd trait documents",
+        "each document contains several ordered flavors",
+        "ZPP composes the effective bdd family",
+        "repository flavors precede space flavors",
+        "space flavors precede global flavors",
+        "each document retains its authored flavor order",
+        "the repository document supplies the effective selection policy",
+        "a repository bdd document declares repository-overwrite mode",
+        "space and global bdd documents are available",
+        "only repository flavors remain eligible for selection",
+        "the repository selection policy governs the family",
+        "a space or global trait document declares repository-overwrite mode",
+        "ZPP validates that source contribution",
+        "the source declaration is rejected",
+    )
+)

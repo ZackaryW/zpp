@@ -72,6 +72,34 @@ def test_decode_trait_document_reports_atomic_flavor_location() -> None:
     assert caught.value.location == ("trait", 0, "content")
 
 
+def test_first_win_rejects_an_obviously_unreachable_later_flavor() -> None:
+    source = SourceRef(kind=SourceKind.GLOBAL, identifier="packaged")
+
+    with pytest.raises(TraitValidationError, match="unreachable") as caught:
+        decode_trait_document(
+            "bdd",
+            {
+                "meta": {"selection": "first-win"},
+                "trait": [
+                    {
+                        "facet": {"language": "python"},
+                        "content": {"body": "generic"},
+                    },
+                    {
+                        "facet": {
+                            "language": "python",
+                            "build_tool": "uv",
+                        },
+                        "content": {"body": "specific"},
+                    },
+                ],
+            },
+            source,
+        )
+
+    assert caught.value.location == ("trait", 1)
+
+
 @pytest.mark.parametrize(
     "facet",
     [

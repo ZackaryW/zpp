@@ -1,0 +1,42 @@
+from features.support.bindings import register_exact_steps
+
+register_exact_steps(
+    (
+        "ZPP is installed for a supported agent",
+        "Agent Router projects the workflow integration",
+        "one consolidated ZPP workflow skill is installed",
+        "no ZPP 1.x stage skill is required",
+        "the packaged workflow skill and trait source are available",
+        "a user inspects their distributed contents",
+        "workflow stages transitions gates and authority exist in the skill",
+        "no workflow trait family is packaged",
+        "the separate reference repository contains the established standard traits",
+        "ZPP packages its TOML trait source under artifacts traits",
+        "related BDD structure BDD TDD build and tool variants are complete flavors",
+        "focused dependency lease reconciliation and zero-assumption behavior "
+        "remains represented",
+        "the packaged source path is not imposed as the runtime collection path",
+        "a workflow invocation has repository files stored context and resolved traits",
+        "the invocation does not identify a stage",
+        "the consolidated skill requests the stage",
+        "it does not infer a stage from those inputs",
+        "an explicit workflow stage resolves several contextual trait bodies",
+        "the consolidated skill applies those bodies in returned order",
+        "the bodies may specialize repository language framework test and build "
+        "guidance",
+        "they cannot authorize mutation advance a stage or establish completion",
+        "the user authorized end-to-end workflow progression",
+        "the current stage has independently verified completion",
+        "the workflow continues",
+        "it invokes the next stage as a distinct explicit action",
+        "supplies that stage to trait resolution",
+        "a workflow stage requires OpenSpec OpenLease and Agent Router operations",
+        "the consolidated skill dispatches those operations",
+        "it follows the installed skill that owns each OpenSpec operation",
+        "uses OpenLease only for its public coordination and configuration contracts",
+        "uses Agent Router only for its public discovery and projection contracts",
+        "a machine retains one or more ZPP 1.x workflow skills",
+        "ZPP 2.0 runs its workflow",
+        "it does not invoke translate or treat them as migration sources",
+    )
+)

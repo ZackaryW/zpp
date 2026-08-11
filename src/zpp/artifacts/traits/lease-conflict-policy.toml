@@ -1,0 +1,6 @@
+[meta]
+selection = "first-win"
+
+[[trait]]
+[trait.content]
+body = """When another space owns an overlapping authority lease, explicitly defer the work or isolate a successor through OpenLease. A different physical checkout does not grant authority to mutate the contested logical scope. Native blocking is available only where the installed agent exposes a current supported guard; this trait remains advisory regardless of that independent integration."""

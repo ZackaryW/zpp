@@ -9,6 +9,7 @@ from typing import Protocol
 
 from openlease import (
     ConfigurationLayout,
+    ConfigurationTarget,
     ExtensionDocumentBinding,
     ExtensionManifest,
     ExtensionRegistration,
@@ -60,9 +61,7 @@ class _Bound(Protocol):
 
 
 class _OpenLeasePort(Protocol):
-    def bind_extension_document(
-        self, binding: ExtensionDocumentBinding
-    ) -> _Bound: ...
+    def bind_extension_document(self, binding: ExtensionDocumentBinding) -> _Bound: ...
 
     def initialize_extension_document(
         self,
@@ -71,6 +70,15 @@ class _OpenLeasePort(Protocol):
         initial: Mapping[str, object],
         boundary: Path | None = None,
         create_parents: bool = False,
+    ) -> _Bound: ...
+
+    def snapshot(self) -> object: ...
+
+    def bind_extension(
+        self,
+        extension_id: str,
+        space_id: str,
+        target: ConfigurationTarget,
     ) -> _Bound: ...
 
 
@@ -148,6 +156,57 @@ class OpenLeaseTraitDocuments:
                 raise ValueError(f"trait document escapes repository: {path}")
             documents.append(self._read(resolved, root, family=path.stem))
         return tuple(documents)
+
+    def read_space_sources(
+        self,
+        repository: Path,
+        space_id: str,
+        *,
+        authority: str | None = None,
+    ) -> tuple[BoundTraitSource, ...]:
+        root = repository.resolve()
+        state = self._lifecycle.snapshot()
+        repositories = getattr(state, "repositories", ())
+        matching = tuple(
+            item for item in repositories if Path(item.path).resolve() == root
+        )
+        if len(matching) != 1:
+            raise ValueError(
+                "selected-space traits require one registered repository matching "
+                f"the target path: {root}"
+            )
+        target = (
+            ConfigurationTarget.authority(authority)
+            if authority is not None
+            else ConfigurationTarget.repository(matching[0].identifier)
+        )
+        bound = self._lifecycle.bind_extension(_EXTENSION_ID, space_id, target)
+        record = bound.config.snapshot_record()
+        sources: list[BoundTraitSource] = []
+        for position, binding in enumerate(record.bindings):
+            path = Path(binding.canonical_path)
+            values = to_plain_managed_value(binding.selected)
+            if not isinstance(values, dict):
+                raise ValueError(f"managed trait document is not a mapping: {path}")
+            kind = self._source_kind(binding.scope_kind)
+            identifier = f"openlease:{binding.identifier}"
+            sources.append(
+                BoundTraitSource(
+                    kind=kind,
+                    identifier=identifier,
+                    order=binding.order,
+                    documents=(
+                        BoundTraitDocument(
+                            family=path.stem,
+                            values=MappingProxyType(values),
+                            identifier=identifier,
+                            order=position,
+                            path=path,
+                        ),
+                    ),
+                )
+            )
+        return tuple(sources)
 
     def initialize_trait(
         self,
@@ -240,3 +299,11 @@ class OpenLeaseTraitDocuments:
         if not _FAMILY.fullmatch(family):
             raise ValueError(f"invalid trait family: {family}")
         return repository / ".zpp" / "traits" / f"{family}.toml"
+
+    @staticmethod
+    def _source_kind(scope_kind: str) -> SourceKind:
+        if scope_kind in {"repository", "authority"}:
+            return SourceKind.REPOSITORY
+        if scope_kind == "space":
+            return SourceKind.SPACE
+        return SourceKind.GLOBAL

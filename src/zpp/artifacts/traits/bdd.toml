@@ -1,0 +1,40 @@
+[meta]
+selection = "extend"
+
+[[trait]]
+[trait.facet]
+language = "python"
+[[trait.when]]
+workspace_contains = "behave.ini"
+[[trait.when]]
+workspace_contains = ".behaverc"
+[[trait.when]]
+workspace_contains = "features/*/steps/bindings.py"
+[trait.content]
+body = """Use Behave for integration behavior exercised through the public system. Keep pure-functionality case matrices in unit tests, while retaining one end-to-end scenario when needed to prove that a rule is enforced through the public boundary. Keep bindings thin and run each capability-owned BDD root independently."""
+
+[[trait]]
+[trait.facet]
+language = "flutter"
+[[trait.when]]
+workspace_contains = "integration_test/*.dart"
+[[trait.when]]
+workspace_contains = "integration_test/**/*.dart"
+[trait.content]
+body = """Express user-visible behavior in capability-cohesive tests without requiring Gherkin or a Python filesystem shape."""
+
+[[trait]]
+[trait.facet]
+language = "typescript"
+[[trait.when]]
+workspace_contains = "cucumber.js"
+[[trait.when]]
+workspace_contains = "cucumber.cjs"
+[[trait.when]]
+workspace_contains = "cucumber.mjs"
+[[trait.when]]
+workspace_contains = "cucumber.yml"
+[[trait.when]]
+workspace_contains = "**/steps/*.ts"
+[trait.content]
+body = """Keep scenarios capability-cohesive and bind them through the selected TypeScript runner without imposing Python layouts."""

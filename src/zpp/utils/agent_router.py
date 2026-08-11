@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tomllib
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
@@ -7,12 +8,17 @@ from typing import Final, Protocol
 
 from agent_router import (
     AgentRouter,
+    ArtifactEffectiveState,
     ArtifactManifest,
+    ArtifactStatus,
     LifecycleResult,
     PluginArtifactContext,
     Scope,
     Skill,
 )
+
+from zpp.core.application import BoundTraitDocument, BoundTraitSource
+from zpp.core.models import SourceKind
 
 ZPP_TRAITS_ARTIFACT_ID: Final[str] = "zpp.traits"
 ZPP_TRAITS_CONTRACT_VERSION: Final[str] = "2"
@@ -48,6 +54,54 @@ class _WorkflowRouter(Protocol):
         project_root: str | Path | None = None,
     ) -> LifecycleResult: ...
 
+    def uninstall_skill(
+        self,
+        name: str,
+        *,
+        scope: Scope,
+        project_root: str | Path | None = None,
+    ) -> LifecycleResult: ...
+
+
+def active_trait_artifacts(
+    router: AgentRouter,
+) -> tuple[ArtifactStatus, ...]:
+    return tuple(
+        status
+        for status in router.resolve_artifacts(ZPP_TRAITS_ARTIFACT_ID)
+        if status.effective is ArtifactEffectiveState.ACTIVE
+    )
+
+
+def active_trait_sources(router: AgentRouter) -> tuple[BoundTraitSource, ...]:
+    sources: list[BoundTraitSource] = []
+    for source_order, status in enumerate(active_trait_artifacts(router), start=1):
+        identifier = (
+            f"agent-router:{status.ref.agent.value}:"
+            f"{status.ref.scope}:{status.ref.native_ref}"
+        )
+        documents = tuple(
+            BoundTraitDocument(
+                family=path.stem,
+                values=tomllib.loads(path.read_text(encoding="utf-8")),
+                identifier=f"{identifier}:{path.name}",
+                order=order,
+                path=path,
+            )
+            for order, path in enumerate(status.paths)
+            if path.suffix == ".toml"
+        )
+        if documents:
+            sources.append(
+                BoundTraitSource(
+                    kind=SourceKind.GLOBAL,
+                    identifier=identifier,
+                    order=source_order,
+                    documents=documents,
+                )
+            )
+    return tuple(sources)
+
 
 def project_workflow_skill(
     router: AgentRouter | _WorkflowRouter,
@@ -57,6 +111,19 @@ def project_workflow_skill(
 ) -> LifecycleResult:
     return router.install_skill(
         skill,
+        scope=scope,
+        project_root=project_root,
+    )
+
+
+def remove_workflow_skill(
+    router: AgentRouter | _WorkflowRouter,
+    name: str,
+    scope: Scope,
+    project_root: Path | None,
+) -> LifecycleResult:
+    return router.uninstall_skill(
+        name,
         scope=scope,
         project_root=project_root,
     )

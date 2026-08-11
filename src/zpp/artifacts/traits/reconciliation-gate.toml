@@ -1,0 +1,6 @@
+[meta]
+selection = "first-win"
+
+[[trait]]
+[trait.content]
+body = """Before finalization, inspect every generated successor cohort and record an explicit OpenLease reconciliation and disposition. Do not merge, delete, abandon, or finalize retained work implicitly."""

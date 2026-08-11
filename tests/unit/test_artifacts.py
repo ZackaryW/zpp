@@ -55,3 +55,33 @@ def test_packaged_toml_becomes_a_detached_global_bound_source(
     assert source.identifier == "zpp:packaged"
     assert [item.family for item in source.documents] == ["bdd"]
     assert source.documents[0].values["meta"] == {"selection": "first-win"}
+
+
+def test_packaged_assets_keep_workflow_authority_out_of_traits() -> None:
+    traits = packaged_traits()
+    families = {item.family for item in traits}
+
+    assert "workflow" not in families
+    assert "automatic-workflow" not in families
+    assert "workflow-authority" not in families
+    assert families == {
+        "bdd",
+        "bdd-structure",
+        "bdd-workflow",
+        "build",
+        "dependencies",
+        "lease-complete-affected-set",
+        "lease-conflict-policy",
+        "reconciliation-gate",
+        "tdd",
+        "tooling",
+        "zero-assumptions",
+    }
+
+    skill = packaged_workflow_skill()
+    document = next(
+        item.content for item in skill.files if item.relative_path == "SKILL.md"
+    )
+    text = document.decode("utf-8")
+    assert "Automatic progression" in text
+    assert "Traits advise the selected stage" in text

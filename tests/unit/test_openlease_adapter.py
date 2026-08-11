@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from openlease import ConfigurationLayout, InvalidRequest
@@ -173,3 +174,62 @@ def test_create_trait_documents_registers_only_zpp_traits(
     assert captured["state_root"] == tmp_path / "state"
     registrations = captured["extensions"]
     assert [item.manifest.identifier for item in registrations] == ["zpp.traits"]
+
+
+def test_selected_space_sources_preserve_openlease_scope_and_order(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    global_path = tmp_path / "global" / "bdd.toml"
+    space_path = tmp_path / "space" / "bdd.toml"
+    repository_path = tmp_path / "repository-source" / "bdd.toml"
+
+    bindings = tuple(
+        SimpleNamespace(
+            identifier=identifier,
+            canonical_path=path,
+            selected={
+                "meta": {"selection": "first-win"},
+                "trait": [{"content": {"body": identifier}}],
+            },
+            scope_kind=scope,
+            order=order,
+        )
+        for identifier, path, scope, order in (
+            ("machine", global_path, "machine", 2),
+            ("space", space_path, "space", 3),
+            ("repository", repository_path, "repository", 4),
+        )
+    )
+
+    class Configuration:
+        def snapshot_record(self):
+            return SimpleNamespace(bindings=bindings)
+
+    class Lifecycle(_Lifecycle):
+        def snapshot(self):
+            return SimpleNamespace(
+                repositories=(SimpleNamespace(identifier="repo", path=repository),)
+            )
+
+        def bind_extension(self, extension_id, space_id, target):
+            self.space_call = (extension_id, space_id, target)
+            return SimpleNamespace(config=Configuration())
+
+    lifecycle = Lifecycle()
+
+    sources = OpenLeaseTraitDocuments(lifecycle).read_space_sources(repository, "work")
+
+    assert [source.kind.value for source in sources] == [
+        "global",
+        "space",
+        "repository",
+    ]
+    assert [source.order for source in sources] == [2, 3, 4]
+    assert [source.documents[0].family for source in sources] == [
+        "bdd",
+        "bdd",
+        "bdd",
+    ]
+    assert lifecycle.space_call[0:2] == ("zpp.traits", "work")

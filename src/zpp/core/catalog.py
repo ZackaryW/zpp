@@ -147,6 +147,26 @@ def decode_trait_document(
             detail=str(first["msg"]),
         ) from error
 
+    if decoded.meta.selection is SelectionPolicy.FIRST_WIN:
+        for position, flavor in enumerate(decoded.trait):
+            for earlier in decoded.trait[:position]:
+                earlier_constraints = set(earlier.facet.items())
+                later_constraints = set(flavor.facet.items())
+                shadows_every_path = not earlier.when and (
+                    not earlier_constraints
+                    or (not flavor.when and earlier_constraints <= later_constraints)
+                )
+                if shadows_every_path:
+                    raise TraitValidationError(
+                        source=source,
+                        family=family,
+                        location=("trait", position),
+                        detail=(
+                            "flavor is unreachable under first-win because an "
+                            "earlier unconditional flavor always wins"
+                        ),
+                    )
+
     flavors = tuple(
         TraitFlavor(
             facets=frozen_mapping(item.facet),

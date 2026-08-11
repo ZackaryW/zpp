@@ -1,2 +1,5 @@
-def main() -> None:
-    print("Hello from zpp!")
+"""ZPP public package metadata."""
+
+__version__ = "2.0.0"
+
+__all__ = ["__version__"]
