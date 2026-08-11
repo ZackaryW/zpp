@@ -81,6 +81,13 @@ unloading, parsing, validation, and conversion into runtime classes are eligible
 Never add tests merely to pin prose or arbitrary artifact wording; when no
 executable utility behavior remains, record `mature-utilities` as not applicable.
 
+In a monorepo, shape and bind Gherkin only at each established public application
+or composition owner through its real composed entry point. Reusable implementation
+subpackages own focused fail-first unit TDD, not feature-level acceptance
+contracts. Public BDD may compose those packages but never replaces their unit
+tests. Inspect package topology and dependency direction directly instead of
+encoding repository structure as behavior tests; expose unresolved ownership.
+
 ## Verify repository behavior
 
 When an accepted shaped BDD obligation requires integration verification, apply
