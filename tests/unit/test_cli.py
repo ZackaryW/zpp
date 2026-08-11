@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from agent_router import Agent
 from typer.testing import CliRunner
 
@@ -11,6 +13,8 @@ import zpp.cli.workflow
 from zpp.cli import app
 
 runner = CliRunner()
+open_cli = import_module("zpp.cli.open")
+reset_cli = import_module("zpp.cli.reset")
 
 
 def test_public_cli_preserves_grouped_shape() -> None:
@@ -28,7 +32,15 @@ def test_public_cli_preserves_grouped_shape() -> None:
     )
     assert all(
         command in root.stdout
-        for command in ("init", "resolve", "behave", "trait", "workflow")
+        for command in (
+            "init",
+            "open",
+            "reset",
+            "resolve",
+            "behave",
+            "trait",
+            "workflow",
+        )
     )
     assert all(
         option in behavior.stdout
@@ -42,6 +54,90 @@ def test_public_cli_preserves_grouped_shape() -> None:
     assert "init-trait" not in root.stdout
     assert "explain" not in root.stdout
     assert "space" not in root.stdout
+
+
+def test_open_creates_and_opens_selected_home_without_openlease(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    selected = tmp_path / "custom-home"
+    opened = []
+    monkeypatch.setattr(
+        open_cli,
+        "open_directory",
+        lambda path: opened.append(path),
+    )
+
+    result = runner.invoke(app, ["--path", str(selected), "open"])
+
+    assert result.exit_code == 0
+    assert selected.is_dir()
+    assert not (selected / "openlease").exists()
+    assert opened == [selected]
+    assert str(selected) in result.stdout
+
+
+def test_open_rejects_a_symlinked_home_without_launching_opener(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    real = tmp_path / "real"
+    real.mkdir()
+    selected = tmp_path / "linked-home"
+    selected.symlink_to(real, target_is_directory=True)
+    monkeypatch.setattr(
+        open_cli,
+        "open_directory",
+        lambda path: pytest.fail(f"opened unsafe home {path}"),
+    )
+
+    result = runner.invoke(app, ["--path", str(selected), "open"])
+
+    assert result.exit_code == 2
+    assert "cannot be a symlink" in result.output
+
+
+def test_reset_requires_confirmation_before_building_projection_catalog(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        reset_cli,
+        "reset_projections",
+        lambda: pytest.fail("reset inspected projections without --yes"),
+    )
+
+    result = runner.invoke(app, ["reset"])
+
+    assert result.exit_code == 2
+    assert "--yes" in result.output
+
+
+def test_confirmed_reset_replaces_only_selected_home_state(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    selected = tmp_path / "custom-home"
+    state = selected / "openlease"
+    state.mkdir(parents=True)
+    (state / "old.json").write_text("old")
+    sibling = selected / "notes.txt"
+    sibling.write_text("keep")
+    monkeypatch.setattr(reset_cli, "reset_projections", lambda: ())
+
+    result = runner.invoke(app, ["--path", str(selected), "reset", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert list(state.iterdir()) == []
+    assert sibling.read_text() == "keep"
+    assert "replaced" in result.stdout
+
+
+def test_reset_help_omits_obsolete_global_trait_overwrite_option() -> None:
+    result = runner.invoke(app, ["reset", "--help"])
+
+    assert result.exit_code == 0
+    assert "--yes" in result.stdout
+    assert "overwrite-global-traits" not in result.stdout
 
 
 def test_prompt_uses_exact_agent_router_agent_order(monkeypatch) -> None:

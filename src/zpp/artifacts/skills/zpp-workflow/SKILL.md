@@ -72,21 +72,26 @@ projection contracts.
 ## Verify repository behavior
 
 When an accepted shaped BDD obligation requires integration verification, apply
-the complete injected `bdd-execution` body as advisory selection policy and use
-only a command declared by the repository's root `zpp.behave.yaml`:
+the complete injected `bdd-execution` body as advisory selection policy. Select
+an established native BDD command from repository configuration or an explicit
+owner choice. The absence of `zpp.behave.yaml` never blocks native BDD:
 
 - `manual`: pause for an explicit command and selection choice.
-- `disabled`: omit `zpp behave` only when independently observed alternate
+- `disabled`: omit BDD only when independently observed alternate
   relevant verification exists and no shaped BDD obligation remains unsatisfied.
-- `complete`: invoke `zpp behave COMMAND --all`.
-- `targeted`, including the default: when the chosen command declares the
-  `zpp-workflow` gate, invoke `zpp behave COMMAND --gate zpp-workflow`; otherwise
-  invoke `zpp behave COMMAND` for deterministic affected selection.
+- `complete`: run the complete established native BDD suite. When the repository
+  explicitly selects `zpp behave` coordination, invoke its command with `--all`.
+- `targeted`, including the default: run the relevant established native feature
+  surface directly. When the repository explicitly selects a declared
+  `zpp behave` command, use its `zpp-workflow` gate when present and its
+  deterministic affected selection otherwise.
 
-The trait never supplies the command, targets, gate binding, process arguments,
-callback selection, stage skip, or completion result. A failed or insufficient
-behavior command leaves verification unsatisfied. Do not alias or migrate a
-former `zpp-flow-*` gate identity.
+`zpp.behave.yaml` remains complete authority whenever `zpp behave` is selected,
+but it is optional coordination rather than a BDD prerequisite. The trait never
+supplies the command, targets, gate binding, process arguments, callback
+selection, stage skip, or completion result. A failed or insufficient native or
+coordinated BDD command leaves verification unsatisfied. Do not alias or migrate
+a former `zpp-flow-*` gate identity.
 
 ## Declare each stage outcome
 

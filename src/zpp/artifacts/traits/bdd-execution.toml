@@ -17,14 +17,14 @@ body = """Omit BDD only when another established relevant verification surface e
 [trait.facet]
 bdd_mode = "complete"
 [trait.content]
-body = """Apply this mode before any optional repository gate. Run every declared target with `--all`. This trait never carries or authors repository gate bindings or target identities, cannot bypass failed or insufficient verification, and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
+body = """Run the complete established native BDD suite. When the repository explicitly selects optional `zpp behave` coordination, request every declared target with `--all`. This trait never supplies executable command text, repository gate bindings, or target identities, cannot bypass failed or insufficient verification, and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
 
 [[trait]]
 [trait.facet]
 bdd_mode = "targeted"
 [trait.content]
-body = """Apply this mode before any optional repository gate. When the selected command declares the current consolidated workflow gate, request it with `--gate zpp-workflow`; otherwise run deterministic affected selection without `--all`. This trait never carries or authors repository gate bindings or target identities, cannot bypass failed or insufficient verification, and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
+body = """Run the relevant established native BDD feature surface directly. When the repository explicitly selects optional `zpp behave` coordination, request its declared workflow gate with `--gate zpp-workflow` and otherwise use deterministic affected selection. This trait never supplies executable command text, repository gate bindings, or target identities, cannot bypass failed or insufficient verification, and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
 
 [[trait]]
 [trait.content]
-body = """Use targeted BDD verification by default. Apply this mode before any optional repository gate: when the selected command declares the current consolidated workflow gate, request it with `--gate zpp-workflow`; otherwise run deterministic affected selection without `--all`. This global or inherited trait never carries or authors repository gate bindings or target identities. It cannot convert failed or insufficient verification or an unsatisfied shaped BDD obligation into success and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
+body = """Use targeted BDD verification by default and run the relevant established native feature surface directly. When the repository explicitly selects optional `zpp behave` coordination, request its declared workflow gate with `--gate zpp-workflow` and otherwise use deterministic affected selection. This global or inherited trait never supplies executable command text, repository gate bindings, or target identities. It cannot convert failed or insufficient verification or an unsatisfied shaped BDD obligation into success and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""

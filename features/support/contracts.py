@@ -9,6 +9,7 @@ import tomllib
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import MappingProxyType
+from unittest.mock import patch
 
 from agent_router import Agent
 from typer.testing import CliRunner
@@ -20,6 +21,7 @@ from zpp.artifacts import (
     packaged_workflow_skill,
 )
 from zpp.cli import app
+from zpp.cli.reset import reset_projections
 from zpp.cli.shared import agent_router
 from zpp.core.application import TraitApplication, TraitInvocation
 from zpp.core.catalog import decode_trait_document
@@ -96,10 +98,11 @@ def verify_workflow_contract() -> None:
     execution_bodies = [
         flavor["content"]["body"] for flavor in documents["bdd-execution"]["trait"]
     ]
-    assert "zpp behave COMMAND --all" in text
-    assert "--gate zpp-workflow" in text
-    assert "--gate zpp-workflow" in execution_bodies[3]
-    assert "--gate zpp-workflow" in execution_bodies[4]
+    assert "absence of `zpp.behave.yaml` never blocks native BDD" in text
+    assert "complete established native BDD suite" in text
+    assert "optional `zpp behave` coordination" in execution_bodies[2]
+    assert "established native BDD feature surface directly" in execution_bodies[3]
+    assert "established native feature surface directly" in execution_bodies[4]
     assert "zpp-flow-wire-feature" not in text
     assert all("zpp-flow-" not in body for body in execution_bodies)
     assert [flavor["facet"]["tool"] for flavor in documents["tooling"]["trait"]] == [
@@ -116,7 +119,15 @@ def verify_repository_contract() -> None:
     assert root.exit_code == workflow.exit_code == trait.exit_code == 0
     assert all(
         name in root.stdout
-        for name in ("init", "resolve", "behave", "trait", "workflow")
+        for name in (
+            "init",
+            "open",
+            "reset",
+            "resolve",
+            "behave",
+            "trait",
+            "workflow",
+        )
     )
     assert all(name in workflow.stdout for name in ("install", "update", "remove"))
     assert "space" not in root.stdout
@@ -191,16 +202,16 @@ def verify_repository_contract() -> None:
         prior = Path.cwd()
         try:
             os.chdir(repository)
-            behavior_state = base / "behavior-state"
+            behavior_home = base / "behavior-home"
             initialized = runner.invoke(
                 app,
-                ["--path", str(behavior_state), "behave", "init"],
+                ["--path", str(behavior_home), "behave", "init"],
             )
         finally:
             os.chdir(prior)
         assert initialized.exit_code == 0, initialized.output
         assert (repository / "zpp.behave.yaml").is_file()
-        assert create_zpp_openlease(behavior_state).snapshot().spaces == ()
+        assert create_zpp_openlease(behavior_home / "openlease").snapshot().spaces == ()
         router = agent_router(Agent.CODEX, repository)
         assert router.environment.root == Path.home().resolve()
         assert router.environment.project_root == repository.resolve()
@@ -386,6 +397,45 @@ def verify_automatic_hook_contract() -> None:
         assert len(json.loads(removed.stdout)) == 2
 
 
+def verify_product_home_contract() -> None:
+    runner = CliRunner()
+    catalog = reset_projections()
+    assert [(item.agent, item.kind) for item in catalog] == [
+        (agent, kind)
+        for agent in ("codex", "claude", "pi", "kimi")
+        for kind in ("hook", "skill")
+    ]
+
+    with TemporaryDirectory() as directory:
+        root = Path(directory)
+        home = root / "selected-home"
+        with patch("zpp.cli.open.open_directory") as opener:
+            opened = runner.invoke(app, ["--path", str(home), "open"])
+        assert opened.exit_code == 0, opened.output
+        opener.assert_called_once_with(home)
+        assert home.is_dir()
+        assert not (home / "openlease").exists()
+
+        unconfirmed = runner.invoke(app, ["--path", str(home), "reset"])
+        assert unconfirmed.exit_code == 2
+        assert "--yes" in unconfirmed.output
+
+        state = home / "openlease"
+        state.mkdir()
+        (state / "old.json").write_text("old")
+        sibling = home / "notes.txt"
+        sibling.write_text("keep")
+        with patch("zpp.cli.reset.reset_projections", return_value=()):
+            reset = runner.invoke(
+                app,
+                ["--path", str(home), "reset", "--yes"],
+            )
+        assert reset.exit_code == 0, reset.output
+        assert json.loads(reset.stdout)["state"] == "replaced"
+        assert list(state.iterdir()) == []
+        assert sibling.read_text() == "keep"
+
+
 def verify_behavior_contract() -> None:
     runner = CliRunner()
     root_help = runner.invoke(app, ["--help"])
@@ -419,13 +469,13 @@ def verify_behavior_contract() -> None:
         (repository / "tracked.txt").write_text("base\n")
         git("add", ".")
         git("commit", "--quiet", "-m", "base")
-        state_root = base / "state"
+        product_home = base / "home"
         prior = Path.cwd()
         try:
             os.chdir(repository)
             initialized = runner.invoke(
                 app,
-                ["--path", str(state_root), "behave", "init"],
+                ["--path", str(product_home), "behave", "init"],
             )
             assert initialized.exit_code == 0, initialized.output
             mapping = repository / "zpp.behave.yaml"
@@ -446,7 +496,7 @@ def verify_behavior_contract() -> None:
             authored = mapping.read_text()
             validated = runner.invoke(
                 app,
-                ["--path", str(state_root), "behave", "init"],
+                ["--path", str(product_home), "behave", "init"],
             )
             assert validated.exit_code == 0, validated.output
             assert "Behavior mapping validated" in validated.stdout
@@ -456,7 +506,7 @@ def verify_behavior_contract() -> None:
 
             clean = runner.invoke(
                 app,
-                ["--path", str(state_root), "behave", "bdd"],
+                ["--path", str(product_home), "behave", "bdd"],
             )
             assert clean.exit_code == 0, clean.output
             assert "No targets are affected" in clean.stdout
@@ -466,14 +516,14 @@ def verify_behavior_contract() -> None:
             changed.write_text("changed\n")
             affected = runner.invoke(
                 app,
-                ["--path", str(state_root), "behave", "bdd"],
+                ["--path", str(product_home), "behave", "bdd"],
             )
             assert affected.exit_code == 0, affected.output
             assert affected.stdout == "features/core\n"
 
             complete = runner.invoke(
                 app,
-                ["--path", str(state_root), "behave", "bdd", "--all"],
+                ["--path", str(product_home), "behave", "bdd", "--all"],
             )
             assert complete.exit_code == 0, complete.output
             assert complete.stdout == "features/core|features/workflow\n"
@@ -482,7 +532,7 @@ def verify_behavior_contract() -> None:
                 app,
                 [
                     "--path",
-                    str(state_root),
+                    str(product_home),
                     "behave",
                     "bdd",
                     "--target",
@@ -498,7 +548,7 @@ def verify_behavior_contract() -> None:
                 app,
                 [
                     "--path",
-                    str(state_root),
+                    str(product_home),
                     "behave",
                     "bdd",
                     "--gate",
@@ -517,7 +567,7 @@ def verify_behavior_contract() -> None:
         finally:
             os.chdir(prior)
 
-        assert create_zpp_openlease(state_root).snapshot().spaces == ()
+        assert create_zpp_openlease(product_home / "openlease").snapshot().spaces == ()
 
 
 VERIFIERS = {
@@ -527,6 +577,7 @@ VERIFIERS = {
     "toml_trait_catalog": verify_catalog_contract,
     "trait_resolution": verify_resolution_contract,
     "automatic_trait_hooks": verify_automatic_hook_contract,
+    "product_home_lifecycle": verify_product_home_contract,
 }
 
 

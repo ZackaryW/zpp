@@ -74,8 +74,10 @@ repository-authoring operation rather than a resolution side effect.
 ## Commands
 
 ```text
-zpp [--path OPENLEASE_STATE_ROOT] COMMAND
+zpp [--path ZPP_HOME] COMMAND
 zpp init [--agent AGENT ...]
+zpp open
+zpp reset --yes
 zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--space SPACE [--authority AUTHORITY]] [--explain]
 zpp behave init
 zpp behave COMMAND [--all | --target TARGET ... | --gate GATE | --base REV --head REV]
@@ -83,10 +85,25 @@ zpp trait init context|FAMILY [TARGET]
 zpp workflow install|update|remove [--agent AGENT ...] [--target PATH | --global]
 ```
 
-The root `--path` option selects ZPP's OpenLease state root. `resolve --space`
-adds one explicitly selected OpenLease space; `OPENLEASE_SPACE` may supply the
-same selection. `--authority` narrows that selected-space resolution and
-therefore requires either `--space` or `OPENLEASE_SPACE`.
+The root `--path` option selects ZPP's home. It defaults to `~/.zpp`, and every
+OpenLease-backed command uses only that home's `openlease` child as managed
+state. Merely selecting a home does not create it. `zpp open` creates the
+selected home when absent and opens that exact directory in the native file
+manager without initializing OpenLease or interpreting the other contents.
+
+`zpp reset --yes` preflights every supported agent's ZPP-owned user-scope
+`zpp-workflow` skill and `zpp-session` hook through Agent Router. If every asset
+is absent or intact, reset removes the present projections and replaces only the
+selected home's `openlease` child. It preserves the home itself, repository
+`.zpp` documents, `zpp.behave.yaml`, project-scope projections, plugins,
+worktrees, and unrelated files. A conflict aborts before removal, and a removal
+failure leaves the prior OpenLease state unchanged. Reset has no global-trait
+overwrite mode.
+
+`resolve --space` adds one explicitly selected OpenLease space;
+`OPENLEASE_SPACE` may supply the same selection. `--authority` narrows that
+selected-space resolution and therefore requires either `--space` or
+`OPENLEASE_SPACE`.
 
 `--stage` accepts only `clarify`, `shape`, `plan-utilities`,
 `mature-utilities`, `wire`, `form-specs`, or `finalize`. Stage is protected
@@ -114,6 +131,12 @@ callbacks remain inactive unless OpenLease explicitly selects one. When selected
 the callback uses real repository or cohort context to locate the target, then
 reopens that repository's exact `zpp.behave.yaml` through the same direct binding;
 it requires no managed callback configuration or additional temporary space.
+
+Native BDD execution does not require `zpp.behave.yaml`. The consolidated
+workflow may run an established repository Behave, Cucumber, or other BDD
+surface directly from repository configuration or an explicit owner choice.
+`zpp.behave.yaml` participates only when the repository explicitly chooses
+`zpp behave` for affected-target or gate coordination.
 
 OpenLease owns direct TOML and YAML binding, provenance, selected-space
 configuration, and bounded writes. Existing repository documents can be read from an

@@ -23,22 +23,30 @@ register_exact_steps(
         "no bdd-workflow compatibility family is packaged",
         "an accepted shaped BDD obligation requires repository integration "
         "verification",
+        "the repository has an established native BDD command",
+        "no zpp.behave.yaml is configured",
+        "the consolidated workflow verifies the shaped behavior",
+        "it invokes the established native BDD surface directly",
+        "the absent behavior mapping does not block verification",
         "the resolved bdd-execution mode is complete",
-        "the consolidated workflow selects a repository-declared behavior command",
-        "it invokes that command with all targets",
+        "it runs the complete native BDD suite or explicitly selected coordinated "
+        "command",
         "it judges completion only from the observed verification result",
         "the resolved bdd-execution mode is targeted",
+        "the workflow explicitly selects a declared zpp behave command",
         "the chosen command declares the zpp-workflow gate",
         "the workflow invokes that exact repository-owned gate",
         "without that gate it invokes deterministic affected selection instead",
+        "no zpp behave command is selected",
+        "the workflow invokes the relevant established native feature surface",
         "bdd-execution selects manual or disabled mode",
         "manual mode pauses for an explicit verification choice",
         "disabled mode requires independently observed alternate evidence with no "
         "unsatisfied shaped obligation",
         "a resolved trait body contains command gate callback or completion-like text",
         "the consolidated workflow considers repository verification",
-        "it invokes only a command and selection declared through the accepted "
-        "workflow and repository mapping",
+        "it invokes only a command established by repository evidence or explicit "
+        "owner choice",
         "the trait cannot select a callback skip a stage or establish completion",
         "a repository behavior command declares a former zpp-flow gate but no "
         "zpp-workflow gate",

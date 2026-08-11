@@ -3,11 +3,57 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from agent_router import AgentEnvironment, AgentRouter, Scope
 from typer.testing import CliRunner
 
+from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skill
 from zpp.cli import app
+from zpp.cli.reset import SUPPORTED_AGENTS
 
 runner = CliRunner()
+
+
+def test_confirmed_reset_removes_every_agent_user_projection_through_router(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    user_home = tmp_path / "user"
+    project = tmp_path / "project"
+    user_home.mkdir()
+    project.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: user_home))
+    skill = packaged_workflow_skill()
+    routers = {}
+    for agent in SUPPORTED_AGENTS:
+        router = AgentRouter(
+            agent,
+            home=user_home,
+            environment=AgentEnvironment(user_home, project),
+        )
+        router.install_skill(skill, scope=Scope.USER)
+        router.install_hook(packaged_workflow_hook(agent), scope=Scope.USER)
+        routers[agent] = router
+
+    zpp_home = tmp_path / "zpp-home"
+    state = zpp_home / "openlease"
+    state.mkdir(parents=True)
+    (state / "old.json").write_text("old")
+    result = runner.invoke(
+        app,
+        ["--path", str(zpp_home), "reset", "--yes"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert list(state.iterdir()) == []
+    for agent, router in routers.items():
+        assert router.inspect_skill(skill, scope=Scope.USER).status == "absent"
+        assert (
+            router.inspect_hook(
+                packaged_workflow_hook(agent),
+                scope=Scope.USER,
+            ).status
+            == "absent"
+        )
 
 
 def test_no_space_repository_resolution_selects_python_and_flutter(
@@ -46,9 +92,10 @@ def test_no_space_repository_resolution_selects_python_and_flutter(
     assert context["version"] == 2
     assert context["facets"]["language"] == ["python", "flutter"]
     assert "stage" not in context["facets"]
-    assert [
-        item["value"] for item in context["members"]["language"]
-    ] == ["python", "flutter"]
+    assert [item["value"] for item in context["members"]["language"]] == [
+        "python",
+        "flutter",
+    ]
     assert payload["explanation"]["families"]
     assert payload["explanation"]["context"]["values"]["stage"] == "wire"
     after = sorted(path.relative_to(repository) for path in repository.rglob("*"))
@@ -91,9 +138,7 @@ def test_manual_trait_requires_direct_query_and_uses_normal_matching(
     repository = tmp_path / "repository"
     traits = repository / ".zpp" / "traits"
     traits.mkdir(parents=True)
-    (repository / ".zpp" / "zpp.toml").write_text(
-        "[facet]\nlanguage='python'\n"
-    )
+    (repository / ".zpp" / "zpp.toml").write_text("[facet]\nlanguage='python'\n")
     (traits / "manual-policy.toml").write_text(
         "[meta]\nselection='all'\nactivation='manual'\n"
         "[[trait]]\n[trait.facet]\nlanguage='python'\n"

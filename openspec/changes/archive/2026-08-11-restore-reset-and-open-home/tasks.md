@@ -24,11 +24,11 @@
 
 ## 5. Native BDD independence
 
-- [ ] 5.1 Replace the workflow's mandatory `zpp.behave.yaml` path with native BDD execution and optional coordinated selection
-- [ ] 5.2 Reconcile the BDD execution trait and capability feature with the corrected boundary
+- [x] 5.1 Replace the workflow's mandatory `zpp.behave.yaml` path with native BDD execution and optional coordinated selection
+- [x] 5.2 Reconcile the BDD execution trait and capability feature with the corrected boundary
 
 ## 6. Acceptance and documentation
 
-- [ ] 6.1 Pass the feature, unit, CLI, formatting, lint, and package-build verification suites
+- [x] 6.1 Pass the feature, unit, CLI, formatting, lint, and package-build verification suites
 - [x] 6.2 Update the README for the default `~/.zpp` home, `--path`, `open`, and destructive reset boundaries
-- [ ] 6.3 Form the canonical specifications and archive the completed OpenSpec change
+- [x] 6.3 Form the canonical specifications and archive the completed OpenSpec change

@@ -14,6 +14,7 @@ from openlease import OpenLeaseError
 
 from zpp.utils.agent_router import ZppTraitArtifactExtension
 from zpp.utils.agent_selection import AgentSelection, AgentSelectionError
+from zpp.utils.product_home import ZppHome
 
 AGENT_CHOICES = (
     ("Codex", Agent.CODEX),
@@ -25,7 +26,11 @@ AGENT_CHOICES = (
 
 @dataclass(frozen=True, slots=True)
 class Runtime:
-    state_root: Path
+    home: ZppHome
+
+    @property
+    def state_root(self) -> Path:
+        return self.home.state_root
 
 
 def runtime(ctx: typer.Context) -> Runtime:
