@@ -47,6 +47,22 @@ class ZppTraitArtifactExtension:
 
 
 class _WorkflowRouter(Protocol):
+    def inspect_skill(
+        self,
+        skill: Skill,
+        *,
+        scope: Scope,
+        project_root: str | Path | None = None,
+    ) -> LifecycleResult: ...
+
+    def inspect_hook(
+        self,
+        hook: Hook,
+        *,
+        scope: Scope,
+        project_root: str | Path | None = None,
+    ) -> LifecycleResult: ...
+
     def install_skill(
         self,
         skill: Skill,
@@ -139,6 +155,32 @@ def project_workflow_skill(
     operation = router.update_skill if replace_project else router.install_skill
     return operation(
         skill,
+        scope=scope,
+        project_root=project_root,
+    )
+
+
+def inspect_workflow_skill(
+    router: AgentRouter | _WorkflowRouter,
+    skill: Skill,
+    scope: Scope,
+    project_root: Path | None,
+) -> LifecycleResult:
+    return router.inspect_skill(
+        skill,
+        scope=scope,
+        project_root=project_root,
+    )
+
+
+def inspect_workflow_hook(
+    router: AgentRouter | _WorkflowRouter,
+    hook: Hook,
+    scope: Scope,
+    project_root: Path | None,
+) -> LifecycleResult:
+    return router.inspect_hook(
+        hook,
         scope=scope,
         project_root=project_root,
     )

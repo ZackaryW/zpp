@@ -17,11 +17,47 @@ from zpp.utils.agent_router import (
     ZPP_TRAITS_ARTIFACT_ID,
     ZppTraitArtifactExtension,
     active_trait_sources,
+    inspect_workflow_hook,
+    inspect_workflow_skill,
     project_workflow_hook,
     project_workflow_skill,
     remove_workflow_hook,
     remove_workflow_skill,
 )
+
+
+def test_inspect_workflow_skill_delegates_exact_arguments() -> None:
+    expected = object()
+
+    class Router:
+        def inspect_skill(self, skill, *, scope, project_root):
+            self.call = (skill, scope, project_root)
+            return expected
+
+    router = Router()
+    skill = object()
+
+    result = inspect_workflow_skill(router, skill, Scope.USER, None)
+
+    assert result is expected
+    assert router.call == (skill, Scope.USER, None)
+
+
+def test_inspect_workflow_hook_delegates_exact_arguments() -> None:
+    expected = object()
+
+    class Router:
+        def inspect_hook(self, hook, *, scope, project_root):
+            self.call = (hook, scope, project_root)
+            return expected
+
+    router = Router()
+    hook = object()
+
+    result = inspect_workflow_hook(router, hook, Scope.USER, None)
+
+    assert result is expected
+    assert router.call == (hook, Scope.USER, None)
 
 
 def test_trait_artifact_extension_locates_only_ordered_top_level_toml(

@@ -1,17 +1,17 @@
 ## 1. Feature contract
 
-- [ ] 1.1 Add fail-first feature scenarios for selected-home resolution, native home opening, and confirmed complete reset
-- [ ] 1.2 Cover reset preflight conflicts, absent integrations, removal failures, retry convergence, and preservation boundaries
+- [x] 1.1 Add fail-first feature scenarios for selected-home resolution, native home opening, and confirmed complete reset
+- [x] 1.2 Cover reset preflight conflicts, absent integrations, removal failures, retry convergence, and preservation boundaries
 
 ## 2. Home lifecycle utilities
 
-- [ ] 2.1 Add selected-home and OpenLease-child path resolution with unsafe-boundary validation
-- [ ] 2.2 Add a shell-free native file-manager opener for the selected ZPP home
-- [ ] 2.3 Add fresh OpenLease-state preparation and exact-child replacement with rollback-safe behavior
+- [x] 2.1 Add selected-home and OpenLease-child path resolution with unsafe-boundary validation
+- [x] 2.2 Add a shell-free native file-manager opener for the selected ZPP home
+- [x] 2.3 Add fresh OpenLease-state preparation and exact-child replacement with rollback-safe behavior
 
 ## 3. Agent integration reset
 
-- [ ] 3.1 Extend the Agent Router adapter for user-scope skill and hook inspection
+- [x] 3.1 Extend the Agent Router adapter for user-scope skill and hook inspection
 - [ ] 3.2 Implement all-agent reset preflight and deterministic removal of intact ZPP-owned integrations
 - [ ] 3.3 Aggregate removal failures without replacing the prior OpenLease state and make retry converge
 
