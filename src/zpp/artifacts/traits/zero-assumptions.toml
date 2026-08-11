@@ -1,5 +1,6 @@
 [meta]
 selection = "first-win"
+activation = "always-run"
 
 [[trait]]
 [trait.content]

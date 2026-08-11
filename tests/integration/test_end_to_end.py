@@ -135,3 +135,34 @@ def test_unknown_direct_trait_query_returns_no_unrelated_output(
     assert result.exit_code == 2
     assert "unknown trait family" in result.output
     assert "Behave" not in result.output
+
+
+def test_reconciled_packaged_families_resolve_by_their_current_boundaries(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+
+    execution = runner.invoke(
+        app,
+        [
+            "resolve",
+            str(repository),
+            "--trait",
+            "bdd-execution",
+            "--facet",
+            "bdd_mode=complete",
+        ],
+    )
+    common = runner.invoke(app, ["resolve", str(repository)])
+    removed = runner.invoke(
+        app,
+        ["resolve", str(repository), "--trait", "lease-complete-affected-set"],
+    )
+
+    assert execution.exit_code == common.exit_code == 0
+    assert "--all" in execution.stdout
+    assert "Preserve current specifications" in common.stdout
+    assert "logical leases" not in common.stdout
+    assert removed.exit_code == 2
+    assert "unknown trait family" in removed.output

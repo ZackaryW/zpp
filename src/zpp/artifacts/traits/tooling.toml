@@ -16,11 +16,3 @@ tool = "jq"
 which = "jq"
 [trait.content]
 body = """Use `jq` when JSON structure matters; preserve typed fields and fail on invalid input."""
-
-[[trait]]
-[trait.facet]
-tool = "zmem"
-[[trait.when]]
-which = "zmem"
-[trait.content]
-body = """Use bounded zmem recall for prior decisions, then verify every recalled claim against current specifications and code. Use `zpp-use-zmem` for read-only recall and `zpp-flow-commit-zmem` only when a durable decision annotation is warranted."""

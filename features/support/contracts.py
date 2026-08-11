@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import tomllib
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import MappingProxyType
@@ -61,17 +62,27 @@ def verify_workflow_contract() -> None:
     assert "ZPP_CONTEXT" not in text
     assert {
         "bdd",
+        "bdd-execution",
         "bdd-structure",
-        "bdd-workflow",
         "build",
         "dependencies",
         "tdd",
         "tooling",
-        "lease-complete-affected-set",
-        "lease-conflict-policy",
-        "reconciliation-gate",
         "zero-assumptions",
     } == families
+
+    documents = {
+        item.family: tomllib.loads(item.content.decode("utf-8"))
+        for item in packaged_traits()
+    }
+    assert documents["zero-assumptions"]["meta"]["activation"] == "always-run"
+    assert [
+        flavor.get("facet", {}).get("bdd_mode")
+        for flavor in documents["bdd-execution"]["trait"]
+    ] == ["manual", "disabled", "complete", "targeted", None]
+    assert [
+        flavor["facet"]["tool"] for flavor in documents["tooling"]["trait"]
+    ] == ["rg", "jq"]
 
 
 def verify_repository_contract() -> None:
@@ -150,7 +161,12 @@ def verify_catalog_contract() -> None:
             SourceRef(SourceKind.GLOBAL, item.identifier or item.family),
         )
         assert decoded.flavors
-        assert decoded.activation is ActivationMode.AUTOMATIC
+        expected_activation = (
+            ActivationMode.ALWAYS_RUN
+            if item.family == "zero-assumptions"
+            else ActivationMode.AUTOMATIC
+        )
+        assert decoded.activation is expected_activation
         assert all(flavor.content.body for flavor in decoded.flavors)
 
     def document(

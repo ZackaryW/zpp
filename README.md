@@ -87,5 +87,9 @@ or Kimi; the consolidated skill contains workflow policy and does not bootstrap
 trait resolution.
 
 Packaged defaults are source assets under `zpp/artifacts/traits`; this is not a
-required runtime collection layout. ZPP 1.x Markdown traits and its seven stage
-skills are not migration inputs.
+required runtime collection layout. The standard families are `bdd`,
+`bdd-structure`, `bdd-execution`, `tdd`, `build`, `dependencies`, `tooling`, and
+`zero-assumptions`. Lease conflicts remain OpenLease behavior and final
+reconciliation remains workflow-skill behavior rather than globally injected
+traits. ZPP 1.x Markdown traits and its seven stage skills are not migration
+inputs.

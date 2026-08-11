@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -70,13 +71,10 @@ def test_packaged_assets_keep_workflow_authority_out_of_traits() -> None:
     assert "workflow-authority" not in families
     assert families == {
         "bdd",
+        "bdd-execution",
         "bdd-structure",
-        "bdd-workflow",
         "build",
         "dependencies",
-        "lease-complete-affected-set",
-        "lease-conflict-policy",
-        "reconciliation-gate",
         "tdd",
         "tooling",
         "zero-assumptions",
@@ -89,6 +87,22 @@ def test_packaged_assets_keep_workflow_authority_out_of_traits() -> None:
     text = document.decode("utf-8")
     assert "Automatic progression" in text
     assert "Traits advise the selected stage" in text
+
+
+def test_packaged_collection_has_precise_execution_activation_and_tools() -> None:
+    documents = {
+        item.family: tomllib.loads(item.content.decode("utf-8"))
+        for item in packaged_traits()
+    }
+
+    assert documents["zero-assumptions"]["meta"]["activation"] == "always-run"
+    assert [
+        flavor.get("facet", {}).get("bdd_mode")
+        for flavor in documents["bdd-execution"]["trait"]
+    ] == ["manual", "disabled", "complete", "targeted", None]
+    assert [
+        flavor["facet"]["tool"] for flavor in documents["tooling"]["trait"]
+    ] == ["rg", "jq"]
 
 
 @pytest.mark.parametrize("agent", tuple(Agent))
