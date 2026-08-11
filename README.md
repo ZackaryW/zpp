@@ -13,6 +13,7 @@ provider graph.
 ```toml
 [meta]
 selection = "extend"
+activation = "automatic"
 
 [[trait]]
 [trait.facet]
@@ -39,6 +40,12 @@ specializations. A repository document can set
 `mode = "repository-overwrite"` to replace space and global contributions for
 that family explicitly.
 
+Activation defaults to `automatic`, which uses normal facet and evidence
+matching. `manual` families are excluded from common resolution and can be
+requested explicitly with repeatable `--trait FAMILY`. `always-run` families
+bypass facet and evidence activation but still apply their declared selection
+policy.
+
 Repository context lives in `.zpp/zpp.toml`:
 
 ```toml
@@ -56,7 +63,7 @@ does not recursively restart selection. `which = "uv"` also publishes a typed
 
 ```text
 zpp init [--agent AGENT ...]
-zpp resolve [TARGET] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--explain]
+zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--explain]
 zpp trait init context|FAMILY [TARGET]
 zpp workflow install|update|remove [--agent AGENT ...] [--target PATH | --global]
 ```
@@ -67,10 +74,17 @@ Codex, Claude Code, Pi, and Kimi in that order; cancellation occurs before any
 projection. `resolve` accepts at most one agent because it reads that invoking
 agent's effective plugin artifacts.
 
+Default `resolve` output is the selected complete trait bodies, ready for prompt
+injection. `--explain` emits the structured bodies, context, and deterministic
+selection decisions instead.
+
 OpenLease owns direct TOML binding, provenance, selected-space configuration,
 and bounded writes. Existing repository documents can be read from an
 unregistered repository without creating or selecting a space. Agent Router owns
-plugin discovery and every workflow-skill destination mutation.
+plugin discovery and every workflow skill and native hook destination mutation.
+The installed hook invokes `resolve` automatically for Codex, Claude Code, Pi,
+or Kimi; the consolidated skill contains workflow policy and does not bootstrap
+trait resolution.
 
 Packaged defaults are source assets under `zpp/artifacts/traits`; this is not a
 required runtime collection layout. ZPP 1.x Markdown traits and its seven stage

@@ -35,9 +35,11 @@ def runtime(ctx: typer.Context) -> Runtime:
 
 def agent_router(agent: Agent, target: Path) -> AgentRouter:
     resolved = target.resolve()
+    home = Path.home().resolve()
     return AgentRouter(
         agent,
-        environment=AgentEnvironment(resolved, resolved),
+        home=home,
+        environment=AgentEnvironment(home, resolved),
         extensions=(ZppTraitArtifactExtension(),),
     )
 

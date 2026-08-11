@@ -13,6 +13,7 @@ from zpp.artifacts import packaged_trait_source
 from zpp.cli.shared import agent_router, emit_json, runtime, user_action
 from zpp.core.application import TraitApplication, TraitInvocation
 from zpp.core.evidence import EvidenceRuntime
+from zpp.core.rendering import render_prompt_bodies
 from zpp.utils.agent_router import active_trait_sources
 from zpp.utils.agent_selection import AgentSelectionError, select_one_agent
 from zpp.utils.openlease import create_trait_documents
@@ -51,6 +52,13 @@ def resolve(
     facet: Annotated[
         list[str] | None,
         typer.Option("--facet", help="Known NAME=VALUE facet; repeat as needed."),
+    ] = None,
+    trait: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--trait",
+            help="Resolve only this trait family; repeat to request several.",
+        ),
     ] = None,
     agent: Annotated[
         list[Agent] | None,
@@ -137,21 +145,25 @@ def resolve(
                 stored_context=os.environ.get("ZPP_CONTEXT"),
                 repository_context=repository.context,
                 sources=sources,
+                requested_families=(tuple(trait) if trait is not None else None),
             )
         )
     )
-    output: dict[str, object] = {
-        "bodies": [
-            {
-                "family": body.family,
-                "body": body.body,
-                "source": body.source.identifier,
-                "flavor": body.flavor_position,
-            }
-            for body in result.bodies
-        ],
-        "ZPP_CONTEXT": result.context,
-    }
     if explain:
-        output["explanation"] = dict(result.explanation)
-    emit_json(output)
+        emit_json(
+            {
+                "bodies": [
+                    {
+                        "family": body.family,
+                        "body": body.body,
+                        "source": body.source.identifier,
+                        "flavor": body.flavor_position,
+                    }
+                    for body in result.bodies
+                ],
+                "ZPP_CONTEXT": result.context,
+                "explanation": dict(result.explanation),
+            }
+        )
+        return
+    typer.echo(render_prompt_bodies(result.resolution), nl=False)

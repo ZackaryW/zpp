@@ -1,6 +1,6 @@
 ---
 name: zpp-workflow
-description: Run the complete ZPP product-change workflow through explicit stages, resolving repository traits as contextual policy while preserving OpenSpec, OpenLease, Agent Router, verification, and commit authority boundaries.
+description: Run the complete ZPP product-change workflow through explicit stages while preserving OpenSpec, OpenLease, Agent Router, verification, and commit authority boundaries.
 ---
 
 # ZPP workflow
@@ -14,9 +14,8 @@ a stage, authorize a mutation, satisfy a gate, or establish completion.
 1. Identify the exact repository target and the user's requested product outcome.
 2. Require an explicit current stage. If no stage was supplied, ask for it; do not
    infer it from files, stored context, prior messages, or resolved traits.
-3. Run `zpp resolve TARGET --stage STAGE` and preserve the returned `ZPP_CONTEXT`
-   for the same target. Apply every retained body in returned order as contextual
-   policy for this invocation.
+3. Apply complete trait bodies already injected by the agent-native ZPP hook as
+   contextual policy. The hook is stage-neutral and its bodies remain advisory.
 4. Treat canonical OpenSpec specifications as current product authority, the
    active proposal and capability delta specifications as mutable authority for
    the change, and zmem as temporal evidence that must be checked against current
@@ -56,7 +55,7 @@ boundary to its owner instead of inventing an answer.
 
 Under explicit end-to-end delegation, continue through a satisfied checkpoint to
 the next stage without asking for ordinary approval. Invoke the next stage as a
-new explicit action and pass that exact stage to trait resolution. Pause only for
+new explicit action without delegating stage choice to the trait hook. Pause only for
 unresolved clarification, a new or changed product boundary, a missing or changed
 utility shape, missing authority, a failed gate, or a component-owned conflict
 that requires the owner.

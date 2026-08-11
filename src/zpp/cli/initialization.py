@@ -6,7 +6,7 @@ from typing import Annotated
 import typer
 from agent_router import Agent, Scope
 
-from zpp.artifacts import packaged_workflow_skill
+from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skill
 from zpp.cli.shared import (
     abort_cancelled,
     agent_router,
@@ -15,7 +15,7 @@ from zpp.cli.shared import (
     prompt_agent_selection,
     user_action,
 )
-from zpp.utils.agent_router import project_workflow_skill
+from zpp.utils.agent_router import project_workflow_hook, project_workflow_skill
 from zpp.utils.agent_selection import AgentSelectionError, select_many_agents
 
 
@@ -41,13 +41,23 @@ def initialize(
     skill = packaged_workflow_skill()
     results = []
     for selected in selection.agents:
-        result = user_action(
-            lambda selected_agent=selected: project_workflow_skill(
-                agent_router(selected_agent, root),
+        router = agent_router(selected, root)
+        hook = packaged_workflow_hook(selected)
+        skill_result = user_action(
+            lambda selected_router=router: project_workflow_skill(
+                selected_router,
                 skill,
                 Scope.USER,
                 None,
             )
         )
-        results.append(result.to_dict())
+        hook_result = user_action(
+            lambda selected_router=router, selected_hook=hook: project_workflow_hook(
+                selected_router,
+                selected_hook,
+                Scope.USER,
+                None,
+            )
+        )
+        results.extend((skill_result.to_dict(), hook_result.to_dict()))
     emit_json(results)

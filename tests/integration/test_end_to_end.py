@@ -64,3 +64,74 @@ def test_invalid_repository_trait_reports_clean_cli_error(tmp_path: Path) -> Non
     assert result.exit_code == 2
     assert "invalid trait document" in result.output
     assert "Traceback" not in result.output
+
+
+def test_manual_trait_requires_direct_query_and_uses_normal_matching(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    traits = repository / ".zpp" / "traits"
+    traits.mkdir(parents=True)
+    (repository / ".zpp" / "zpp.toml").write_text(
+        "[facet]\nlanguage='python'\n"
+    )
+    (traits / "manual-policy.toml").write_text(
+        "[meta]\nselection='all'\nactivation='manual'\n"
+        "[[trait]]\n[trait.facet]\nlanguage='python'\n"
+        "[trait.content]\nbody='manual python policy'\n"
+        "[[trait]]\n[trait.facet]\nlanguage='flutter'\n"
+        "[trait.content]\nbody='manual flutter policy'\n"
+    )
+
+    common = runner.invoke(app, ["resolve", str(repository)])
+    direct = runner.invoke(
+        app,
+        ["resolve", str(repository), "--trait", "manual-policy"],
+    )
+
+    assert common.exit_code == direct.exit_code == 0
+    assert "manual python policy" not in common.stdout
+    assert direct.stdout == "manual python policy"
+
+
+def test_always_run_trait_bypasses_activation_and_preserves_extend(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    traits = repository / ".zpp" / "traits"
+    traits.mkdir(parents=True)
+    (traits / "baseline.toml").write_text(
+        "[meta]\nselection='extend'\nactivation='always-run'\n"
+        "[[trait]]\n[trait.facet]\nlanguage='python'\n"
+        "[trait.content]\nbody='generic python'\n"
+        "[[trait]]\n[trait.facet]\nlanguage='python'\nbuild_tool='uv'\n"
+        "[trait.content]\nbody='python uv'\n"
+        "[[trait]]\n[trait.facet]\nlanguage='flutter'\n"
+        "[trait.content]\nbody='flutter'\n"
+    )
+
+    result = runner.invoke(
+        app,
+        ["resolve", str(repository), "--trait", "baseline", "--explain"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert [item["body"] for item in payload["bodies"]] == ["python uv", "flutter"]
+    assert "language" not in json.loads(payload["ZPP_CONTEXT"])["facets"]
+
+
+def test_unknown_direct_trait_query_returns_no_unrelated_output(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+
+    result = runner.invoke(
+        app,
+        ["resolve", str(repository), "--trait", "unknown-family"],
+    )
+
+    assert result.exit_code == 2
+    assert "unknown trait family" in result.output
+    assert "Behave" not in result.output

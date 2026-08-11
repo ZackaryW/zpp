@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 import typer
 from agent_router import Agent, Scope
 
-from zpp.artifacts import packaged_workflow_skill
+from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skill
 from zpp.cli.shared import (
     abort_cancelled,
     agent_router,
@@ -15,11 +15,16 @@ from zpp.cli.shared import (
     prompt_agent_selection,
     user_action,
 )
-from zpp.utils.agent_router import project_workflow_skill, remove_workflow_skill
+from zpp.utils.agent_router import (
+    project_workflow_hook,
+    project_workflow_skill,
+    remove_workflow_hook,
+    remove_workflow_skill,
+)
 from zpp.utils.agent_selection import AgentSelectionError, select_many_agents
 
 app = typer.Typer(
-    help="Manage the consolidated workflow skill through Agent Router.",
+    help="Manage the consolidated workflow skill and hook through Agent Router.",
     no_args_is_help=True,
 )
 
@@ -54,21 +59,43 @@ def _manage(
     results = []
     for agent in selection.agents:
         router = agent_router(agent, project)
+        hook = packaged_workflow_hook(agent)
         if operation == "remove":
-            result = user_action(
+            hook_result = user_action(
+                lambda selected_router=router, selected_hook=hook: (
+                    remove_workflow_hook(
+                        selected_router, selected_hook.name, scope, project_root
+                    )
+                )
+            )
+            skill_result = user_action(
                 lambda selected_router=router: remove_workflow_skill(
                     selected_router, skill.name, scope, project_root
                 )
             )
         else:
-            result = user_action(
+            skill_result = user_action(
                 lambda selected_router=router: project_workflow_skill(
-                    selected_router, skill, scope, project_root
+                    selected_router,
+                    skill,
+                    scope,
+                    project_root,
+                    replace_project=(
+                        operation == "update" and scope is Scope.PROJECT
+                    ),
                 )
             )
-        item = result.to_dict()
-        item["request"] = operation
-        results.append(item)
+            hook_result = user_action(
+                lambda selected_router=router, selected_hook=hook: (
+                    project_workflow_hook(
+                        selected_router, selected_hook, scope, project_root
+                    )
+                )
+            )
+        for result in (skill_result, hook_result):
+            item = result.to_dict()
+            item["request"] = operation
+            results.append(item)
     emit_json(results)
 
 
@@ -95,7 +122,7 @@ def install(
         typer.Option("--global", help="Install in the user scope."),
     ] = False,
 ) -> None:
-    """Install the consolidated workflow skill."""
+    """Install the consolidated workflow skill and native trait hook."""
     _manage("install", *_options(agent, target, global_))
 
 

@@ -10,6 +10,7 @@ from zpp.core.catalog import decode_repository_context, decode_trait_document
 from zpp.core.composition import compose_trait_family
 from zpp.core.evidence import EvidenceRuntime, collect_evidence, evidence_requests
 from zpp.core.models import (
+    ActivationMode,
     FacetContext,
     ResolutionResult,
     SourceKind,
@@ -17,7 +18,7 @@ from zpp.core.models import (
     TargetIdentity,
     frozen_mapping,
 )
-from zpp.core.resolution import resolve_traits
+from zpp.core.resolution import resolve_traits, select_trait_families
 from zpp.core.session import (
     build_resolution_context,
     complete_stored_context,
@@ -51,6 +52,7 @@ class TraitInvocation:
     stored_context: str | None
     repository_context: BoundTraitDocument | None
     sources: tuple[BoundTraitSource, ...]
+    requested_families: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,8 +82,16 @@ class TraitApplication:
         target = invocation.target.resolve()
         repository_context = self._repository_context(invocation)
         families = self._families(invocation.sources)
+        selected_families = select_trait_families(
+            families, invocation.requested_families
+        )
+        evidence_families = tuple(
+            family
+            for family in selected_families
+            if family.activation is not ActivationMode.ALWAYS_RUN
+        )
         evidence = collect_evidence(
-            evidence_requests(families), self._evidence_runtime(target)
+            evidence_requests(evidence_families), self._evidence_runtime(target)
         )
         fingerprints = {
             key: value
@@ -102,7 +112,12 @@ class TraitApplication:
             ),
         )
         known = build_resolution_context(direct, repository_context, stored)
-        resolved = resolve_traits(families, known, evidence)
+        resolved = resolve_traits(
+            selected_families,
+            known,
+            evidence,
+            requested=tuple(family.family for family in selected_families),
+        )
         completed = complete_stored_context(resolved, identity)
         bodies = tuple(
             ResolvedBody(
@@ -118,7 +133,7 @@ class TraitApplication:
             resolution=resolved,
             bodies=bodies,
             context=encode_session_context(completed),
-            explanation=MappingProxyType(self._explain(families, resolved)),
+            explanation=MappingProxyType(self._explain(selected_families, resolved)),
         )
 
     @staticmethod
@@ -190,6 +205,7 @@ class TraitApplication:
                 {
                     "family": resolution.family,
                     "selection": effective[resolution.family].selection.value,
+                    "activation": effective[resolution.family].activation.value,
                     "policy_source": effective[
                         resolution.family
                     ].policy_source.identifier,
