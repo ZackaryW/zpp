@@ -9,6 +9,19 @@ Feature: Run the ZPP workflow through one explicit authority
     Then one consolidated ZPP workflow skill is installed
     And no ZPP 1.x stage skill is required
 
+  Scenario: Keep the workflow definition only in the skill
+    Given the packaged workflow skill and trait source are available
+    When a user inspects their distributed contents
+    Then workflow stages transitions gates and authority exist in the skill
+    And no workflow trait family is packaged
+
+  Scenario: Reauthor the complete applicable reference behavior
+    Given the separate reference repository contains the established standard traits
+    When ZPP packages its TOML trait source under artifacts traits
+    Then related BDD structure BDD TDD build and tool variants are complete flavors
+    And focused dependency lease reconciliation and zero-assumption behavior remains represented
+    And the packaged source path is not imposed as the runtime collection path
+
   Scenario: Require an explicit workflow stage
     Given a workflow invocation has repository files stored context and resolved traits
     When the invocation does not identify a stage

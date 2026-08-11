@@ -23,7 +23,7 @@ Feature: Use repository traits through bounded component-owned integration
 
   Scenario: Initialize only an explicitly requested document
     Given the repository bdd trait document is absent
-    When a user explicitly requests its initialization
+    When a user runs trait init for bdd against that exact repository
     Then ZPP asks OpenLease to initialize exactly that bounded document
     And no repository registration topology persistent source or space is created
 
@@ -43,3 +43,34 @@ Feature: Use repository traits through bounded component-owned integration
     When ZPP receives that component result
     Then ZPP reports the rejection
     And no ZPP-owned configuration coordination discovery or projection fallback runs
+
+  Scenario: Preserve the established command hierarchy
+    Given the ZPP command application is installed
+    When a user requests its root and command-group help
+    Then init and resolve remain root commands
+    And trait init owns exact repository document initialization
+    And workflow install update and remove remain grouped commands
+    And no flat init-trait install-workflow standalone explain or mirrored space command exists
+
+  Scenario: Preserve explicit multi-agent selection order
+    Given a workflow command receives Codex Pi and Codex agent selections in that order
+    When ZPP normalizes the Agent Router agent values
+    Then Codex and Pi are selected once in first-requested order
+    And the workflow operation runs once for each selected agent in that order
+
+  Scenario: Select required agents interactively
+    Given a multi-agent command requires selection and has an interactive terminal
+    When the user supplies no agent option
+    Then ZPP offers Codex Claude Code Pi and Kimi in that order
+    And cancelling the selection performs no mutation
+
+  Scenario: Require agents without an interactive terminal
+    Given a multi-agent command requires selection without an interactive terminal
+    When the user supplies no agent option
+    Then ZPP reports that one or more agent values are required
+    And no workflow projection is attempted
+
+  Scenario: Restrict resolution to one invoking agent
+    Given resolve may use one invoking agent active artifact context
+    When the user supplies more than one agent option
+    Then ZPP rejects the request without combining their artifact contexts
