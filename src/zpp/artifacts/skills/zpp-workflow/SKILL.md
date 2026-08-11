@@ -9,6 +9,22 @@ Run one product change from clarification through finalization. This skill is th
 only ZPP workflow authority. Traits advise the selected stage; they never invoke
 a stage, authorize a mutation, satisfy a gate, or establish completion.
 
+## Route artifact-only maintenance
+
+Before requiring a workflow stage, classify the requested outcome. When the
+entire change is limited to non-runtime artifacts such as README or reference
+docs, repository-local ZPP traits or context, packaged skill or trait prose, or
+commit metadata, use the owning artifact guidance and edit directly. Do not
+create an OpenSpec change, Gherkin, a utility plan, TDD, or workflow-stage
+outcomes. Run only relevant structural, format, resolution, and diff validation,
+then create an authorized commit when requested.
+
+Classify by effect, not filename. Artifact loading, parsing, validation, class
+conversion, canonical product-specification changes, or any artifact-backed
+change to executable or public behavior uses the product workflow. For a mixed
+change, apply the workflow to its behavioral portion while keeping supporting
+artifact text out of BDD and TDD obligations.
+
 ## Establish the invocation
 
 1. Identify the exact repository target and the user's requested product outcome.
