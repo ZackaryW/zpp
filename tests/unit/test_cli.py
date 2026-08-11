@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from contextlib import contextmanager
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,6 +17,7 @@ from zpp.cli import app
 runner = CliRunner()
 open_cli = import_module("zpp.cli.open")
 reset_cli = import_module("zpp.cli.reset")
+initialization_cli = import_module("zpp.cli.initialization")
 
 
 def test_public_cli_preserves_grouped_shape() -> None:
@@ -54,6 +57,114 @@ def test_public_cli_preserves_grouped_shape() -> None:
     assert "init-trait" not in root.stdout
     assert "explain" not in root.stdout
     assert "space" not in root.stdout
+
+
+def test_workflow_lifecycle_exposes_no_openspec_control() -> None:
+    for operation in ("install", "update", "remove"):
+        result = runner.invoke(app, ["workflow", operation, "--help"])
+
+        assert result.exit_code == 0
+        assert "openspec" not in result.stdout.casefold()
+
+
+def test_init_preflights_every_generated_inventory_before_projection(
+    monkeypatch,
+) -> None:
+    events: list[str] = []
+
+    class Result:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def to_dict(self):
+            return {"name": self.name, "status": "installed"}
+
+    @contextmanager
+    def generated(agents, *, cwd):
+        selected = tuple(agents)
+        events.append("generated:" + ",".join(agent.value for agent in selected))
+        yield tuple(
+            (
+                agent,
+                tuple(
+                    SimpleNamespace(name=f"openspec-{index}")
+                    for index in range(6)
+                ),
+            )
+            for agent in selected
+        )
+        events.append("generation-cleanup")
+
+    monkeypatch.setattr(
+        initialization_cli,
+        "generated_openspec_skill_sets",
+        generated,
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "agent_router",
+        lambda agent, root: agent,
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "packaged_workflow_skill",
+        lambda: SimpleNamespace(name="zpp-workflow"),
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "packaged_workflow_hook",
+        lambda agent: SimpleNamespace(name="zpp-session", agent=agent),
+    )
+
+    def project(router, skill, scope, project_root):
+        events.append(f"skill:{router.value}:{skill.name}")
+        return Result(skill.name)
+
+    def project_hook(router, hook, scope, project_root):
+        events.append(f"hook:{router.value}:{hook.name}")
+        return Result(hook.name)
+
+    monkeypatch.setattr(initialization_cli, "project_workflow_skill", project)
+    monkeypatch.setattr(initialization_cli, "project_workflow_hook", project_hook)
+
+    result = runner.invoke(
+        app,
+        ["init", "--agent", "codex", "--agent", "pi"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert events[0] == "generated:codex,pi"
+    assert events[-1] == "generation-cleanup"
+    assert len(json.loads(result.stdout)) == 16
+    assert events[1:9] == [
+        "skill:codex:zpp-workflow",
+        "hook:codex:zpp-session",
+        *(f"skill:codex:openspec-{index}" for index in range(6)),
+    ]
+
+
+def test_init_generation_failure_precedes_every_projection(monkeypatch) -> None:
+    @contextmanager
+    def fail_generation(agents, *, cwd):
+        del agents, cwd
+        raise ValueError("generation failed")
+        yield ()
+
+    monkeypatch.setattr(
+        initialization_cli,
+        "generated_openspec_skill_sets",
+        fail_generation,
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "agent_router",
+        lambda agent, root: pytest.fail(f"projected {agent} in {root}"),
+    )
+
+    result = runner.invoke(app, ["init", "--agent", "codex"])
+
+    assert result.exit_code == 2
+    assert "generation failed" in result.output
 
 
 def test_open_creates_and_opens_selected_home_without_openlease(

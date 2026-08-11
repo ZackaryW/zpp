@@ -16,6 +16,7 @@ from zpp.utils.agent_router import (
     remove_workflow_hook,
     remove_workflow_skill,
 )
+from zpp.utils.openspec import OPENSPEC_CORE_SKILL_NAMES
 from zpp.utils.product_home import PreparedOpenLeaseState
 
 SUPPORTED_AGENTS = (Agent.CODEX, Agent.CLAUDE, Agent.PI, Agent.KIMI)
@@ -37,7 +38,7 @@ class _PreparedState(Protocol):
 class _ResetProjection:
     agent: str
     kind: str
-    inspect: Callable[[], _RouterResult]
+    inspect: Callable[[], _RouterResult] | None
     remove: Callable[[], _RouterResult]
 
 
@@ -125,6 +126,23 @@ def reset_projections() -> tuple[_ResetProjection, ...]:
                 ),
             )
         )
+        projections.extend(
+            _ResetProjection(
+                agent.value,
+                f"skill:{name}",
+                None,
+                lambda selected_router=router, selected_name=name: (
+                    remove_workflow_skill(
+                        selected_router,
+                        selected_name,
+                        Scope.USER,
+                        None,
+                        force=True,
+                    )
+                ),
+            )
+            for name in OPENSPEC_CORE_SKILL_NAMES
+        )
     return tuple(projections)
 
 
@@ -134,8 +152,11 @@ def _reset_state(
     prepare: Callable[[], _PreparedState],
 ) -> _ResetReport:
     inspected: list[tuple[_ResetProjection, dict[str, object]]] = []
+    inspections_by_projection: dict[int, dict[str, object]] = {}
     conflicts: list[dict[str, object]] = []
     for projection in projections:
+        if projection.inspect is None:
+            continue
         try:
             result = projection.inspect()
             record = _record(projection, result.to_dict())
@@ -145,6 +166,7 @@ def _reset_state(
                 {"status": "inspection-failed", "error": str(error)},
             )
         inspected.append((projection, record))
+        inspections_by_projection[id(projection)] = record
         if record["status"] not in {"absent", "current"}:
             conflicts.append(record)
 
@@ -154,8 +176,9 @@ def _reset_state(
     prepared = prepare()
     removals: list[dict[str, object]] = []
     failures: list[dict[str, object]] = []
-    for projection, inspection in inspected:
-        if inspection["status"] == "absent":
+    for projection in projections:
+        inspection = inspections_by_projection.get(id(projection))
+        if inspection is not None and inspection["status"] == "absent":
             continue
         try:
             result = projection.remove()

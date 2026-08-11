@@ -46,6 +46,23 @@ def projection(
     return _ResetProjection(agent, kind, inspect, remove)
 
 
+def forced_projection(
+    agent: str,
+    kind: str,
+    status: str,
+    events: list[str],
+    *,
+    removal_error: str | None = None,
+) -> _ResetProjection:
+    def remove():
+        events.append(f"force-remove:{agent}:{kind}")
+        if removal_error is not None:
+            raise OSError(removal_error)
+        return Result(status, f"{agent}:{kind}")
+
+    return _ResetProjection(agent, kind, None, remove)
+
+
 def test_reset_preflights_every_projection_before_preparation_and_removal() -> None:
     events: list[str] = []
     projections = (
@@ -129,6 +146,77 @@ def test_reset_aggregates_removal_failures_discards_stage_and_preserves_state() 
     assert events[-3:] == [
         "remove:codex:hook",
         "remove:claude:hook",
+        "discard",
+    ]
+    assert "replace" not in events
+
+
+def test_forced_removals_run_only_after_complete_standard_preflight() -> None:
+    events: list[str] = []
+    projections = (
+        projection("codex", "hook", "current", events),
+        forced_projection(
+            "codex",
+            "skill:openspec-apply-change",
+            "removed",
+            events,
+        ),
+        projection("claude", "skill", "absent", events),
+        forced_projection(
+            "claude",
+            "skill:openspec-apply-change",
+            "absent",
+            events,
+        ),
+    )
+
+    report = _reset_state(
+        projections,
+        prepare=lambda: events.append("prepare") or Prepared(events),
+    )
+
+    assert events == [
+        "inspect:codex:hook",
+        "inspect:claude:skill",
+        "prepare",
+        "remove:codex:hook",
+        "force-remove:codex:skill:openspec-apply-change",
+        "force-remove:claude:skill:openspec-apply-change",
+        "replace",
+    ]
+    assert len(report.inspections) == 2
+    assert [item["status"] for item in report.removals] == [
+        "removed",
+        "removed",
+        "absent",
+    ]
+
+
+def test_forced_removal_failure_is_aggregated_and_preserves_state() -> None:
+    events: list[str] = []
+    projections = (
+        projection("codex", "hook", "current", events),
+        forced_projection(
+            "codex",
+            "skill:openspec-apply-change",
+            "removed",
+            events,
+            removal_error="unmanaged skill",
+        ),
+        forced_projection(
+            "pi",
+            "skill:openspec-apply-change",
+            "removed",
+            events,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="unmanaged skill"):
+        _reset_state(projections, prepare=lambda: Prepared(events))
+
+    assert events[-3:] == [
+        "force-remove:codex:skill:openspec-apply-change",
+        "force-remove:pi:skill:openspec-apply-change",
         "discard",
     ]
     assert "replace" not in events

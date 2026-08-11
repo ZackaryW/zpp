@@ -56,6 +56,37 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
         )
 
 
+def test_init_regenerates_and_reset_force_removes_openspec_skills(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    user_home = tmp_path / "user"
+    user_home.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: user_home))
+
+    first = runner.invoke(app, ["init", "--agent", "codex"])
+    second = runner.invoke(app, ["init", "--agent", "codex"])
+
+    assert first.exit_code == second.exit_code == 0
+    assert len(json.loads(first.stdout)) == 8
+    assert len(json.loads(second.stdout)) == 8
+    generated = user_home / ".codex/skills/openspec-apply-change"
+    provenance = generated / ".zpp-openspec.json"
+    assert provenance.is_file()
+    assert json.loads(provenance.read_text())["generator"] == "zpp"
+
+    (generated / "SKILL.md").write_text("modified", encoding="utf-8")
+    zpp_home = tmp_path / "zpp-home"
+    reset = runner.invoke(
+        app,
+        ["--path", str(zpp_home), "reset", "--yes"],
+    )
+
+    assert reset.exit_code == 0, reset.output
+    assert not generated.exists()
+    assert (zpp_home / "openlease").is_dir()
+
+
 def test_no_space_repository_resolution_selects_python_and_flutter(
     tmp_path: Path,
 ) -> None:

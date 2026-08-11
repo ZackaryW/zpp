@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import tomllib
+from functools import lru_cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import MappingProxyType
@@ -40,6 +41,7 @@ from zpp.utils.openlease import (
     create_trait_documents,
     create_zpp_openlease,
 )
+from zpp.utils.openspec import OPENSPEC_CORE_SKILL_NAMES
 
 
 def verify_workflow_contract() -> None:
@@ -401,9 +403,16 @@ def verify_product_home_contract() -> None:
     runner = CliRunner()
     catalog = reset_projections()
     assert [(item.agent, item.kind) for item in catalog] == [
-        (agent, kind)
+        item
         for agent in ("codex", "claude", "pi", "kimi")
-        for kind in ("hook", "skill")
+        for item in (
+            (agent, "hook"),
+            (agent, "skill"),
+            *(
+                (agent, f"skill:{name}")
+                for name in OPENSPEC_CORE_SKILL_NAMES
+            ),
+        )
     ]
 
     with TemporaryDirectory() as directory:
@@ -434,6 +443,41 @@ def verify_product_home_contract() -> None:
         assert json.loads(reset.stdout)["state"] == "replaced"
         assert list(state.iterdir()) == []
         assert sibling.read_text() == "keep"
+
+
+@lru_cache(maxsize=1)
+def verify_openspec_skill_provisioning_contract() -> None:
+    runner = CliRunner()
+    for operation in ("install", "update", "remove"):
+        help_result = runner.invoke(app, ["workflow", operation, "--help"])
+        assert help_result.exit_code == 0
+        assert "openspec" not in help_result.stdout.casefold()
+
+    with TemporaryDirectory() as directory:
+        root = Path(directory)
+        user_home = root / "user"
+        user_home.mkdir()
+        with patch.object(
+            Path,
+            "home",
+            classmethod(lambda cls: user_home),
+        ):
+            initialized = runner.invoke(app, ["init", "--agent", "codex"])
+            assert initialized.exit_code == 0, initialized.output
+            assert len(json.loads(initialized.stdout)) == 8
+            generated = user_home / ".codex/skills/openspec-apply-change"
+            provenance = generated / ".zpp-openspec.json"
+            assert json.loads(provenance.read_text())["generator"] == "zpp"
+            (generated / "SKILL.md").write_text("modified", encoding="utf-8")
+
+            product_home = root / "zpp-home"
+            reset = runner.invoke(
+                app,
+                ["--path", str(product_home), "reset", "--yes"],
+            )
+            assert reset.exit_code == 0, reset.output
+            assert not generated.exists()
+            assert (product_home / "openlease").is_dir()
 
 
 def verify_behavior_contract() -> None:
@@ -578,6 +622,7 @@ VERIFIERS = {
     "trait_resolution": verify_resolution_contract,
     "automatic_trait_hooks": verify_automatic_hook_contract,
     "product_home_lifecycle": verify_product_home_contract,
+    "openspec_skill_provisioning": verify_openspec_skill_provisioning_contract,
 }
 
 
