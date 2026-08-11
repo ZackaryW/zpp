@@ -16,7 +16,8 @@ register_exact_steps(
         "every supported agent user integration is absent or ownership-safe removable",
         "the selected ZPP home and its openlease child are safe",
         "a user runs zpp reset with confirmation",
-        "ZPP removes every present user workflow skill and hook through Agent Router",
+        "ZPP removes every present user workflow skill hook and generated OpenSpec "
+        "operation skill through Agent Router",
         "ZPP replaces only the selected home's openlease child with fresh state",
         "repository project plugin worktree and other home contents remain unchanged",
         "one supported agent user workflow skill or hook conflicts with its "

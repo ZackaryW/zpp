@@ -92,12 +92,16 @@ selected home when absent and opens that exact directory in the native file
 manager without initializing OpenLease or interpreting the other contents.
 
 `zpp reset --yes` preflights every supported agent's ZPP-owned user-scope
-`zpp-workflow` skill and `zpp-session` hook through Agent Router. If every asset
-is absent or intact, reset removes the present projections and replaces only the
+`zpp-workflow` skill and `zpp-session` hook through Agent Router. If that
+preflight succeeds, reset removes those assets and force-deletes the six
+canonical Agent Router-owned OpenSpec skills for each agent by stable name. A
+modified generated skill is removed with its ownership state and no retained
+history; an unmanaged same-named skill is preserved as a conflict. Reset never
+regenerates OpenSpec. Only after all removals succeed does it replace the
 selected home's `openlease` child. It preserves the home itself, repository
 `.zpp` documents, `zpp.behave.yaml`, project-scope projections, plugins,
-worktrees, and unrelated files. A conflict aborts before removal, and a removal
-failure leaves the prior OpenLease state unchanged. Reset has no global-trait
+worktrees, and unrelated files. A removal failure leaves prior OpenLease state
+unchanged and a retry accepts assets already removed. Reset has no global-trait
 overwrite mode.
 
 `resolve --space` adds one explicitly selected OpenLease space;
@@ -115,6 +119,14 @@ first-seen order and are deduplicated. Required interactive selection offers
 Codex, Claude Code, Pi, and Kimi in that order; cancellation occurs before any
 projection. `resolve` accepts at most one agent because it reads that invoking
 agent's effective plugin artifacts.
+
+`zpp init` requires the local `openspec` executable. For every selected agent it
+freshly generates and validates the six core OpenSpec operation skills before
+projecting anything, then Agent Router installs or safely reconciles those
+skills together with `zpp-workflow` and `zpp-session` in user scope. Re-running
+`init` is the only OpenSpec regeneration operation. The grouped `workflow`
+commands continue to manage only the consolidated workflow skill and native
+hook; they expose no OpenSpec update option.
 
 Default `resolve` output is the selected complete trait bodies, ready for prompt
 injection. `--explain` emits the structured bodies, context, and deterministic

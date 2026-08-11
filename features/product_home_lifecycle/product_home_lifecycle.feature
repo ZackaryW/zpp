@@ -24,7 +24,7 @@ Feature: Manage one bounded ZPP home
     Given every supported agent user integration is absent or ownership-safe removable
     And the selected ZPP home and its openlease child are safe
     When a user runs zpp reset with confirmation
-    Then ZPP removes every present user workflow skill and hook through Agent Router
+    Then ZPP removes every present user workflow skill hook and generated OpenSpec operation skill through Agent Router
     And ZPP replaces only the selected home's openlease child with fresh state
     And repository project plugin worktree and other home contents remain unchanged
 
@@ -45,4 +45,3 @@ Feature: Manage one bounded ZPP home
     Given the selected home or openlease child cannot be proven to be a safe directory boundary
     When a user runs zpp reset with confirmation
     Then ZPP fails before changing an agent integration or filesystem path
-
