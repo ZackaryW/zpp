@@ -98,6 +98,12 @@ class FacetContext:
 class ResolutionContext:
     values: Mapping[str, str | tuple[str, ...] | bool]
     provenance: Mapping[str, str]
+    evidence: Mapping[str, tuple[str, ...]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    fingerprints: Mapping[str, str] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
 
 @dataclass(frozen=True, slots=True)

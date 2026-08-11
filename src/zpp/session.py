@@ -10,6 +10,7 @@ from zpp.models import (
     FacetContext,
     FacetProvenance,
     ResolutionContext,
+    ResolutionResult,
     StoredContext,
     TargetIdentity,
 )
@@ -167,11 +168,59 @@ def build_resolution_context(
     provenance = {
         key: item.source for key, item in stored.provenance.items()
     }
+    evidence = {
+        key: item.evidence
+        for key, item in stored.provenance.items()
+        if item.evidence
+    }
     values.update(repository.values)
     provenance.update(repository.provenance)
+    for key in repository.values:
+        evidence.pop(key, None)
     values.update(invocation.values)
     provenance.update(invocation.provenance)
+    for key in invocation.values:
+        evidence.pop(key, None)
+    relevant = {item for keys in evidence.values() for item in keys}
     return ResolutionContext(
         values=MappingProxyType(values),
         provenance=MappingProxyType(provenance),
+        evidence=MappingProxyType(evidence),
+        fingerprints=MappingProxyType(
+            {
+                key: value
+                for key, value in stored.fingerprints.items()
+                if key in relevant
+            }
+        ),
+    )
+
+
+def complete_stored_context(
+    result: ResolutionResult,
+    target: TargetIdentity,
+) -> StoredContext:
+    provenance = {
+        key: FacetProvenance(
+            source=result.context.provenance[key],
+            evidence=result.context.evidence.get(key, ()),
+        )
+        for key in result.context.values
+    }
+    relevant = {
+        evidence_key
+        for item in provenance.values()
+        for evidence_key in item.evidence
+    }
+    return StoredContext(
+        target=target,
+        values=MappingProxyType(dict(result.context.values)),
+        provenance=MappingProxyType(provenance),
+        fingerprints=MappingProxyType(
+            {
+                key: value
+                for key, value in result.context.fingerprints.items()
+                if key in relevant
+            }
+        ),
     )

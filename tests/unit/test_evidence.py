@@ -1,7 +1,14 @@
 from pathlib import Path
 
-from zpp.evidence import EvidenceRequest, EvidenceRuntime, collect_evidence
-from zpp.models import EvidenceBranch, EvidenceRef, FileContains
+from zpp.catalog import decode_trait_document
+from zpp.composition import compose_trait_family
+from zpp.evidence import (
+    EvidenceRequest,
+    EvidenceRuntime,
+    collect_evidence,
+    evidence_requests,
+)
+from zpp.models import EvidenceBranch, EvidenceRef, FileContains, SourceKind, SourceRef
 
 
 def test_collect_evidence_combines_bounded_predicates_and_records_uv_fact(
@@ -99,3 +106,47 @@ def test_unavailable_executable_records_false_boolean_fact(tmp_path: Path) -> No
 
     assert result.matched is False
     assert result.facts == {"has_uv": False}
+
+
+def test_evidence_requests_preserve_family_flavor_and_branch_order() -> None:
+    bdd = compose_trait_family(
+        "bdd",
+        [
+            decode_trait_document(
+                "bdd",
+                {
+                    "meta": {"selection": "all"},
+                    "trait": [
+                        {
+                            "when": [
+                                {"workspace_contains": "/pyproject.toml"},
+                                {"which": "uv"},
+                            ],
+                            "content": {"body": "bdd"},
+                        }
+                    ],
+                },
+                SourceRef(SourceKind.GLOBAL, "global"),
+            )
+        ],
+    )
+    build = compose_trait_family(
+        "build",
+        [
+            decode_trait_document(
+                "build",
+                {
+                    "meta": {"selection": "first-win"},
+                    "trait": [{"content": {"body": "build"}}],
+                },
+                SourceRef(SourceKind.GLOBAL, "global"),
+            )
+        ],
+    )
+
+    requests = evidence_requests([bdd, build])
+
+    assert [request.ref for request in requests] == [
+        EvidenceRef("bdd", 0, 0),
+        EvidenceRef("bdd", 0, 1),
+    ]

@@ -199,3 +199,91 @@ def test_unmatched_family_is_inactive_and_families_stack() -> None:
 
     assert result.families[0].bodies == ()
     assert result.families[1].bodies == ("uv",)
+
+
+def test_resolve_traits_publishes_false_evaluated_fact_with_fingerprint() -> None:
+    family = _family(
+        "first-win",
+        [_flavor("uv", when=[{"which": "uv"}], build_tool="uv")],
+    )
+    ref = evidence_ref(family, family.flavors[0], 0)
+
+    result = resolve_traits(
+        [family],
+        _context(),
+        {
+            ref: EvidenceResult(
+                matched=False,
+                facts=MappingProxyType({"has_uv": False}),
+                fingerprints=MappingProxyType({"which:uv": "missing"}),
+            )
+        },
+    )
+
+    assert result.context.values["has_uv"] is False
+    assert result.context.provenance["has_uv"] == "evidence"
+    assert result.context.evidence["has_uv"] == ("which:uv",)
+    assert result.context.fingerprints == {"which:uv": "missing"}
+
+
+def test_resolve_traits_attaches_selected_backfill_fingerprint_provenance() -> None:
+    family = _family(
+        "extend",
+        [
+            _flavor("generic"),
+            _flavor(
+                "python",
+                when=[{"workspace_contains": "/pyproject.toml"}],
+                language="python",
+            ),
+        ],
+    )
+    selected = family.flavors[1]
+    ref = evidence_ref(family, selected, 0)
+
+    result = resolve_traits(
+        [family],
+        _context(),
+        {
+            ref: EvidenceResult(
+                matched=True,
+                fingerprints=MappingProxyType(
+                    {"workspace_contains:/pyproject.toml": "present"}
+                ),
+            )
+        },
+    )
+
+    assert result.families[0].bodies == ("python",)
+    assert result.context.values["language"] == "python"
+    assert result.context.evidence["language"] == (
+        "workspace_contains:/pyproject.toml",
+    )
+
+
+def test_resolve_traits_does_not_replace_explicit_fact_with_evidence() -> None:
+    family = _family(
+        "first-win",
+        [_flavor("uv", when=[{"which": "uv"}], build_tool="uv")],
+    )
+    ref = evidence_ref(family, family.flavors[0], 0)
+    explicit = ResolutionContext(
+        values=MappingProxyType({"has_uv": True}),
+        provenance=MappingProxyType({"has_uv": "invocation"}),
+    )
+
+    result = resolve_traits(
+        [family],
+        explicit,
+        {
+            ref: EvidenceResult(
+                matched=False,
+                facts=MappingProxyType({"has_uv": False}),
+                fingerprints=MappingProxyType({"which:uv": "missing"}),
+            )
+        },
+    )
+
+    assert result.context.values["has_uv"] is True
+    assert result.context.provenance["has_uv"] == "invocation"
+    assert "has_uv" not in result.context.evidence

@@ -197,14 +197,47 @@ def resolve_traits(
     )
     merged_values = dict(context.values)
     merged_provenance = dict(context.provenance)
+    merged_evidence = dict(context.evidence)
+    merged_fingerprints = dict(context.fingerprints)
+
+    for family in families:
+        for flavor in family.flavors:
+            for branch_position, _ in enumerate(flavor.flavor.when):
+                ref = evidence_ref(family, flavor, branch_position)
+                evidence_result = evidence.get(ref)
+                if evidence_result is None:
+                    continue
+                keys = tuple(evidence_result.fingerprints)
+                for key, value in evidence_result.facts.items():
+                    if key in merged_values:
+                        continue
+                    merged_values[key] = value
+                    merged_provenance[key] = "evidence"
+                    merged_evidence[key] = keys
+                    merged_fingerprints.update(evidence_result.fingerprints)
+
     for resolution in resolutions:
         for key, value in resolution.backfill.values.items():
             merged_values[key] = value
             merged_provenance[key] = resolution.backfill.provenance[key]
+        for decision in resolution.decisions:
+            if not decision.selected or decision.evidence is None:
+                continue
+            evidence_result = evidence[decision.evidence]
+            keys = tuple(evidence_result.fingerprints)
+            for key in decision.flavor.flavor.facets:
+                if key not in resolution.backfill.values:
+                    continue
+                existing = list(merged_evidence.get(key, ()))
+                existing.extend(item for item in keys if item not in existing)
+                merged_evidence[key] = tuple(existing)
+            merged_fingerprints.update(evidence_result.fingerprints)
     return ResolutionResult(
         families=resolutions,
         context=ResolutionContext(
             values=MappingProxyType(merged_values),
             provenance=MappingProxyType(merged_provenance),
+            evidence=MappingProxyType(merged_evidence),
+            fingerprints=MappingProxyType(merged_fingerprints),
         ),
     )

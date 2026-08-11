@@ -6,7 +6,12 @@ from hashlib import sha256
 from pathlib import Path
 from types import MappingProxyType
 
-from zpp.models import EvidenceBranch, EvidenceRef, EvidenceResult
+from zpp.models import (
+    EffectiveTraitFamily,
+    EvidenceBranch,
+    EvidenceRef,
+    EvidenceResult,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,6 +25,24 @@ class EvidenceRuntime:
     target: Path
     read_bytes: Callable[[Path], bytes]
     executable: Callable[[str], str | None]
+
+
+def evidence_requests(
+    families: Sequence[EffectiveTraitFamily],
+) -> tuple[EvidenceRequest, ...]:
+    return tuple(
+        EvidenceRequest(
+            EvidenceRef(
+                family.family,
+                flavor.effective_position,
+                branch_position,
+            ),
+            branch,
+        )
+        for family in families
+        for flavor in family.flavors
+        for branch_position, branch in enumerate(flavor.flavor.when)
+    )
 
 
 def _digest(parts: Sequence[bytes]) -> str:

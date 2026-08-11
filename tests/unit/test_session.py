@@ -3,10 +3,16 @@ from types import MappingProxyType
 
 import pytest
 
-from zpp.models import FacetContext, TargetIdentity
+from zpp.models import (
+    FacetContext,
+    ResolutionContext,
+    ResolutionResult,
+    TargetIdentity,
+)
 from zpp.session import (
     SessionContextError,
     build_resolution_context,
+    complete_stored_context,
     encode_session_context,
     restore_session_context,
 )
@@ -139,3 +145,53 @@ def test_build_resolution_context_applies_context_precedence() -> None:
         "framework": "click",
         "stage": "shape",
     }
+
+
+def test_complete_stored_context_preserves_resolution_provenance() -> None:
+    resolution = ResolutionResult(
+        families=(),
+        context=ResolutionContext(
+            values=MappingProxyType(
+                {"framework": "click", "language": "python", "has_uv": False}
+            ),
+            provenance=MappingProxyType(
+                {
+                    "framework": "repository",
+                    "language": "evidence",
+                    "has_uv": "evidence",
+                }
+            ),
+            evidence=MappingProxyType(
+                {
+                    "language": ("workspace:/pyproject.toml",),
+                    "has_uv": ("which:uv",),
+                }
+            ),
+            fingerprints=MappingProxyType(
+                {
+                    "workspace:/pyproject.toml": "present",
+                    "which:uv": "missing",
+                    "unused": "ignored",
+                }
+            ),
+        ),
+    )
+
+    stored = complete_stored_context(resolution, TargetIdentity("/repo"))
+
+    assert stored.target.repository == "/repo"
+    assert stored.values == resolution.context.values
+    assert stored.provenance["framework"].evidence == ()
+    assert stored.provenance["language"].evidence == (
+        "workspace:/pyproject.toml",
+    )
+    assert stored.fingerprints == {
+        "workspace:/pyproject.toml": "present",
+        "which:uv": "missing",
+    }
+    encoded = encode_session_context(stored)
+    assert restore_session_context(
+        encoded,
+        TargetIdentity("/repo"),
+        stored.fingerprints,
+    ) == stored
