@@ -135,3 +135,4 @@ def test_packaged_workflow_hook_is_typed_and_resolves_for_its_agent(
     )
     assert "guard" not in payload
     assert "UserPromptSubmit" not in payload
+    assert "behave" not in payload

@@ -4,7 +4,6 @@ import pytest
 from openlease import (
     CallbackEvent,
     CallbackMode,
-    ConfigurationLayout,
     ConfigurationTarget,
     ExtensionContext,
     ExtensionEvent,
@@ -42,10 +41,14 @@ class FakeRunner:
         return ProcessResult(tuple(arguments), 0, "verified\n", "")
 
 
-def test_behavior_extension_registers_exact_operations_and_callbacks(
+def test_behavior_extension_registers_direct_operations_and_opt_in_callbacks(
     tmp_path: Path,
 ) -> None:
-    registration = behavior_extension(state_root=tmp_path / "state")
+    runner = FakeRunner()
+    registration = behavior_extension(
+        runner=runner,
+        state_root=tmp_path / "state",
+    )
 
     assert registration.manifest.identifier == "zpp.behave"
     assert [(item.name, item.target_kinds) for item in registration.operations] == [
@@ -71,6 +74,7 @@ def test_behavior_extension_registers_exact_operations_and_callbacks(
             (CallbackMode.OBSERVE,),
         ),
     ]
+    assert runner.calls == []
 
 
 def test_behavior_document_initializes_dedicated_yaml_without_a_space(
@@ -124,13 +128,17 @@ commands:
     assert runner.calls == [(("verify", "features/core"), repository.resolve())]
 
 
-def test_callback_reopens_the_exact_repository_behavior_document(
+class ExplodingManagedConfiguration:
+    def snapshot(self):
+        raise AssertionError("callback managed configuration must not be read")
+
+
+def test_callback_reopens_direct_document_without_managed_callback_configuration(
     tmp_path: Path,
 ) -> None:
     repository = tmp_path / "repository"
     repository.mkdir()
-    mapping = repository / "zpp.behave.yaml"
-    mapping.write_text(
+    (repository / "zpp.behave.yaml").write_text(
         """version: 1
 commands:
   bdd:
@@ -148,9 +156,9 @@ commands:
     )
     direct = lifecycle.bind_extension_document(
         "zpp.behave",
-        mapping,
+        repository / "zpp.behave.yaml",
         codec="yaml",
-        layout=ConfigurationLayout.DEDICATED,
+        layout="dedicated",
         repository_path=repository,
     )
     registration = behavior_extension(
@@ -159,7 +167,7 @@ commands:
     operation = next(item for item in registration.operations if item.name == "run")
     context = ExtensionContext(
         extension_id="zpp.behave",
-        target_kind="cohort",
+        target_kind="repository",
         target=ConfigurationTarget.repository("repo"),
         state_generation=1,
         configuration_generation=1,
@@ -174,12 +182,12 @@ commands:
     invocation = ExtensionInvocation(
         {"command": "bdd", "complete": True},
         context,
-        direct.config,
+        ExplodingManagedConfiguration(),
         direct.data,
         direct.cache,
         ExtensionEvent(
-            CallbackEvent.RECONCILE_AFTER_COHORT,
-            CallbackMode.OBSERVE,
+            CallbackEvent.RECONCILE_BEFORE_REPOSITORY,
+            CallbackMode.GATE,
             repository_id="repo",
             cohort_id="work",
         ),
@@ -193,7 +201,7 @@ commands:
     incomplete = ExtensionInvocation(
         {"command": "bdd"},
         context,
-        direct.config,
+        ExplodingManagedConfiguration(),
         direct.data,
         direct.cache,
         invocation.event,

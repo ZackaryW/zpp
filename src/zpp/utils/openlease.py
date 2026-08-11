@@ -164,10 +164,9 @@ def _run_behavior_invocation(
     runner: ProcessRunner | None,
     state_root: Path | None,
 ) -> object:
-    if (
-        invocation.event is not None
-        and isinstance(invocation.input, Mapping)
-        and "complete" not in invocation.input
+    if invocation.event is not None and (
+        not isinstance(invocation.input, Mapping)
+        or "complete" not in invocation.input
     ):
         raise BehaviorExecutionError(
             "behavior callback requires an explicit complete or affected selection mode"
@@ -176,8 +175,9 @@ def _run_behavior_invocation(
     root = _behavior_repository_root(invocation)
     process_runner = runner or SubprocessRunner()
     selected = tuple(adapters)
-    configuration = _plain_behavior_configuration(invocation)
-    if invocation.event is not None:
+    if invocation.event is None:
+        configuration = _plain_behavior_configuration(invocation)
+    else:
         if state_root is None:
             raise BehaviorExecutionError(
                 "callback behavior requires the selected OpenLease state root"
