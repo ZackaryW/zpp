@@ -444,8 +444,15 @@ def verify_product_home_contract() -> None:
                 app,
                 ["--path", str(home), "reset", "--yes"],
             )
+            reset_json = runner.invoke(
+                app,
+                ["--path", str(home), "reset", "--yes", "--json"],
+            )
         assert reset.exit_code == 0, reset.output
-        assert json.loads(reset.stdout)["state"] == "replaced"
+        assert len(reset.stdout.splitlines()) == 1
+        assert reset.stdout.startswith("Reset complete:")
+        assert reset_json.exit_code == 0, reset_json.output
+        assert json.loads(reset_json.stdout)["state"] == "replaced"
         assert list(state.iterdir()) == []
         assert sibling.read_text() == "keep"
 
@@ -468,12 +475,29 @@ def verify_openspec_skill_provisioning_contract() -> None:
             classmethod(lambda cls: user_home),
         ):
             initialized = runner.invoke(app, ["init", "--agent", "codex"])
-            assert initialized.exit_code == 0, initialized.output
-            assert len(json.loads(initialized.stdout)) == 10
+            repeated = runner.invoke(app, ["init", "--agent", "codex"])
+            detailed = runner.invoke(
+                app,
+                ["init", "--agent", "codex", "--json"],
+            )
+            assert initialized.exit_code == repeated.exit_code == 0
+            assert len(initialized.stdout.splitlines()) == 1
+            assert initialized.stdout.startswith("Initialized 1 agent:")
+            assert len(repeated.stdout.splitlines()) == 1
+            assert "10 unchanged" in repeated.stdout
+            assert detailed.exit_code == 0, detailed.output
+            assert len(json.loads(detailed.stdout)) == 10
             generated = user_home / ".codex/skills/openspec-apply-change"
             provenance = generated / ".zpp-openspec.json"
             assert json.loads(provenance.read_text())["generator"] == "zpp"
             (generated / "SKILL.md").write_text("modified", encoding="utf-8")
+            forced = runner.invoke(
+                app,
+                ["init", "--agent", "codex", "--force"],
+            )
+            assert forced.exit_code == 0, forced.output
+            assert len(forced.stdout.splitlines()) == 1
+            assert generated.joinpath("SKILL.md").read_text() != "modified"
 
             product_home = root / "zpp-home"
             reset = runner.invoke(
@@ -483,6 +507,22 @@ def verify_openspec_skill_provisioning_contract() -> None:
             assert reset.exit_code == 0, reset.output
             assert not generated.exists()
             assert (product_home / "openlease").is_dir()
+
+        unmanaged_home = root / "unmanaged-user"
+        unmanaged = unmanaged_home / ".codex/skills/zpp-workflow/SKILL.md"
+        unmanaged.parent.mkdir(parents=True)
+        unmanaged.write_text("unmanaged", encoding="utf-8")
+        with patch.object(
+            Path,
+            "home",
+            classmethod(lambda cls: unmanaged_home),
+        ):
+            rejected = runner.invoke(
+                app,
+                ["init", "--agent", "codex", "--force"],
+            )
+        assert rejected.exit_code == 2
+        assert unmanaged.read_text() == "unmanaged"
 
 
 def verify_behavior_contract() -> None:

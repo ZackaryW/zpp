@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from zpp.cli.reset import _reset_state, _ResetProjection
+from zpp.cli.reset import _reset_state, _reset_summary, _ResetProjection, _ResetReport
 
 
 @dataclass
@@ -23,6 +23,24 @@ class Prepared:
 
     def discard(self) -> None:
         self.events.append("discard")
+
+
+def test_reset_summary_counts_removed_and_absent_once() -> None:
+    report = _ResetReport(
+        inspections=(
+            {"status": "current"},
+            {"status": "absent"},
+        ),
+        removals=(
+            {"status": "removed"},
+            {"status": "absent"},
+        ),
+        state="replaced",
+    )
+
+    assert _reset_summary(report) == (
+        "Reset complete: 1 removed, 2 already absent; OpenLease state replaced."
+    )
 
 
 def projection(

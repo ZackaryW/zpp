@@ -138,7 +138,7 @@ def test_init_preflights_every_generated_inventory_before_projection(
 
     result = runner.invoke(
         app,
-        ["init", "--agent", "codex", "--agent", "pi"],
+        ["init", "--agent", "codex", "--agent", "pi", "--json"],
     )
 
     assert result.exit_code == 0, result.output
@@ -146,6 +146,98 @@ def test_init_preflights_every_generated_inventory_before_projection(
     assert events[-1] == "generation-cleanup"
     assert len(json.loads(result.stdout)) == 20
     assert events[1:11] == [
+        "skill:codex:zpp-workflow",
+        "hook:codex:zpp-session",
+        "skill:codex:zpp-configure-behave",
+        "skill:codex:zpp-author-trait",
+        *(f"skill:codex:openspec-{index}" for index in range(6)),
+    ]
+
+
+def test_lifecycle_summary_aggregates_stable_human_statuses() -> None:
+    summary = zpp.cli.shared.render_lifecycle_summary(
+        "Initialized",
+        2,
+        (
+            {"status": "no-op"},
+            {"status": "updated"},
+            {"status": "installed"},
+            {"status": "no-op"},
+        ),
+    )
+
+    assert summary == "Initialized 2 agents: 1 installed, 1 updated, 2 unchanged."
+
+
+def test_forced_init_reprojects_every_prepared_asset(monkeypatch, tmp_path) -> None:
+    events: list[str] = []
+
+    class Result:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def to_dict(self):
+            return {"name": self.name, "status": "updated"}
+
+    @contextmanager
+    def generated(agents, *, cwd):
+        del cwd
+        yield tuple(
+            (
+                agent,
+                tuple(SimpleNamespace(name=f"openspec-{index}") for index in range(6)),
+            )
+            for agent in agents
+        )
+
+    monkeypatch.setattr(initialization_cli, "generated_openspec_skill_sets", generated)
+    monkeypatch.setattr(initialization_cli, "agent_router", lambda agent, root: agent)
+    monkeypatch.setattr(
+        initialization_cli,
+        "packaged_workflow_skill",
+        lambda: SimpleNamespace(name="zpp-workflow"),
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "packaged_authoring_skills",
+        lambda: (
+            SimpleNamespace(name="zpp-configure-behave"),
+            SimpleNamespace(name="zpp-author-trait"),
+        ),
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "packaged_workflow_hook",
+        lambda agent: SimpleNamespace(name="zpp-session", agent=agent),
+    )
+
+    def reproject_skill(router, skill, scope, project_root):
+        events.append(f"skill:{router.value}:{skill.name}")
+        return Result(skill.name)
+
+    def reproject_hook(router, hook, scope, project_root):
+        events.append(f"hook:{router.value}:{hook.name}")
+        return Result(hook.name)
+
+    monkeypatch.setattr(
+        initialization_cli,
+        "reproject_workflow_skill",
+        reproject_skill,
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "reproject_workflow_hook",
+        reproject_hook,
+    )
+
+    results = initialization_cli._initialize_selected(
+        (Agent.CODEX,),
+        tmp_path,
+        force=True,
+    )
+
+    assert len(results) == 10
+    assert events == [
         "skill:codex:zpp-workflow",
         "hook:codex:zpp-session",
         "skill:codex:zpp-configure-behave",

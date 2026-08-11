@@ -75,9 +75,9 @@ repository-authoring operation rather than a resolution side effect.
 
 ```text
 zpp [--path ZPP_HOME] COMMAND
-zpp init [--agent AGENT ...]
+zpp init [--agent AGENT ...] [--force] [--json]
 zpp open
-zpp reset --yes
+zpp reset --yes [--json]
 zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--space SPACE [--authority AUTHORITY]] [--explain]
 zpp behave init
 zpp behave COMMAND [--all | --target TARGET ... | --gate GATE | --base REV --head REV]
@@ -104,6 +104,8 @@ child. It preserves the home itself, repository `.zpp` documents,
 `zpp.behave.yaml`, project-scope projections, plugins, worktrees, and unrelated
 files. A removal failure leaves prior OpenLease state unchanged and a retry
 accepts assets already removed. Reset has no global-trait overwrite mode.
+Successful reset prints one concise summary line by default; `--json` emits the
+complete inspection, removal, and state report.
 
 `resolve --space` adds one explicitly selected OpenLease space;
 `OPENLEASE_SPACE` may supply the same selection. `--authority` narrows that
@@ -127,6 +129,10 @@ projecting anything, then Agent Router installs or safely reconciles those
 skills together with `zpp-workflow`, `zpp-session`, `zpp-configure-behave`, and
 `zpp-author-trait` in user scope. Re-running `init` is the only OpenSpec
 regeneration operation and also reconciles the two packaged authoring skills.
+Successful initialization prints one concise summary line by default; `--json`
+emits every ordered Agent Router lifecycle result. `--force` reprojects every
+selected owned integration, including safely replacing diverged skills with
+matching Agent Router ownership, while unmanaged destinations remain conflicts.
 The grouped `workflow` commands continue to manage only the consolidated
 workflow skill and native hook; they expose no authoring-skill or OpenSpec
 option.

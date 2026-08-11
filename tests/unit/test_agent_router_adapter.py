@@ -23,7 +23,63 @@ from zpp.utils.agent_router import (
     project_workflow_skill,
     remove_workflow_hook,
     remove_workflow_skill,
+    reproject_workflow_hook,
+    reproject_workflow_skill,
 )
+
+
+def test_reproject_workflow_skill_force_removes_then_installs() -> None:
+    events = []
+    expected = object()
+
+    class Router:
+        def uninstall_skill(self, name, *, scope, project_root, force=False):
+            events.append(("remove", name, scope, project_root, force))
+            return SimpleNamespace(status="removed")
+
+        def install_skill(self, skill, *, scope, project_root):
+            events.append(("install", skill, scope, project_root))
+            return expected
+
+    router = Router()
+    skill = SimpleNamespace(name="zpp-workflow")
+
+    result = reproject_workflow_skill(router, skill, Scope.USER, None)
+
+    assert result is expected
+    assert events == [
+        ("remove", "zpp-workflow", Scope.USER, None, True),
+        ("install", skill, Scope.USER, None),
+    ]
+
+
+def test_reproject_workflow_hook_removes_current_then_installs() -> None:
+    events = []
+    expected = object()
+
+    class Router:
+        def inspect_hook(self, hook, *, scope, project_root):
+            events.append(("inspect", hook, scope, project_root))
+            return SimpleNamespace(status="current")
+
+        def uninstall_hook(self, name, *, scope, project_root):
+            events.append(("remove", name, scope, project_root))
+
+        def install_hook(self, hook, *, scope, project_root):
+            events.append(("install", hook, scope, project_root))
+            return expected
+
+    router = Router()
+    hook = SimpleNamespace(name="zpp-session")
+
+    result = reproject_workflow_hook(router, hook, Scope.USER, None)
+
+    assert result is expected
+    assert events == [
+        ("inspect", hook, Scope.USER, None),
+        ("remove", "zpp-session", Scope.USER, None),
+        ("install", hook, Scope.USER, None),
+    ]
 
 
 def test_inspect_workflow_skill_delegates_exact_arguments() -> None:

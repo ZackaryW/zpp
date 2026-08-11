@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 import sys
-from collections.abc import Callable
+from collections import Counter
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn
@@ -80,6 +81,34 @@ def abort_cancelled() -> NoReturn:
 
 def emit_json(value: object) -> None:
     typer.echo(json.dumps(value, ensure_ascii=False, sort_keys=True))
+
+
+def render_lifecycle_summary(
+    action: str,
+    agent_count: int,
+    records: Sequence[Mapping[str, object]],
+) -> str:
+    counts = Counter(str(record.get("status", "unknown")) for record in records)
+    labels = (
+        ("installed", "installed"),
+        ("updated", "updated"),
+        ("removed", "removed"),
+        ("no-op", "unchanged"),
+        ("absent", "already absent"),
+    )
+    parts = [
+        f"{counts[status]} {label}"
+        for status, label in labels
+        if counts[status]
+    ]
+    known = {status for status, _ in labels}
+    parts.extend(
+        f"{counts[status]} {status}"
+        for status in sorted(counts.keys() - known)
+    )
+    outcomes = ", ".join(parts) if parts else "no changes"
+    noun = "agent" if agent_count == 1 else "agents"
+    return f"{action} {agent_count} {noun}: {outcomes}."
 
 
 def user_action[T](action: Callable[[], T]) -> T:

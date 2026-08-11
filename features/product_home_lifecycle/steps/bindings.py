@@ -20,6 +20,10 @@ register_exact_steps(
         "operation skill through Agent Router",
         "ZPP replaces only the selected home's openlease child with fresh state",
         "repository project plugin worktree and other home contents remain unchanged",
+        "confirmed reset can complete against safe user integrations and state",
+        "the user runs confirmed reset with and without JSON output",
+        "the default reset result is one concise line with removal and state outcomes",
+        "the JSON reset result retains complete inspection removal and state details",
         "one supported agent user workflow skill or hook conflicts with its "
         "packaged asset",
         "ZPP identifies the conflicting agent integration",

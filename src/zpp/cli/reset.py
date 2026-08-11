@@ -66,6 +66,10 @@ def reset(
         bool,
         typer.Option("--yes", help="Confirm complete user integration reset."),
     ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Emit the complete reset report as JSON."),
+    ] = False,
 ) -> None:
     """Remove ZPP user integrations and replace managed OpenLease state."""
     if not yes:
@@ -80,7 +84,10 @@ def reset(
             prepare=lambda: PreparedOpenLeaseState.prepare(selected),
         )
     )
-    emit_json(report.to_dict())
+    if json_output:
+        emit_json(report.to_dict())
+        return
+    typer.echo(_reset_summary(report))
 
 
 def reset_projections() -> tuple[_ResetProjection, ...]:
@@ -245,6 +252,20 @@ def _record(
         "agent": projection.agent,
         "asset": projection.kind,
     }
+
+
+def _reset_summary(report: _ResetReport) -> str:
+    removed = sum(
+        record.get("status") == "removed" for record in report.removals
+    )
+    absent = sum(
+        record.get("status") == "absent"
+        for record in (*report.inspections, *report.removals)
+    )
+    return (
+        f"Reset complete: {removed} removed, {absent} already absent; "
+        f"OpenLease state {report.state}."
+    )
 
 
 def _summarize(records: Sequence[Mapping[str, object]]) -> str:

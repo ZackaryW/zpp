@@ -78,10 +78,12 @@ def test_init_regenerates_and_reset_force_removes_openspec_skills(
 
     first = runner.invoke(app, ["init", "--agent", "codex"])
     second = runner.invoke(app, ["init", "--agent", "codex"])
+    detailed = runner.invoke(app, ["init", "--agent", "codex", "--json"])
 
-    assert first.exit_code == second.exit_code == 0
-    assert len(json.loads(first.stdout)) == 10
-    assert len(json.loads(second.stdout)) == 10
+    assert first.exit_code == second.exit_code == detailed.exit_code == 0
+    assert first.stdout == "Initialized 1 agent: 10 installed.\n"
+    assert second.stdout == "Initialized 1 agent: 10 unchanged.\n"
+    assert len(json.loads(detailed.stdout)) == 10
     for name in ("zpp-configure-behave", "zpp-author-trait"):
         assert (user_home / ".codex/skills" / name / "SKILL.md").is_file()
     generated = user_home / ".codex/skills/openspec-apply-change"

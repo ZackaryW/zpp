@@ -24,6 +24,19 @@ Feature: Provision OpenSpec operations at ZPP initialization
     Then ZPP freshly generates every selected agent inventory
     And Agent Router safely reconciles the changed owned skill
 
+  Scenario: Summarize initialization unless JSON is requested
+    Given one selected agent has a current complete integration
+    When the user runs normal zpp init twice
+    Then each default result is one concise line with lifecycle outcome counts
+    And an explicit JSON request returns the complete ordered lifecycle report
+
+  Scenario: Force reproject a complete owned integration
+    Given one selected agent has a current complete integration
+    And one selected skill has diverged under matching Agent Router ownership
+    When the user runs zpp init with force
+    Then every selected workflow hook authoring and OpenSpec asset is requested for reprojection
+    And the owned diverged skill is replaced without adopting unmanaged destinations
+
   Scenario: Keep grouped workflow lifecycle free of OpenSpec controls
     Given a user selects a supported agent and integration scope
     When the user inspects or invokes workflow install update or remove

@@ -196,6 +196,34 @@ def project_workflow_hook(
     return router.install_hook(hook, scope=scope, project_root=project_root)
 
 
+def reproject_workflow_skill(
+    router: AgentRouter | _WorkflowRouter,
+    skill: Skill,
+    scope: Scope,
+    project_root: Path | None,
+) -> LifecycleResult:
+    remove_workflow_skill(
+        router,
+        skill.name,
+        scope,
+        project_root,
+        force=True,
+    )
+    return project_workflow_skill(router, skill, scope, project_root)
+
+
+def reproject_workflow_hook(
+    router: AgentRouter | _WorkflowRouter,
+    hook: Hook,
+    scope: Scope,
+    project_root: Path | None,
+) -> LifecycleResult:
+    inspection = inspect_workflow_hook(router, hook, scope, project_root)
+    if inspection.status == "current":
+        remove_workflow_hook(router, hook.name, scope, project_root)
+    return project_workflow_hook(router, hook, scope, project_root)
+
+
 def remove_workflow_skill(
     router: AgentRouter | _WorkflowRouter,
     name: str,

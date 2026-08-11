@@ -28,6 +28,12 @@ Feature: Manage one bounded ZPP home
     And ZPP replaces only the selected home's openlease child with fresh state
     And repository project plugin worktree and other home contents remain unchanged
 
+  Scenario: Summarize reset unless JSON is requested
+    Given confirmed reset can complete against safe user integrations and state
+    When the user runs confirmed reset with and without JSON output
+    Then the default reset result is one concise line with removal and state outcomes
+    And the JSON reset result retains complete inspection removal and state details
+
   Scenario: Abort complete reset on a preflight conflict
     Given one supported agent user workflow skill or hook conflicts with its packaged asset
     When a user runs zpp reset with confirmation
