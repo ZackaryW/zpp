@@ -1,14 +1,20 @@
 from pathlib import Path
 
-from zpp.catalog import decode_trait_document
-from zpp.composition import compose_trait_family
-from zpp.evidence import (
+from zpp.core.catalog import decode_trait_document
+from zpp.core.composition import compose_trait_family
+from zpp.core.evidence import (
     EvidenceRequest,
     EvidenceRuntime,
     collect_evidence,
     evidence_requests,
 )
-from zpp.models import EvidenceBranch, EvidenceRef, FileContains, SourceKind, SourceRef
+from zpp.core.models import (
+    EvidenceBranch,
+    EvidenceRef,
+    FileContains,
+    SourceKind,
+    SourceRef,
+)
 
 
 def test_collect_evidence_combines_bounded_predicates_and_records_uv_fact(

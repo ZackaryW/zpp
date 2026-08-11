@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+from pathlib import Path
+from types import MappingProxyType
+
+from zpp.core.application import (
+    BoundTraitDocument,
+    BoundTraitSource,
+    TraitApplication,
+    TraitInvocation,
+)
+from zpp.core.evidence import EvidenceRuntime
+from zpp.core.models import SourceKind
+
+
+def _document(body: str) -> BoundTraitDocument:
+    return BoundTraitDocument(
+        family="bdd",
+        values=MappingProxyType(
+            {
+                "meta": {"selection": "first-win"},
+                "trait": [
+                    {
+                        "facet": {"language": "python"},
+                        "content": {"body": body},
+                    }
+                ],
+            }
+        ),
+    )
+
+
+def test_application_resolves_classified_sources_without_layout_assumptions(
+    tmp_path: Path,
+) -> None:
+    sources = (
+        BoundTraitSource(
+            SourceKind.GLOBAL,
+            "packaged-global",
+            0,
+            (_document("global body"),),
+        ),
+        BoundTraitSource(
+            SourceKind.SPACE,
+            "selected-space",
+            0,
+            (_document("space body"),),
+        ),
+        BoundTraitSource(
+            SourceKind.REPOSITORY,
+            "selected-repository",
+            0,
+            (_document("repository body"),),
+        ),
+    )
+    application = TraitApplication(
+        lambda target: EvidenceRuntime(target, Path.read_bytes, lambda _tool: None)
+    )
+
+    result = application.resolve(
+        TraitInvocation(
+            target=tmp_path,
+            stage="wire",
+            facets=MappingProxyType({"language": "python"}),
+            stored_context=None,
+            repository_context=None,
+            sources=sources,
+        )
+    )
+
+    assert [item.body for item in result.bodies] == ["repository body"]
+    assert result.explanation["families"][0]["policy_source"] == (
+        "selected-repository"
+    )
+    assert "artifacts/traits" not in str(result.explanation)
+    assert '"stage":"wire"' in result.context

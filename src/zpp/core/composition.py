@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from zpp.models import (
+from zpp.core.models import (
     CompositionMode,
     EffectiveFlavor,
     EffectiveTraitFamily,

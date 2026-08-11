@@ -3,13 +3,13 @@ from types import MappingProxyType
 
 import pytest
 
-from zpp.models import (
+from zpp.core.models import (
     FacetContext,
     ResolutionContext,
     ResolutionResult,
     TargetIdentity,
 )
-from zpp.session import (
+from zpp.core.session import (
     SessionContextError,
     build_resolution_context,
     complete_stored_context,

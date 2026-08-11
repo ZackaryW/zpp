@@ -1,8 +1,8 @@
 import pytest
 
-from zpp.catalog import decode_trait_document
-from zpp.composition import CompositionError, compose_trait_family
-from zpp.models import CompositionMode, SelectionPolicy, SourceKind, SourceRef
+from zpp.core.catalog import decode_trait_document
+from zpp.core.composition import CompositionError, compose_trait_family
+from zpp.core.models import CompositionMode, SelectionPolicy, SourceKind, SourceRef
 
 
 def _document(

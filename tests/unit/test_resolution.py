@@ -1,9 +1,9 @@
 from types import MappingProxyType
 
-from zpp.catalog import decode_trait_document
-from zpp.composition import compose_trait_family
-from zpp.models import EvidenceResult, ResolutionContext, SourceKind, SourceRef
-from zpp.resolution import evidence_ref, resolve_trait_family, resolve_traits
+from zpp.core.catalog import decode_trait_document
+from zpp.core.composition import compose_trait_family
+from zpp.core.models import EvidenceResult, ResolutionContext, SourceKind, SourceRef
+from zpp.core.resolution import evidence_ref, resolve_trait_family, resolve_traits
 
 
 def _family(selection: str, flavors: list[dict[str, object]]):

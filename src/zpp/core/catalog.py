@@ -12,7 +12,7 @@ from pydantic import (
     field_validator,
 )
 
-from zpp.models import (
+from zpp.core.models import (
     CompositionMode,
     EvidenceBranch,
     FacetContext,

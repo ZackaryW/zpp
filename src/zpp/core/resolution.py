@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 
-from zpp.models import (
+from zpp.core.models import (
     EffectiveFlavor,
     EffectiveTraitFamily,
     EvidenceRef,

@@ -6,7 +6,7 @@ from types import MappingProxyType
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from zpp.models import (
+from zpp.core.models import (
     FacetContext,
     FacetProvenance,
     ResolutionContext,

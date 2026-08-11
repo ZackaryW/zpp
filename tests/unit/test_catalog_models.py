@@ -1,11 +1,11 @@
 import pytest
 
-from zpp.catalog import (
+from zpp.core.catalog import (
     TraitValidationError,
     decode_repository_context,
     decode_trait_document,
 )
-from zpp.models import SelectionPolicy, SourceKind, SourceRef
+from zpp.core.models import SelectionPolicy, SourceKind, SourceRef
 
 
 def test_decode_trait_document_returns_ordered_immutable_flavors() -> None:

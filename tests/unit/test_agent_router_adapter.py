@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 from agent_router import ConflictError, Scope
 
-from zpp.integrations.agent_router import (
+from zpp.utils.agent_router import (
     ZPP_TRAITS_ARTIFACT_ID,
     ZppTraitArtifactExtension,
     project_workflow_skill,

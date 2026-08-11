@@ -10,13 +10,29 @@ from typing import Protocol
 from openlease import (
     ConfigurationLayout,
     ExtensionDocumentBinding,
+    ExtensionManifest,
+    ExtensionRegistration,
     OpenLease,
     WriteDisposition,
     to_plain_managed_value,
 )
 
+from zpp.core.application import (
+    BoundTraitDocument,
+    BoundTraitSource,
+)
+from zpp.core.models import SourceKind
+
 _EXTENSION_ID = "zpp.traits"
 _FAMILY = re.compile(r"^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$")
+
+
+def create_trait_documents(state_root: Path) -> OpenLeaseTraitDocuments:
+    lifecycle = OpenLease(
+        state_root,
+        extensions=(ExtensionRegistration(ExtensionManifest(_EXTENSION_ID)),),
+    )
+    return OpenLeaseTraitDocuments(lifecycle)
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +41,12 @@ class ManagedTraitDocument:
     family: str | None
     values: Mapping[str, object]
     provenance: object
+
+
+@dataclass(frozen=True, slots=True)
+class BoundRepositoryTraits:
+    context: BoundTraitDocument | None
+    source: BoundTraitSource
 
 
 class _Configuration(Protocol):
@@ -81,6 +103,39 @@ class OpenLeaseTraitDocuments:
             return None
         return self._read(path, root, family=None)
 
+    def read_repository(self, repository: Path) -> BoundRepositoryTraits:
+        root = repository.resolve()
+        context = self.read_context(root)
+        traits = self.read_traits(root)
+        return BoundRepositoryTraits(
+            context=(
+                BoundTraitDocument(
+                    family="context",
+                    values=context.values,
+                    identifier=str(context.path),
+                    path=context.path,
+                )
+                if context is not None
+                else None
+            ),
+            source=BoundTraitSource(
+                kind=SourceKind.REPOSITORY,
+                identifier=str(root),
+                order=0,
+                documents=tuple(
+                    BoundTraitDocument(
+                        family=document.family or "",
+                        values=document.values,
+                        identifier=str(document.path),
+                        order=order,
+                        path=document.path,
+                    )
+                    for order, document in enumerate(traits)
+                    if document.family is not None
+                ),
+            ),
+        )
+
     def read_traits(self, repository: Path) -> tuple[ManagedTraitDocument, ...]:
         root = repository.resolve()
         trait_root = root / ".zpp" / "traits"
@@ -110,6 +165,17 @@ class OpenLeaseTraitDocuments:
             create_parents=True,
         )
         return self._managed_document(path, family, bound)
+
+    def initialize_context(self, repository: Path) -> ManagedTraitDocument:
+        root = repository.resolve()
+        path = root / ".zpp" / "zpp.toml"
+        bound = self._lifecycle.initialize_extension_document(
+            self._binding(path, root, writable=True),
+            initial={"facet": {}},
+            boundary=root / ".zpp",
+            create_parents=True,
+        )
+        return self._managed_document(path, None, bound)
 
     def set_trait_value(
         self,

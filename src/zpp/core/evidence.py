@@ -6,7 +6,7 @@ from hashlib import sha256
 from pathlib import Path
 from types import MappingProxyType
 
-from zpp.models import (
+from zpp.core.models import (
     EffectiveTraitFamily,
     EvidenceBranch,
     EvidenceRef,
