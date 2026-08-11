@@ -85,6 +85,7 @@ class _WorkflowRouter(Protocol):
         *,
         scope: Scope,
         project_root: str | Path | None = None,
+        force: bool = False,
     ) -> LifecycleResult: ...
 
     def install_hook(
@@ -200,7 +201,16 @@ def remove_workflow_skill(
     name: str,
     scope: Scope,
     project_root: Path | None,
+    *,
+    force: bool = False,
 ) -> LifecycleResult:
+    if force:
+        return router.uninstall_skill(
+            name,
+            scope=scope,
+            project_root=project_root,
+            force=True,
+        )
     return router.uninstall_skill(
         name,
         scope=scope,

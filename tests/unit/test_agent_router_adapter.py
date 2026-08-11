@@ -165,6 +165,28 @@ def test_remove_workflow_skill_delegates_exact_arguments() -> None:
     assert router.call == ("zpp-workflow", Scope.PROJECT, project)
 
 
+def test_remove_workflow_skill_forwards_explicit_force() -> None:
+    expected = object()
+
+    class Router:
+        def uninstall_skill(self, name, *, scope, project_root, force=False):
+            self.call = (name, scope, project_root, force)
+            return expected
+
+    router = Router()
+
+    result = remove_workflow_skill(
+        router,
+        "openspec-apply-change",
+        Scope.USER,
+        None,
+        force=True,
+    )
+
+    assert result is expected
+    assert router.call == ("openspec-apply-change", Scope.USER, None, True)
+
+
 def test_remove_workflow_hook_delegates_exact_arguments() -> None:
     expected = object()
 
