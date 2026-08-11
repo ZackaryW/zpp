@@ -15,12 +15,31 @@ Feature: Run the ZPP workflow through one explicit authority
     Then workflow stages transitions gates and authority exist in the skill
     And no workflow trait family is packaged
 
-  Scenario: Reauthor the complete applicable reference behavior
-    Given the separate reference repository contains the established standard traits
-    When ZPP packages its TOML trait source under artifacts traits
-    Then related BDD structure BDD TDD build and tool variants are complete flavors
-    And focused dependency lease reconciliation and zero-assumption behavior remains represented
+  Scenario: Package the reconciled standard behavior collection
+    Given ZPP packages its standard TOML traits under artifacts traits
+    When a user inspects the packaged family inventory
+    Then BDD operation structure and execution remain separate focused families
+    And TDD build dependency tooling and zero-assumption behavior remain represented
+    And no lease conflict or reconciliation policy family is packaged
     And the packaged source path is not imposed as the runtime collection path
+
+  Scenario: Name BDD execution without creating workflow authority
+    Given the packaged BDD execution modes are available
+    When a repository resolves its BDD execution policy
+    Then manual disabled complete targeted and targeted-default behavior comes from bdd-execution
+    And no bdd-workflow compatibility family is packaged
+
+  Scenario: Keep universal and tool guidance precise
+    Given the packaged zero-assumptions and tooling families are available
+    When a user inspects their activation and flavors
+    Then zero-assumptions declares always-run activation
+    And tooling contains evidence-backed rg and jq guidance without zmem workflow policy
+
+  Scenario: Keep component operations with their owners
+    Given a workflow encounters an OpenLease conflict or final reconciliation
+    When ZPP determines the governing behavior
+    Then OpenLease or the consolidated workflow skill supplies the operational contract
+    And no packaged trait is treated as lease or reconciliation authority
 
   Scenario: Require an explicit workflow stage
     Given a workflow invocation has repository files stored context and resolved traits
