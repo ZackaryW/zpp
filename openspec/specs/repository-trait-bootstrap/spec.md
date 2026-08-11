@@ -44,15 +44,19 @@ Creating or modifying `.zpp/zpp.toml` or `.zpp/traits/{name}.toml` SHALL require
 - **THEN** ZPP may request OpenLease's bounded initialization for exactly that document
 
 ### Requirement: Stable public command hierarchy
-ZPP SHALL export its Typer application as `zpp.cli:app`, retain root `init` and `resolve` commands, add exact repository initialization as grouped `trait init`, and retain the `workflow install`, `workflow update`, and `workflow remove` command group. Trait explanations SHALL be requested as part of `resolve`, and workflow lifecycle SHALL NOT be exposed as a flat `install-workflow` command. The commands SHALL delegate configuration and projection operations to OpenLease and Agent Router rather than exposing a mirrored OpenLease space lifecycle.
+ZPP SHALL export its Typer application as `zpp.cli:app`, retain root `init` and `resolve` commands, add exact repository initialization as grouped `trait init`, restore root `behave COMMAND` with reserved `behave init`, and retain the `workflow install`, `workflow update`, and `workflow remove` command group. `behave COMMAND` SHALL accept `--all`, repeatable `--target`, `--gate`, and paired `--base` and `--head` according to the behavior-verification selection contract. Trait explanations SHALL be requested as part of `resolve`, and workflow lifecycle SHALL NOT be exposed as a flat `install-workflow` command. The commands SHALL delegate configuration and projection operations to OpenLease and Agent Router rather than exposing a mirrored OpenLease space lifecycle.
 
 #### Scenario: Inspect command help
 - **WHEN** a user opens ZPP command help
-- **THEN** root `init` and `resolve`, grouped `trait init`, and grouped `workflow install|update|remove` are present, while flat `init-trait`, flat `install-workflow`, standalone `explain`, and mirrored `space` commands are absent
+- **THEN** root `init`, `resolve`, and `behave COMMAND`, grouped `trait init`, and grouped `workflow install|update|remove` are present, while flat `init-trait`, flat `install-workflow`, standalone `explain`, and mirrored `space` commands are absent
 
 #### Scenario: Explain one resolution
 - **WHEN** a user resolves a target with the explanation option
 - **THEN** the same side-effect-free resolution operation emits its source, policy, flavor, facet, and evidence decisions without changing the selected bodies
+
+#### Scenario: Inspect behavior selection help
+- **WHEN** a user inspects `zpp behave --help`
+- **THEN** the command documents its command-or-init argument and complete, exact-target, gate, and paired-revision selection options
 
 ### Requirement: Typed agent selection behavior
 ZPP CLI commands SHALL use Agent Router's `Agent` type as the supported agent identity. Commands accepting multiple agents SHALL accept repeatable explicit values, preserve first-seen request order, and deduplicate repeats. When such a command requires selection and receives no explicit value, it SHALL prompt on an interactive terminal in Codex, Claude Code, Pi, Kimi order and SHALL abort without mutation if cancelled; the same omission SHALL fail in noninteractive use. `resolve --agent` SHALL remain optional and SHALL accept at most one invoking agent.
@@ -74,18 +78,26 @@ ZPP CLI commands SHALL use Agent Router's `Agent` type as the supported agent id
 - **THEN** ZPP rejects the request instead of combining several invoking-agent artifact contexts
 
 ### Requirement: No-space repository operation
-Ordinary repository trait opening, initialization, and resolution SHALL NOT create, select, lock, or require an OpenLease space. An explicitly selected space MAY supply additional OpenLease context, but its lifecycle SHALL remain independent from baseline repository trait availability.
+Ordinary repository trait opening, initialization, and resolution and direct `zpp behave init` or execution SHALL NOT create, select, lock, or require an OpenLease space. An explicitly selected space MAY supply additional trait context or a real reconciliation callback context, but its lifecycle SHALL remain independent from baseline repository trait availability and direct behavior verification.
 
 #### Scenario: Resolve repository traits without a space
 - **WHEN** an unregistered repository uses its direct trait document without explicit space selection
 - **THEN** ZPP resolves the bounded repository context without creating or selecting a space
 
-### Requirement: OpenLease configuration authority
-OpenLease SHALL remain the owner of direct document binding, codec/layout handling, repository-path provenance, bounded initialization, and managed writes. ZPP SHALL own only the `zpp.traits` schemas and semantic resolution of the context and one-family trait documents supplied through that binding.
+#### Scenario: Run repository behavior without a space
+- **WHEN** an unregistered Git worktree invokes `zpp behave` against its dedicated root mapping
+- **THEN** ZPP uses an invocation-scoped direct document binding without creating or selecting a space
 
-#### Scenario: Consume an exact direct context
+### Requirement: OpenLease configuration authority
+OpenLease SHALL remain the owner of direct document binding, codec and layout handling, repository-path provenance, bounded initialization, managed writes, and explicit extension invocation and callback boundaries. ZPP SHALL own the `zpp.traits` schemas and semantic resolution of context and one-family trait documents and the independent `zpp.behave` version-one schema, deterministic selection, and provider execution supplied through those bindings. The dedicated root `zpp.behave.yaml` SHALL be bound wholly to `zpp.behave` without a namespace wrapper.
+
+#### Scenario: Consume an exact direct trait context
 - **WHEN** OpenLease supplies bound `.zpp/zpp.toml` and `.zpp/traits/{name}.toml` documents with the selected repository path
 - **THEN** ZPP consumes those exact invocation documents without creating topology or a compatibility-owned configuration record
+
+#### Scenario: Consume an exact behavior mapping
+- **WHEN** OpenLease supplies the repository-root dedicated YAML document to `zpp.behave`
+- **THEN** ZPP receives root-level `version` and `commands`, validates their behavior semantics, and adds no extension wrapper or compatibility record
 
 ### Requirement: Agent Router discovery and projection authority
 Agent Router SHALL remain the owner of supported agent/plugin discovery, effective artifact selection, destination resolution, ownership inspection, skill and hook installation, explicit project skill update, and removal. ZPP SHALL construct Agent Router with the actual user home and the selected repository as project context, register trait artifact semantics, and provide its packaged workflow skill and per-agent hook without independently scanning or mutating agent destinations. One resolution SHALL consume plugin traits only from the explicitly invoking agent's effective active `zpp.traits` artifacts.
