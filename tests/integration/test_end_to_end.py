@@ -7,7 +7,7 @@ from agent_router import AgentEnvironment, AgentRouter, Scope
 from typer.testing import CliRunner
 
 from zpp.artifacts import (
-    packaged_authoring_skills,
+    packaged_companion_skills,
     packaged_workflow_hook,
     packaged_workflow_skill,
 )
@@ -27,7 +27,7 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
     project.mkdir()
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: user_home))
     skill = packaged_workflow_skill()
-    authoring_skills = packaged_authoring_skills()
+    companion_skills = packaged_companion_skills()
     routers = {}
     for agent in SUPPORTED_AGENTS:
         router = AgentRouter(
@@ -36,8 +36,8 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
             environment=AgentEnvironment(user_home, project),
         )
         router.install_skill(skill, scope=Scope.USER)
-        for authoring_skill in authoring_skills:
-            router.install_skill(authoring_skill, scope=Scope.USER)
+        for companion_skill in companion_skills:
+            router.install_skill(companion_skill, scope=Scope.USER)
         router.install_hook(packaged_workflow_hook(agent), scope=Scope.USER)
         routers[agent] = router
 
@@ -55,9 +55,9 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
     for agent, router in routers.items():
         assert router.inspect_skill(skill, scope=Scope.USER).status == "absent"
         assert all(
-            router.inspect_skill(authoring_skill, scope=Scope.USER).status
+            router.inspect_skill(companion_skill, scope=Scope.USER).status
             == "absent"
-            for authoring_skill in authoring_skills
+            for companion_skill in companion_skills
         )
         assert (
             router.inspect_hook(
@@ -81,10 +81,12 @@ def test_init_regenerates_and_reset_force_removes_openspec_skills(
     detailed = runner.invoke(app, ["init", "--agent", "codex", "--json"])
 
     assert first.exit_code == second.exit_code == detailed.exit_code == 0
-    assert first.stdout == "Initialized 1 agent: 10 installed.\n"
-    assert second.stdout == "Initialized 1 agent: 10 unchanged.\n"
-    assert len(json.loads(detailed.stdout)) == 10
-    for name in ("zpp-configure-behave", "zpp-author-trait"):
+    companion_skills = packaged_companion_skills()
+    expected = 2 + len(companion_skills) + 6
+    assert first.stdout == f"Initialized 1 agent: {expected} installed.\n"
+    assert second.stdout == f"Initialized 1 agent: {expected} unchanged.\n"
+    assert len(json.loads(detailed.stdout)) == expected
+    for name in (skill.name for skill in companion_skills):
         assert (user_home / ".codex/skills" / name / "SKILL.md").is_file()
     generated = user_home / ".codex/skills/openspec-apply-change"
     provenance = generated / ".zpp-openspec.json"

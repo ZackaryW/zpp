@@ -1,0 +1,60 @@
+name: Sync vendored skills
+
+on:
+  push:
+    branches: [main]
+    paths: ['pyproject.toml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-vendored-skills
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPO: https://github.com/ZackaryW/zmem.git
+  COMPANION_ROOT: src/zpp/artifacts/skills/companion
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out ZPP
+        uses: actions/checkout@v4
+
+      - name: Check out upstream skills at default-branch HEAD
+        run: git clone --depth 1 "$UPSTREAM_REPO" "$RUNNER_TEMP/upstream"
+
+      - name: Replace vendored skill directories
+        run: |
+          set -euo pipefail
+          for skill in zmem-author-commits zmem-query-memory; do
+            source="$RUNNER_TEMP/upstream/skills/$skill"
+            if [ ! -f "$source/SKILL.md" ]; then
+              echo "upstream skill is missing or invalid: $skill" >&2
+              exit 1
+            fi
+            rm -rf "${COMPANION_ROOT:?}/$skill"
+            cp -r "$source" "$COMPANION_ROOT/$skill"
+          done
+
+      - name: Commit only when vendored content changed
+        run: |
+          set -euo pipefail
+          git add -- "$COMPANION_ROOT"
+          if git diff --cached --quiet -- "$COMPANION_ROOT"; then
+            echo "Vendored skills already match upstream; nothing to commit."
+            exit 0
+          fi
+          if ! git diff --cached --quiet -- . ":(exclude)$COMPANION_ROOT"; then
+            echo "Refusing to commit: changes outside the companion role." >&2
+            git diff --cached --name-only -- . ":(exclude)$COMPANION_ROOT" >&2
+            exit 1
+          fi
+          revision="$(git -C "$RUNNER_TEMP/upstream" rev-parse --short HEAD)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(skills): sync vendored zmem skills to ${revision}"
+          git push

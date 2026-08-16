@@ -28,6 +28,13 @@ Feature: Manage one bounded ZPP home
     And ZPP replaces only the selected home's openlease child with fresh state
     And repository project plugin worktree and other home contents remain unchanged
 
+  Scenario: Target every discovered companion skill during reset
+    Given ZPP discovers its packaged companion skills from their role directory
+    When a user inspects the confirmed reset target catalog
+    Then every discovered companion skill is targeted for each supported agent
+    And those targets follow hook workflow skill then deterministic companion order
+    And no declared list of companion skill names determines that catalog
+
   Scenario: Summarize reset unless JSON is requested
     Given confirmed reset can complete against safe user integrations and state
     When the user runs confirmed reset with and without JSON output

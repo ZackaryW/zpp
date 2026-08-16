@@ -9,7 +9,7 @@ import typer
 from agent_router import Agent, Scope
 
 from zpp.artifacts import (
-    packaged_authoring_skills,
+    packaged_companion_skills,
     packaged_workflow_hook,
     packaged_workflow_skill,
 )
@@ -93,7 +93,7 @@ def reset(
 def reset_projections() -> tuple[_ResetProjection, ...]:
     target = Path.cwd().resolve()
     skill = packaged_workflow_skill()
-    authoring_skills = packaged_authoring_skills()
+    companion_skills = packaged_companion_skills()
     projections: list[_ResetProjection] = []
     for agent in SUPPORTED_AGENTS:
         router = agent_router(agent, target)
@@ -141,8 +141,8 @@ def reset_projections() -> tuple[_ResetProjection, ...]:
         projections.extend(
             _ResetProjection(
                 agent.value,
-                f"skill:{authoring_skill.name}",
-                lambda selected_router=router, selected_skill=authoring_skill: (
+                f"skill:{companion_skill.name}",
+                lambda selected_router=router, selected_skill=companion_skill: (
                     inspect_workflow_skill(
                         selected_router,
                         selected_skill,
@@ -150,7 +150,7 @@ def reset_projections() -> tuple[_ResetProjection, ...]:
                         None,
                     )
                 ),
-                lambda selected_router=router, selected_skill=authoring_skill: (
+                lambda selected_router=router, selected_skill=companion_skill: (
                     remove_workflow_skill(
                         selected_router,
                         selected_skill.name,
@@ -159,7 +159,7 @@ def reset_projections() -> tuple[_ResetProjection, ...]:
                     )
                 ),
             )
-            for authoring_skill in authoring_skills
+            for companion_skill in companion_skills
         )
         projections.extend(
             _ResetProjection(

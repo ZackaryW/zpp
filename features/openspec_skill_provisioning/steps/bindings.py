@@ -9,6 +9,20 @@ register_exact_steps(
         "Agent Router installs the workflow skill native hook and six OpenSpec skills "
         "for each selected agent",
         "each generated skill records the detected OpenSpec version as ZPP provenance",
+        "ZPP discovers its packaged companion skills from their role directory",
+        "Agent Router projects every discovered companion skill for each selected "
+        "agent",
+        "the reported order follows the deterministic packaged order",
+        "no declared list of companion skill names determines that inventory",
+        "a user selects one supported agent",
+        "the user runs zpp init with JSON output",
+        "the ordered report contains one result for the workflow skill and native hook",
+        "it contains one result for each discovered companion skill",
+        "it contains one result for each generated OpenSpec skill",
+        "ZPP packages the vendored zmem authoring and query skills as companion skills",
+        "zmem-author-commits and zmem-query-memory are projected for each selected "
+        "agent",
+        "no zmem extension design skill is packaged or projected",
         "the local OpenSpec CLI fails or returns an unexpected inventory for one "
         "selected agent",
         "the user runs zpp init for several agents",

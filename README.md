@@ -92,11 +92,11 @@ selected home when absent and opens that exact directory in the native file
 manager without initializing OpenLease or interpreting the other contents.
 
 `zpp reset --yes` preflights every supported agent's ZPP-owned user-scope
-`zpp-workflow`, `zpp-configure-behave`, and `zpp-author-trait` skills and
-`zpp-session` hook through Agent Router. If that preflight succeeds, reset
+`zpp-workflow` skill, every packaged companion skill, and `zpp-session` hook
+through Agent Router. If that preflight succeeds, reset
 removes those intact packaged assets normally and force-deletes the six
 canonical Agent Router-owned OpenSpec skills for each agent by stable name. A
-modified packaged authoring skill remains a conflict. A modified generated
+modified packaged companion skill remains a conflict. A modified generated
 skill is removed with its ownership state and no retained history; an unmanaged
 same-named skill is preserved as a conflict. Reset never regenerates OpenSpec.
 Only after all removals succeed does it replace the selected home's `openlease`
@@ -126,9 +126,9 @@ agent's effective plugin artifacts.
 `zpp init` requires the local `openspec` executable. For every selected agent it
 freshly generates and validates the six core OpenSpec operation skills before
 projecting anything, then Agent Router installs or safely reconciles those
-skills together with `zpp-workflow`, `zpp-session`, `zpp-configure-behave`, and
-`zpp-author-trait` in user scope. Re-running `init` is the only OpenSpec
-regeneration operation and also reconciles the two packaged authoring skills.
+skills together with `zpp-workflow`, `zpp-session`, and every packaged companion
+skill in user scope. Re-running `init` is the only OpenSpec
+regeneration operation and also reconciles the packaged companion skills.
 Successful initialization prints one concise summary line by default; `--json`
 emits every ordered Agent Router lifecycle result. `--force` reprojects every
 selected owned integration, including safely replacing diverged skills with
@@ -137,12 +137,22 @@ The grouped `workflow` commands continue to manage only the consolidated
 workflow skill and native hook; they expose no authoring-skill or OpenSpec
 option.
 
+Packaged skills live under `zpp/artifacts/skills/{role}/{skill}`. The `workflow`
+role holds exactly one skill; every skill in the `companion` role is discovered
+by directory scan, in deterministic name order, and is projected and removed as
+part of the installation. A directory is a skill only when it contains
+`SKILL.md`. Adding a companion skill requires no code change; an unusable role
+fails loading rather than yielding a partial inventory.
+
 `zpp-configure-behave` is a manual authoring skill for repository-backed
 verification providers, stable segmented targets, conservative path rules,
 gates, and validation of `zpp.behave.yaml`. `zpp-author-trait` is a manual
 authoring skill for one-family TOML documents, activation, selection, facets,
-evidence, complete bodies, and explained resolution. Neither skill runs from a
-hook or workflow transition, and neither introduces another CLI command.
+evidence, complete bodies, and explained resolution. `zmem-author-commits` and
+`zmem-query-memory` are vendored companion skills for authoring and querying
+durable repository memory, kept current from upstream by the
+`sync-vendored-skills` workflow. No companion skill runs from a
+hook or workflow transition, and none introduces another CLI command.
 
 Default `resolve` output is the selected complete trait bodies, ready for prompt
 injection. `--explain` emits the structured bodies, context, and deterministic

@@ -7,7 +7,7 @@ import typer
 from agent_router import Agent, Scope
 
 from zpp.artifacts import (
-    packaged_authoring_skills,
+    packaged_companion_skills,
     packaged_workflow_hook,
     packaged_workflow_skill,
 )
@@ -73,7 +73,7 @@ def _initialize_selected(
     force: bool = False,
 ) -> list[dict]:
     skill = packaged_workflow_skill()
-    authoring_skills = packaged_authoring_skills()
+    companion_skills = packaged_companion_skills()
     results: list[dict] = []
     skill_projection = (
         reproject_workflow_skill if force else project_workflow_skill
@@ -100,11 +100,11 @@ def _initialize_selected(
             results.extend(
                 skill_projection(
                     router,
-                    authoring_skill,
+                    companion_skill,
                     Scope.USER,
                     None,
                 ).to_dict()
-                for authoring_skill in authoring_skills
+                for companion_skill in companion_skills
             )
             results.extend(
                 skill_projection(
