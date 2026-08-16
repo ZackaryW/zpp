@@ -16,7 +16,7 @@ from agent_router import Agent
 from typer.testing import CliRunner
 
 from zpp.artifacts import (
-    PACKAGED_AUTHORING_SKILL_NAMES,
+    packaged_companion_skills,
     packaged_trait_source,
     packaged_traits,
     packaged_workflow_hook,
@@ -402,6 +402,13 @@ def verify_automatic_hook_contract() -> None:
 
 def verify_product_home_contract() -> None:
     runner = CliRunner()
+    companion_skills = packaged_companion_skills()
+    assert [skill.name for skill in companion_skills] == sorted(
+        skill.name for skill in companion_skills
+    )
+    assert {"zpp-configure-behave", "zpp-author-trait"} <= {
+        skill.name for skill in companion_skills
+    }
     catalog = reset_projections()
     assert [(item.agent, item.kind) for item in catalog] == [
         item
@@ -410,8 +417,8 @@ def verify_product_home_contract() -> None:
             (agent, "hook"),
             (agent, "skill"),
             *(
-                (agent, f"skill:{name}")
-                for name in PACKAGED_AUTHORING_SKILL_NAMES
+                (agent, f"skill:{skill.name}")
+                for skill in companion_skills
             ),
             *(
                 (agent, f"skill:{name}")
@@ -460,6 +467,11 @@ def verify_product_home_contract() -> None:
 @lru_cache(maxsize=1)
 def verify_openspec_skill_provisioning_contract() -> None:
     runner = CliRunner()
+    companion_skills = packaged_companion_skills()
+    companion_names = [skill.name for skill in companion_skills]
+    assert {"zmem-author-commits", "zmem-query-memory"} <= set(companion_names)
+    assert "zmem-design-extensions" not in companion_names
+    expected_assets = 2 + len(companion_names) + len(OPENSPEC_CORE_SKILL_NAMES)
     for operation in ("install", "update", "remove"):
         help_result = runner.invoke(app, ["workflow", operation, "--help"])
         assert help_result.exit_code == 0
@@ -484,9 +496,10 @@ def verify_openspec_skill_provisioning_contract() -> None:
             assert len(initialized.stdout.splitlines()) == 1
             assert initialized.stdout.startswith("Initialized 1 agent:")
             assert len(repeated.stdout.splitlines()) == 1
-            assert "10 unchanged" in repeated.stdout
+            assert f"{expected_assets} unchanged" in repeated.stdout
             assert detailed.exit_code == 0, detailed.output
-            assert len(json.loads(detailed.stdout)) == 10
+            report = json.loads(detailed.stdout)
+            assert len(report) == expected_assets
             generated = user_home / ".codex/skills/openspec-apply-change"
             provenance = generated / ".zpp-openspec.json"
             assert json.loads(provenance.read_text())["generator"] == "zpp"

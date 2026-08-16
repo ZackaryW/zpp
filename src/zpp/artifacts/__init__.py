@@ -5,6 +5,7 @@ from __future__ import annotations
 import tomllib
 from dataclasses import dataclass
 from importlib.resources import as_file, files
+from typing import Final
 
 from agent_router import Agent, Hook, Skill
 
@@ -18,25 +19,56 @@ class PackagedTrait:
     content: bytes
 
 
-PACKAGED_AUTHORING_SKILL_NAMES = (
-    "zpp-configure-behave",
-    "zpp-author-trait",
-)
+WORKFLOW_SKILL_ROLE: Final[str] = "workflow"
+COMPANION_SKILL_ROLE: Final[str] = "companion"
+
+_SKILL_DOCUMENT = "SKILL.md"
 
 
-def packaged_workflow_skill() -> Skill:
-    resource = files("zpp.artifacts").joinpath("skills", "zpp-workflow")
-    with as_file(resource) as path:
-        return Skill.from_path(path)
+class PackagedSkillError(ValueError):
+    pass
 
 
-def packaged_authoring_skills() -> tuple[Skill, ...]:
-    root = files("zpp.artifacts").joinpath("skills")
+def _role_skill_names(role: str) -> tuple[str, ...]:
+    root = files("zpp.artifacts").joinpath("skills", role)
+    if not root.is_dir():
+        raise PackagedSkillError(f"packaged skill role is missing: {role}")
+    return tuple(
+        sorted(
+            (
+                item.name
+                for item in root.iterdir()
+                if item.is_dir() and item.joinpath(_SKILL_DOCUMENT).is_file()
+            ),
+            key=lambda name: (name.casefold(), name),
+        )
+    )
+
+
+def _load_role_skills(role: str) -> tuple[Skill, ...]:
+    root = files("zpp.artifacts").joinpath("skills", role)
     loaded: list[Skill] = []
-    for name in PACKAGED_AUTHORING_SKILL_NAMES:
+    for name in _role_skill_names(role):
         with as_file(root.joinpath(name)) as path:
             loaded.append(Skill.from_path(path))
     return tuple(loaded)
+
+
+def packaged_workflow_skill() -> Skill:
+    loaded = _load_role_skills(WORKFLOW_SKILL_ROLE)
+    if len(loaded) != 1:
+        raise PackagedSkillError(
+            "packaged workflow role must contain exactly one skill, "
+            f"found {len(loaded)}"
+        )
+    return loaded[0]
+
+
+def packaged_companion_skills() -> tuple[Skill, ...]:
+    loaded = _load_role_skills(COMPANION_SKILL_ROLE)
+    if not loaded:
+        raise PackagedSkillError("packaged companion role contains no skill")
+    return loaded
 
 
 def packaged_workflow_hook(agent: Agent) -> Hook:
@@ -86,9 +118,11 @@ def packaged_trait_source() -> BoundTraitSource:
 
 
 __all__ = [
-    "PACKAGED_AUTHORING_SKILL_NAMES",
+    "COMPANION_SKILL_ROLE",
+    "WORKFLOW_SKILL_ROLE",
+    "PackagedSkillError",
     "PackagedTrait",
-    "packaged_authoring_skills",
+    "packaged_companion_skills",
     "packaged_trait_source",
     "packaged_traits",
     "packaged_workflow_hook",

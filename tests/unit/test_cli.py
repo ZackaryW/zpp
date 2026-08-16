@@ -112,7 +112,7 @@ def test_init_preflights_every_generated_inventory_before_projection(
     )
     monkeypatch.setattr(
         initialization_cli,
-        "packaged_authoring_skills",
+        "packaged_companion_skills",
         lambda: (
             SimpleNamespace(name="zpp-configure-behave"),
             SimpleNamespace(name="zpp-author-trait"),
@@ -199,7 +199,7 @@ def test_forced_init_reprojects_every_prepared_asset(monkeypatch, tmp_path) -> N
     )
     monkeypatch.setattr(
         initialization_cli,
-        "packaged_authoring_skills",
+        "packaged_companion_skills",
         lambda: (
             SimpleNamespace(name="zpp-configure-behave"),
             SimpleNamespace(name="zpp-author-trait"),
@@ -276,7 +276,7 @@ def test_init_packaged_authoring_failure_precedes_generation(monkeypatch) -> Non
 
     monkeypatch.setattr(
         initialization_cli,
-        "packaged_authoring_skills",
+        "packaged_companion_skills",
         fail_packaged,
         raising=False,
     )
@@ -378,7 +378,7 @@ def test_reset_help_omits_obsolete_global_trait_overwrite_option() -> None:
     assert "overwrite-global-traits" not in result.stdout
 
 
-def test_reset_catalog_preflights_packaged_authoring_skills_before_generated(
+def test_reset_catalog_preflights_packaged_companion_skills_before_generated(
     monkeypatch,
 ) -> None:
     monkeypatch.setattr(reset_cli, "agent_router", lambda agent, target: agent)
@@ -394,7 +394,7 @@ def test_reset_catalog_preflights_packaged_authoring_skills_before_generated(
     )
     monkeypatch.setattr(
         reset_cli,
-        "packaged_authoring_skills",
+        "packaged_companion_skills",
         lambda: (
             SimpleNamespace(name="zpp-configure-behave"),
             SimpleNamespace(name="zpp-author-trait"),

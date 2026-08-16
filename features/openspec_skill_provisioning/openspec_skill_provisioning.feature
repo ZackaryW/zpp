@@ -11,6 +11,27 @@ Feature: Provision OpenSpec operations at ZPP initialization
     And Agent Router installs the workflow skill native hook and six OpenSpec skills for each selected agent
     And each generated skill records the detected OpenSpec version as ZPP provenance
 
+  Scenario: Project every discovered packaged companion skill
+    Given ZPP discovers its packaged companion skills from their role directory
+    And a user selects one or more supported agents
+    When the user runs zpp init
+    Then Agent Router projects every discovered companion skill for each selected agent
+    And the reported order follows the deterministic packaged order
+    And no declared list of companion skill names determines that inventory
+
+  Scenario: Report one lifecycle result per projected asset
+    Given a user selects one supported agent
+    When the user runs zpp init with JSON output
+    Then the ordered report contains one result for the workflow skill and native hook
+    And it contains one result for each discovered companion skill
+    And it contains one result for each generated OpenSpec skill
+
+  Scenario: Install vendored repository memory guidance
+    Given ZPP packages the vendored zmem authoring and query skills as companion skills
+    When the user runs zpp init
+    Then zmem-author-commits and zmem-query-memory are projected for each selected agent
+    And no zmem extension design skill is packaged or projected
+
   Scenario: Abort initialization before projection on generation failure
     Given the local OpenSpec CLI fails or returns an unexpected inventory for one selected agent
     When the user runs zpp init for several agents

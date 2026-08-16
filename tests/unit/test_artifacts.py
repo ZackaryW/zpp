@@ -8,13 +8,24 @@ from agent_router import Agent, InvalidAssetError
 
 import zpp.artifacts
 from zpp.artifacts import (
-    packaged_authoring_skills,
+    COMPANION_SKILL_ROLE,
+    WORKFLOW_SKILL_ROLE,
+    PackagedSkillError,
+    packaged_companion_skills,
     packaged_trait_source,
     packaged_traits,
     packaged_workflow_hook,
     packaged_workflow_skill,
 )
 from zpp.core.models import SourceKind
+
+
+def _write_skill(root: Path, name: str, body: str) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "SKILL.md").write_text(
+        f"---\nname: {name}\ndescription: Author with ZPP.\n---\n{body}\n",
+        newline="\n",
+    )
 
 
 def test_packaged_assets_are_loaded_before_resource_lifetime_ends(
@@ -25,11 +36,9 @@ def test_packaged_assets_are_loaded_before_resource_lifetime_ends(
     traits.mkdir()
     (traits / "z.toml").write_bytes(b"z-content")
     (traits / "a.toml").write_bytes(b"a-content")
-    skill = tmp_path / "skills" / "zpp-workflow"
+    skill = tmp_path / "skills" / WORKFLOW_SKILL_ROLE / "zpp-workflow"
     skill.mkdir(parents=True)
-    (skill / "SKILL.md").write_text(
-        "---\nname: zpp-workflow\ndescription: Run the ZPP workflow.\n---\nRun it.\n"
-    )
+    _write_skill(skill, "zpp-workflow", "Run it.")
     monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
 
     loaded_skill = packaged_workflow_skill()
@@ -43,27 +52,24 @@ def test_packaged_assets_are_loaded_before_resource_lifetime_ends(
     ]
 
 
-def test_packaged_authoring_skills_are_detached_in_stable_order(
+def test_packaged_companion_skills_are_detached_in_deterministic_order(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    skills = tmp_path / "skills"
-    for name in ("zpp-configure-behave", "zpp-author-trait"):
-        source = skills / name
-        source.mkdir(parents=True)
-        (source / "SKILL.md").write_text(
-            f"---\nname: {name}\ndescription: Author with ZPP.\n---\n{name}\n"
-        )
+    companion = tmp_path / "skills" / COMPANION_SKILL_ROLE
+    for name in ("zpp-configure-behave", "vendor-skill", "zpp-author-trait"):
+        _write_skill(companion / name, name, name)
     monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
 
-    loaded = packaged_authoring_skills()
-    for source in skills.iterdir():
+    loaded = packaged_companion_skills()
+    for source in companion.iterdir():
         (source / "SKILL.md").unlink()
         source.rmdir()
 
     assert tuple(skill.name for skill in loaded) == (
-        "zpp-configure-behave",
+        "vendor-skill",
         "zpp-author-trait",
+        "zpp-configure-behave",
     )
     assert [
         next(
@@ -73,30 +79,86 @@ def test_packaged_authoring_skills_are_detached_in_stable_order(
         )
         for skill in loaded
     ] == [
-        b"---\nname: zpp-configure-behave\ndescription: Author with ZPP.\n---\n"
-        b"zpp-configure-behave\n",
+        b"---\nname: vendor-skill\ndescription: Author with ZPP.\n---\n"
+        b"vendor-skill\n",
         b"---\nname: zpp-author-trait\ndescription: Author with ZPP.\n---\n"
         b"zpp-author-trait\n",
+        b"---\nname: zpp-configure-behave\ndescription: Author with ZPP.\n---\n"
+        b"zpp-configure-behave\n",
     ]
 
 
-def test_packaged_authoring_skills_fail_as_one_invalid_set(
+def test_packaged_companion_role_ignores_entries_without_a_skill_document(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    source = tmp_path / "skills" / "zpp-configure-behave"
-    source.mkdir(parents=True)
-    (source / "SKILL.md").write_text(
-        "---\nname: zpp-configure-behave\ndescription: Author with ZPP.\n---\n"
+    companion = tmp_path / "skills" / COMPANION_SKILL_ROLE
+    _write_skill(companion / "zpp-author-trait", "zpp-author-trait", "body")
+    (companion / "notes").mkdir()
+    (companion / "README.md").write_text("not a skill", newline="\n")
+    monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
+
+    assert tuple(skill.name for skill in packaged_companion_skills()) == (
+        "zpp-author-trait",
     )
+
+
+def test_packaged_companion_skills_fail_as_one_invalid_set(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    companion = tmp_path / "skills" / COMPANION_SKILL_ROLE
+    _write_skill(companion / "zpp-author-trait", "zpp-author-trait", "body")
+    invalid = companion / "zpp-configure-behave"
+    invalid.mkdir(parents=True)
+    (invalid / "SKILL.md").write_text("no frontmatter here", newline="\n")
     monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
 
     with pytest.raises(InvalidAssetError):
-        packaged_authoring_skills()
+        packaged_companion_skills()
+
+
+def test_packaged_workflow_role_requires_exactly_one_skill(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    role = tmp_path / "skills" / WORKFLOW_SKILL_ROLE
+    for name in ("zpp-workflow", "extra-workflow"):
+        _write_skill(role / name, name, "Run it.")
+    monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
+
+    with pytest.raises(PackagedSkillError):
+        packaged_workflow_skill()
+
+
+def test_packaged_roles_fail_when_missing_or_empty(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    (tmp_path / "skills" / COMPANION_SKILL_ROLE).mkdir(parents=True)
+    monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
+
+    with pytest.raises(PackagedSkillError):
+        packaged_companion_skills()
+    with pytest.raises(PackagedSkillError):
+        packaged_workflow_skill()
+
+
+def test_packaged_companion_inventory_binds_the_vendored_zmem_skills() -> None:
+    assert tuple(skill.name for skill in packaged_companion_skills()) == (
+        "zmem-author-commits",
+        "zmem-query-memory",
+        "zpp-author-trait",
+        "zpp-configure-behave",
+    )
 
 
 def test_packaged_authoring_skill_guidance_is_complete_and_cross_agent() -> None:
-    configure, trait = packaged_authoring_skills()
+    trait, configure = (
+        skill
+        for skill in packaged_companion_skills()
+        if skill.name.startswith("zpp-")
+    )
 
     assert configure.compatible_agents == trait.compatible_agents == frozenset(Agent)
     configure_text = next(
