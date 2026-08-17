@@ -1,63 +1,144 @@
-from features.support.bindings import register_exact_steps
+from __future__ import annotations
 
-register_exact_steps(
-    (
-        "the local OpenSpec CLI generates its canonical operation skills",
-        "a user selects one or more supported agents",
-        "the user runs zpp init",
-        "ZPP validates every selected agent OpenSpec inventory before projection",
-        "Agent Router installs the workflow skill native hook and six OpenSpec skills "
-        "for each selected agent",
-        "each generated skill records the detected OpenSpec version as ZPP provenance",
-        "ZPP discovers its packaged companion skills from their role directory",
-        "Agent Router projects every discovered companion skill for each selected "
-        "agent",
-        "the reported order follows the deterministic packaged order",
-        "no declared list of companion skill names determines that inventory",
-        "a user selects one supported agent",
-        "the user runs zpp init with JSON output",
-        "the ordered report contains one result for the workflow skill and native hook",
-        "it contains one result for each discovered companion skill",
-        "it contains one result for each generated OpenSpec skill",
-        "ZPP packages the vendored zmem authoring and query skills as companion skills",
-        "zmem-author-commits and zmem-query-memory are projected for each selected "
-        "agent",
-        "no zmem extension design skill is packaged or projected",
-        "the local OpenSpec CLI fails or returns an unexpected inventory for one "
-        "selected agent",
-        "the user runs zpp init for several agents",
-        "no selected agent workflow hook or skill is projected",
-        "the generation failure remains visible",
-        "Agent Router owns an earlier generated OpenSpec skill",
-        "the detected OpenSpec version or generated content changes",
-        "the user runs zpp init again",
-        "ZPP freshly generates every selected agent inventory",
-        "Agent Router safely reconciles the changed owned skill",
-        "one selected agent has a current complete integration",
-        "the user runs normal zpp init twice",
-        "each default result is one concise line with lifecycle outcome counts",
-        "an explicit JSON request returns the complete ordered lifecycle report",
-        "one selected skill has diverged under matching Agent Router ownership",
-        "the user runs zpp init with force",
-        "every selected workflow hook authoring and OpenSpec asset is requested for "
-        "reprojection",
-        "the owned diverged skill is replaced without adopting unmanaged destinations",
-        "a user selects a supported agent and integration scope",
-        "the user inspects or invokes workflow install update or remove",
-        "only the consolidated workflow skill and native hook are managed",
-        "no OpenSpec lifecycle option is exposed",
-        "every standard user integration passes complete reset preflight",
-        "a canonical OpenSpec skill is modified but validly owned by Agent Router",
-        "a user runs zpp reset with confirmation",
-        "Agent Router force-deletes every present canonical OpenSpec skill and "
-        "ownership record",
-        "no removed OpenSpec backup or history is retained",
-        "OpenSpec generation is not invoked",
-        "one or more canonical OpenSpec skills and ownership records are absent",
-        "absent generated skills are treated as converged no-ops",
-        "OpenLease state is replaced after all removals succeed",
-        "a canonical OpenSpec skill is present without matching Agent Router ownership",
-        "Agent Router refuses to delete the unmanaged skill",
-        "reset leaves prior OpenLease state unchanged",
+import support
+from behave import given, then, when
+
+from zpp.cli import app
+
+
+@given("the packaged companion inventory is loaded")
+def companion_inventory(context) -> None:
+    context.companions = support.companion_names()
+
+
+@given("the grouped workflow lifecycle help is available")
+def workflow_help(context) -> None:
+    from typer.testing import CliRunner
+
+    runner = CliRunner()
+    context.help_outputs = {
+        operation: runner.invoke(app, ["workflow", operation, "--help"])
+        for operation in ("install", "update", "remove")
+    }
+
+
+@given("a disposable user home")
+def disposable_home(context) -> None:
+    context.home = support.Home()
+
+
+@given("the codex agent is initialized")
+def initialized(context) -> None:
+    result = context.home.run("init", "--agent", "codex")
+    assert result.exit_code == 0, result.output
+
+
+@given("a generated OpenSpec skill has been modified locally")
+def modify_generated(context) -> None:
+    document = context.home.generated_document()
+    context.packaged_text = document.read_text(encoding="utf-8")
+    document.write_text("modified", encoding="utf-8")
+
+
+@given("an unmanaged workflow skill occupies the codex surface")
+def unmanaged_skill(context) -> None:
+    path = context.home.skill_path("zpp-workflow") / "SKILL.md"
+    path.parent.mkdir(parents=True)
+    path.write_text("unmanaged", encoding="utf-8")
+    context.unmanaged = path
+
+
+@when("a user initializes the codex agent")
+def initialize(context) -> None:
+    context.result = context.home.run("init", "--agent", "codex")
+    assert context.result.exit_code == 0, context.result.output
+
+
+@when("a user synchronizes the codex agent")
+def synchronize(context) -> None:
+    context.records = context.home.run_json("sync", "--agent", "codex", "--json")
+
+
+@when("a user synchronizes the codex agent with force")
+def synchronize_forced(context) -> None:
+    context.records = context.home.run_json(
+        "sync", "--agent", "codex", "--force", "--json"
     )
-)
+
+
+@when("a user confirms a complete reset")
+def confirm_reset(context) -> None:
+    context.result = context.home.run(
+        "--path", str(context.home.product_home), "reset", "--yes"
+    )
+    assert context.result.exit_code == 0, context.result.output
+
+
+@then("it contains the vendored zmem authoring and query skills")
+def contains_zmem(context) -> None:
+    assert {"zmem-author-commits", "zmem-query-memory"} <= set(context.companions)
+
+
+@then("it contains no withdrawn zmem extension skill")
+def excludes_withdrawn(context) -> None:
+    assert "zmem-design-extensions" not in context.companions
+
+
+@then("no grouped workflow operation exposes an OpenSpec control")
+def no_openspec_control(context) -> None:
+    for operation, result in context.help_outputs.items():
+        assert result.exit_code == 0, operation
+        assert "openspec" not in result.stdout.casefold(), operation
+
+
+@then("one lifecycle result is reported per projected asset")
+def one_result_each(context) -> None:
+    records = context.home.run_json("sync", "--agent", "codex", "--json")
+    assert len(records) == support.expected_asset_count(), records
+
+
+@then("every packaged companion skill is present on disk")
+def companions_present(context) -> None:
+    for name in support.companion_names():
+        assert (context.home.skill_path(name) / "SKILL.md").is_file(), name
+
+
+@then("each generated OpenSpec skill records ZPP as its generator")
+def generator_recorded(context) -> None:
+    assert context.home.provenance()["generator"] == "zpp"
+
+
+@then("every projected asset reports current")
+def all_current(context) -> None:
+    decisions = {record["decision"] for record in context.records}
+    assert decisions == {"current"}, context.records
+    assert len(context.records) == support.expected_asset_count()
+
+
+@then("the generated OpenSpec skill content is restored")
+def generated_restored(context) -> None:
+    restored = context.home.generated_document().read_text(encoding="utf-8")
+    assert restored == context.packaged_text
+
+
+@then("the generated OpenSpec skill is removed")
+def generated_removed(context) -> None:
+    assert not context.home.skill_path(support.GENERATED_SKILL).exists()
+
+
+@then("managed OpenLease state is replaced")
+def state_replaced(context) -> None:
+    assert (context.home.product_home / "openlease").is_dir()
+
+
+@then("ZPP reports the agent as already initialized")
+def already_initialized(context) -> None:
+    assert "already initialized" in context.result.stdout
+
+
+@then("forced synchronization preserves that unmanaged skill")
+def unmanaged_preserved(context) -> None:
+    records = context.home.run_json("sync", "--agent", "codex", "--force", "--json")
+    decisions = {record["asset"]: record["decision"] for record in records}
+    assert decisions["skill"] == "preserve", decisions
+    assert context.unmanaged.read_text(encoding="utf-8") == "unmanaged"

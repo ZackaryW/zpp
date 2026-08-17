@@ -1,51 +1,91 @@
-from behave import step
+from __future__ import annotations
 
-from features.support.bindings import register_exact_steps
-from features.support.lifecycle import record_step
-
-
-@step("ZPP packages the {agent} workflow integration")
-def package_agent_integration(context, agent):
-    record_step(context, f"ZPP packages the {agent} workflow integration")
+import support
+from agent_router import Agent
+from behave import given, then, when
 
 
-@step("the hook uses the {event} context injection form")
-def use_native_event(context, event):
-    record_step(context, f"the hook uses the {event} context injection form")
+@given("ZPP packages the {name} workflow integration")
+def packaged_integration(context, name: str) -> None:
+    context.agent_name = name
+    context.hook = support.hook_for(name)
 
 
-@step("it resolves the current repository with {agent} as the invoking agent")
-def resolve_for_agent(context, agent):
-    record_step(
-        context,
-        f"it resolves the current repository with {agent} as the invoking agent",
+@given("a disposable project root")
+def disposable_project(context) -> None:
+    context.project = support.Project()
+
+
+@given("the codex workflow integration is installed into that project")
+def preinstalled(context) -> None:
+    context.project.run_json(
+        "workflow",
+        "install",
+        "--agent",
+        "codex",
+        "--target",
+        str(context.project.root),
     )
 
 
-register_exact_steps(
-    (
-        "Agent Router inspects its native hook",
-        "a user selects a supported agent and integration scope",
-        "ZPP installs the workflow integration",
-        "Agent Router projects one consolidated workflow skill",
-        "Agent Router projects that agent native trait hook",
-        "Agent Router owns an intact ZPP workflow skill and native trait hook",
-        "a user removes that workflow integration",
-        "Agent Router removes both assets from the selected scope",
-        "every supported agent user hook is absent or ownership-safe removable",
-        "a user confirms a complete ZPP reset",
-        "Agent Router removes every present selected user hook",
-        "ZPP does not inspect or change any project hook",
-        "one supported agent user hook cannot be inspected or ownership-safe removed",
-        "reset stops before removing any selected hook",
-        "OpenLease state remains unchanged",
-        "an installed native hook starts in a repository with active traits",
-        "its public resolver command succeeds",
-        "the hook injects the returned complete bodies as advisory environment policy",
-        "it does not select execute or complete a workflow stage",
-        "an installed native hook starts in a repository",
-        "its public resolver command fails",
-        "the failure remains visible through the native hook contract",
-        "no partial stale or cached trait body is injected as successful context",
+@when("the packaged native hook is inspected")
+def inspect_hook(context) -> None:
+    context.payload = support.hook_payload(context.hook)
+
+
+@when("a user installs the codex workflow integration into that project")
+def install_integration(context) -> None:
+    context.records = context.project.run_json(
+        "workflow",
+        "install",
+        "--agent",
+        "codex",
+        "--target",
+        str(context.project.root),
     )
-)
+
+
+@when("a user removes that workflow integration")
+def remove_integration(context) -> None:
+    context.records = context.project.run_json(
+        "workflow",
+        "remove",
+        "--agent",
+        "codex",
+        "--target",
+        str(context.project.root),
+    )
+
+
+@then("the hook declares the {expected} native format")
+def hook_format(context, expected: str) -> None:
+    assert context.hook.format == expected, context.hook.format
+    assert support.NATIVE_FORMATS[Agent(context.agent_name)] == expected
+
+
+@then("the hook is compatible with only that agent")
+def hook_compatibility(context) -> None:
+    assert context.hook.compatible_agents == frozenset({Agent(context.agent_name)})
+
+
+@then("the hook resolves the current repository with {name} as the invoking agent")
+def hook_resolves_repository(context, name: str) -> None:
+    assert support.resolves_current_repository(context.payload, name), context.payload
+
+
+@then("the hook declares no guard and no prompt-submit event")
+def hook_has_no_guard(context) -> None:
+    assert "guard" not in context.payload
+    assert "UserPromptSubmit" not in context.payload
+
+
+@then("Agent Router projects exactly the workflow skill and the native hook")
+def projected_pair(context) -> None:
+    assert len(context.records) == 2, context.records
+    assert {record["request"] for record in context.records} == {"install"}
+
+
+@then("Agent Router removes exactly the workflow skill and the native hook")
+def removed_pair(context) -> None:
+    assert len(context.records) == 2, context.records
+    assert {record["request"] for record in context.records} == {"remove"}

@@ -1,104 +1,87 @@
-from features.support.bindings import register_exact_steps
+from __future__ import annotations
 
-register_exact_steps(
-    (
-        "a first-win family has matching repository space and global flavors",
-        "ZPP resolves the family",
-        "only the first repository flavor is retained",
-        "its complete body is returned",
-        "no flavor directly matches a first-win family",
-        "the first compatible Flutter flavor has successful workspace evidence",
-        "the Flutter flavor is retained",
-        "later evidence flavors are not considered as winners",
-        "its missing Flutter facet is backfilled without restarting resolution",
-        "an all family has one direct match and two compatible evidence-backed matches",
-        "all three flavors are retained in effective order",
-        "their complete bodies are returned in that order",
-        "an extend family has generic Python, Python with uv, and Flutter flavors",
-        "the known context contains Python Flutter and uv",
-        "Python with uv and Flutter are retained in effective order",
-        "generic Python is removed as dominated",
-        "an extend family matches Python with uv and Python with Click flavors",
-        "both complete flavors are retained",
-        "neither facet constraint set contains the other",
-        "no language is known and Cucumber workspace evidence identifies TypeScript",
-        "another family has a TypeScript flavor without its own evidence",
-        "ZPP resolves all active families",
-        "language is derived before final family selection",
-        "both TypeScript complete bodies are returned in the same resolution",
-        "a facet-only match does not start another enrichment pass",
-        "repository language context contains Python followed by Rust",
-        "compatible evidence derives Python and TypeScript",
-        "ZPP enriches the resolution context",
-        "language contains Python Rust and TypeScript once each in that order",
-        "each evidence-derived member retains its own provenance",
-        "invocation context repository context and stored context provide facet values",
-        "ZPP builds the known resolution context",
-        "invocation values take precedence over repository values",
-        "repository values take precedence over stored and evidence-derived values",
-        "a conflicting evidence flavor is excluded",
-        "ZPP_CONTEXT carries facets provenance target identity and evidence "
-        "fingerprints",
-        "its target differs from the selected repository",
-        "the stored context is ignored",
-        "evidence used by a stored value has changed",
-        "that evidence-derived value is invalidated",
-        "stored language context contains authored Python and evidence-derived "
-        "TypeScript",
-        "only the TypeScript evidence fingerprint changes",
-        "TypeScript is removed from stored language context",
-        "authored Python remains available",
-        "a valid version one ZPP_CONTEXT value",
-        "ZPP restores and completes the context",
-        "compatible values remain available",
-        "the returned context uses member-level provenance",
-        "repository and stored context attempt to provide workflow stages",
-        "an invocation explicitly requests the shape stage",
-        "only the validated explicit stage participates in matching",
-        "the protected stage is not persisted as descriptive context",
-        "an invocation names a stage outside the consolidated workflow",
-        "ZPP builds its resolution context",
-        "a flavor checks a root-anchored workspace path literal file content and uv "
-        "availability",
-        "ZPP evaluates its evidence against the selected target",
-        "the anchored path cannot match a nested substitute",
-        "file content is compared literally in the named file",
-        "the result records has_uv as a boolean",
-        "a resolution contains rejected dominated and evidence-selected flavors",
-        "a user requests its explanation",
-        "the explanation identifies context source order policy decisions and evidence",
-        "it identifies retained flavors backfilled facets and source provenance",
-        "the resolved bodies remain unchanged",
-        "no flavor directly matches or has successful compatible evidence",
-        "the family contributes no body",
-        "a manual family has a flavor with successful activation evidence",
-        "ZPP resolves all commonly active families",
-        "the manual family contributes no body",
-        "a manual family has one matching flavor and one unmatched flavor",
-        "a user resolves that family directly",
-        "only the normally selected matching flavor contributes its complete body",
-        "unrelated always-run families do not contribute",
-        "a manual family has no matching facet or evidence flavor",
-        "the requested family contributes no body",
-        "several known trait families are available",
-        "a user requests two families and repeats the first family",
-        "each requested family is considered once in first-requested order",
-        "an always-run family is available",
-        "a user directly requests an unknown family",
-        "resolution fails visibly",
-        "the unrelated always-run family contributes no body",
-        "an always-run extend family has generic Python Python with uv and Flutter "
-        "flavors",
-        "no flavor has matching context or evidence",
-        "bypass-selected facets do not backfill the context",
-        "resolution retains several complete trait bodies",
-        "a user resolves without explanation",
-        "standard output contains only those complete bodies in deterministic order",
-        "no diagnostic envelope is emitted",
-        "resolution retains several complete trait bodies and recomputes stored "
-        "context",
-        "a user resolves with explanation",
-        "structured output contains the same bodies effective context and "
-        "deterministic decisions",
+import support
+from behave import given, then, when
+
+
+@given("a repository carrying an automatic and a manual trait family")
+def workspace(context) -> None:
+    context.workspace = support.Workspace()
+    context.workspace.write_trait("automatic-policy", support.AUTOMATIC_DOCUMENT)
+    context.workspace.write_trait("manual-policy", support.MANUAL_DOCUMENT)
+
+
+@when("a caller resolves the repository for Python")
+def resolve_python(context) -> None:
+    context.result = context.workspace.resolve("--facet", "language=python")
+
+
+@when("a caller resolves only the manual family for Python")
+def resolve_manual(context) -> None:
+    context.result = context.workspace.resolve(
+        "--trait", "manual-policy", "--facet", "language=python"
     )
-)
+
+
+@when("a caller resolves an unknown named family")
+def resolve_unknown(context) -> None:
+    context.result = context.workspace.resolve(
+        "--trait", "no-such-family", "--facet", "language=python"
+    )
+
+
+@when("a caller resolves the repository for Python with explanation")
+def resolve_explained(context) -> None:
+    context.result = context.workspace.resolve(
+        "--facet", "language=python", "--explain"
+    )
+
+
+@when("a caller resolves the repository for an unmatched language")
+def resolve_unmatched(context) -> None:
+    context.result = context.workspace.resolve("--facet", "language=cobol")
+
+
+@then("the automatic family's complete body is rendered")
+def automatic_rendered(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert "automatic policy" in context.result.stdout
+
+
+@then("the manual family's complete body is rendered")
+def manual_rendered(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert "manual policy" in context.result.stdout
+
+
+@then("the manual family's body is not rendered")
+def manual_absent(context) -> None:
+    assert "manual policy" not in context.result.stdout
+
+
+@then("no structured diagnostics are rendered")
+def no_diagnostics(context) -> None:
+    assert not context.result.stdout.lstrip().startswith("{")
+
+
+@then("structured selection diagnostics are rendered")
+def diagnostics_rendered(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert context.result.stdout.strip(), "no diagnostics were rendered"
+    assert (
+        context.result.stdout
+        != context.workspace.resolve("--facet", "language=python").stdout
+    )
+
+
+@then("resolution is rejected and identifies the unknown family")
+def unknown_rejected(context) -> None:
+    assert context.result.exit_code != 0
+    assert "no-such-family" in context.result.output
+
+
+@then("no trait body is rendered")
+def nothing_rendered(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert "automatic policy" not in context.result.stdout
+    assert "manual policy" not in context.result.stdout

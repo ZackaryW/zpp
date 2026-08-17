@@ -1,12 +1,8 @@
-import support
-
-from features.support.lifecycle import begin_scenario, verify_recorded_steps
-
-
 def before_scenario(context, scenario):
-    begin_scenario(context, "automatic_trait_hooks")
+    context.zpp_capability = "automatic_trait_hooks"
 
 
 def after_scenario(context, scenario):
-    verify_recorded_steps(context, scenario)
-    support.verify()
+    project = getattr(context, "project", None)
+    if project is not None:
+        project.close()

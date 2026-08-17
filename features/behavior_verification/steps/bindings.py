@@ -1,89 +1,119 @@
-from behave import step
+from __future__ import annotations
 
-from features.support.bindings import register_exact_steps
-from features.support.lifecycle import record_step
-
-register_exact_steps(
-    (
-        "an unregistered Git worktree has no zpp.behave.yaml",
-        "a user runs zpp behave init from within that worktree",
-        "ZPP initializes a root version-one YAML mapping with empty commands through "
-        "zpp.behave",
-        "it reports provider diagnostics without creating OpenLease topology or a "
-        "space",
-        "a repository has a valid authored version-one zpp.behave.yaml",
-        "a user runs zpp behave init",
-        "ZPP validates the dedicated root mapping without wrapping or rewriting it",
-        "provider discovery changes only the reported machine-local diagnostics",
-        "a behavior mapping contains an unsafe path duplicate target value invalid "
-        "gate or unknown field",
-        "a user selects one of its commands",
-        "ZPP rejects the complete mapping before starting a configured process",
-        "no legacy behavior implementation runs as fallback",
-        "a command declares several ordered targets with repository path rules",
-        "every changed path maps conclusively to a proper subset",
-        "a user runs that command without a selection override",
-        "ZPP submits only the affected declared target values in declaration order",
-        "a command declares several verification targets",
-        "at least one changed path is invalid unmapped or uncertain",
-        "ZPP performs default affected selection",
-        "every target declared by the selected command is submitted",
-        "a valid command and mapping are selected",
-        "repository evidence contains no changed path",
-        "it reports that no target is affected",
-        "it starts no provider process",
-        "a command declares ordered targets and a valid command-local gate",
-        "a user selects exact targets a gate all targets or a paired revision range",
-        "ZPP applies only that requested selection mode",
-        "repeated exact targets are submitted once in declaration order",
-        "a valid behavior command is available",
-        "a user combines selection modes or supplies only one revision endpoint",
-        "ZPP rejects the invocation before process creation",
-        "it does not fall back to affected or complete execution",
-        "ZPP submits the selected declared target values",
-        "ZPP does not infer install download or select another provider",
-        "zpp.behave registers its supported reconciliation callbacks",
-        "a repository contains zpp.behave.yaml",
-        "reconciliation selects no behavior callback",
-        "no behavior command is invoked",
-        "the selection names its behavior command selection mode and target context",
-        "OpenLease invokes the callback against the real reconciliation context",
-        "ZPP resolves the exact target repository mapping and returns the configured "
-        "outcome",
-        "reconciliation selects a behavior callback",
-        "its command selection mode event mode or required target context is absent",
-        "OpenLease rejects the callback plan instead of guessing repository policy",
-    )
-)
+import support
+from behave import given, then, when
 
 
-@step(
-    "a command selects the valid {provider} provider and its required surface is "
-    "available"
-)
-def select_provider(context, provider):
-    record_step(
-        context,
-        f"a command selects the valid {provider} provider and its required surface "
-        "is available",
+@given("a committed repository")
+def committed_repository(context) -> None:
+    context.repository = support.Repository()
+
+
+@given("a committed repository with a declared behavior mapping")
+def declared_mapping(context) -> None:
+    context.repository = support.Repository()
+    initialized = context.repository.behave("init")
+    assert initialized.exit_code == 0, initialized.output
+    context.repository.declare_mapping()
+    context.authored = (context.repository.root / "zpp.behave.yaml").read_text(
+        encoding="utf-8"
     )
 
 
-@step("the {provider} adapter constructs one validated shell-free argument sequence")
-def construct_provider_arguments(context, provider):
-    record_step(
-        context,
-        f"the {provider} adapter constructs one validated shell-free argument sequence",
+@given("a change under one declared target's paths")
+def change_target(context) -> None:
+    context.repository.change("src/core/module.py")
+
+
+@when("the caller initializes behavior verification")
+@when("the caller initializes behavior verification again")
+def initialize_behavior(context) -> None:
+    context.result = context.repository.behave("init")
+
+
+@when("the caller runs the declared bdd command")
+def run_bdd(context) -> None:
+    context.result = context.repository.behave("bdd")
+
+
+@when("the caller runs the declared bdd command for every target")
+def run_complete(context) -> None:
+    context.result = context.repository.behave("bdd", "--all")
+
+
+@when("the caller runs the declared bdd command for one target twice")
+def run_repeated_target(context) -> None:
+    context.result = context.repository.behave(
+        "bdd", "--target", "workflow", "--target", "workflow"
     )
 
 
-@step(
-    "reconciliation explicitly selects a valid zpp.behave {event} callback in "
-    "{mode} mode"
-)
-def select_callback(context, event, mode):
-    record_step(
-        context,
-        f"reconciliation explicitly selects a valid zpp.behave {event} callback in "
-        f"{mode} mode",
-    )
+@when("the caller runs the declared bdd command for the zpp-workflow gate")
+def run_gate(context) -> None:
+    context.result = context.repository.behave("bdd", "--gate", "zpp-workflow")
+
+
+@when("the caller combines complete and explicit target selection")
+def run_ambiguous(context) -> None:
+    context.result = context.repository.behave("bdd", "--all", "--target", "core")
+
+
+@then("a version-one behavior mapping exists")
+def mapping_exists(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    mapping = context.repository.root / "zpp.behave.yaml"
+    assert mapping.is_file()
+    assert "version: 1" in mapping.read_text(encoding="utf-8")
+
+
+@then("no OpenLease space is created")
+def no_space(context) -> None:
+    assert context.repository.spaces() == ()
+
+
+@then("the mapping is reported as validated")
+def mapping_validated(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert "Behavior mapping validated" in context.result.stdout
+
+
+@then("the authored mapping content is unchanged")
+def mapping_unchanged(context) -> None:
+    current = (context.repository.root / "zpp.behave.yaml").read_text(encoding="utf-8")
+    assert current == context.authored
+
+
+@then("no targets are reported as affected")
+def no_targets(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert "No targets are affected" in context.result.stdout
+
+
+@then("the provider receives only that target")
+def provider_single_target(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert context.result.stdout == "features/core\n"
+
+
+@then("the provider receives every declared target")
+def provider_every_target(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert context.result.stdout == "features/core|features/workflow\n"
+
+
+@then("the provider receives that target once")
+def provider_deduplicated(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert context.result.stdout == "features/workflow\n"
+
+
+@then("the provider receives the gate's declared target set")
+def provider_gate_targets(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert context.result.stdout == "features/core|features/workflow\n"
+
+
+@then("the invocation is rejected as mutually exclusive")
+def rejected_ambiguous(context) -> None:
+    assert context.result.exit_code == 2
+    assert "mutually exclusive" in context.result.output

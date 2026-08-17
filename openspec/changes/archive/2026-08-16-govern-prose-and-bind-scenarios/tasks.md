@@ -21,10 +21,10 @@
 
 ## 5. Bind scenarios to the public system
 
-- [ ] 5.1 Replace `register_exact_steps` recorders with bindings that exercise the behavior each step names
-- [ ] 5.2 Select verification by scenario rather than running one capability-wide block after every scenario, and remove the `lru_cache` that compensates for the repetition
-- [ ] 5.3 Withdraw scenarios describing agent conduct no code observes, confirming each is already a canonical requirement
-- [ ] 5.4 Keep each capability root independently runnable
+- [x] 5.1 Replace `register_exact_steps` recorders with bindings that exercise the behavior each step names
+- [x] 5.2 Select verification by scenario rather than running one capability-wide block after every scenario, and remove the `lru_cache` that compensates for the repetition
+- [x] 5.3 Withdraw scenarios describing agent conduct no code observes, confirming each is already a canonical requirement
+- [x] 5.4 Keep each capability root independently runnable
 
 ## 6. Path portability
 
@@ -33,5 +33,5 @@
 
 ## 7. Finalization
 
-- [ ] 7.1 Run strict OpenSpec validation and the complete established verification set
+- [x] 7.1 Run strict OpenSpec validation and the complete established verification set
 - [ ] 7.2 Archive the change and commit the logical update
