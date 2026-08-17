@@ -14,7 +14,10 @@ creating project-local `.codex/skills`, `.claude/skills`, `.pi/skills`, or
 
 The provisioning specification also predates the accepted lifecycle split: it
 says only `zpp init` may regenerate or project OpenSpec skills, while current
-code and durable decision `fc44ebd:1` assign repair to `zpp sync`.
+code and durable decision `fc44ebd:1` assign repair to `zpp sync`. Its separate
+forced-initialization requirement also requires the removed `zpp init --force`
+mode even though current code and the canonical product-home lifecycle assign
+forced owned repair to `zpp sync --force`.
 
 ## Goals / Non-Goals
 
@@ -29,6 +32,8 @@ code and durable decision `fc44ebd:1` assign repair to `zpp sync`.
 - Preserve ordinary repo-local OpenSpec planning artifacts and operations.
 - Reconcile the provisioning specification with initialization creating and
   synchronization repairing integrations.
+- Remove the obsolete forced-initialization authority without weakening
+  ownership-safe forced synchronization.
 
 **Non-Goals:**
 
@@ -83,6 +88,18 @@ an installed agent. Both generate only in disposable repositories and project
 only through Agent Router into user scope. No workflow or project-scope command
 inherits that authority.
 
+### Forced repair belongs only to synchronization
+
+The obsolete `Forced complete initialization` requirement will be removed.
+`zpp init` remains limited to agents carrying no ZPP projection and exposes no
+force mode. An installed integration that requires complete owned reprojection
+uses `zpp sync --force`, which continues to preserve unmanaged or mismatched
+destinations through Agent Router.
+
+Keeping both force paths was rejected because it would restore two lifecycle
+commands with the same repair responsibility and contradict the accepted
+create-versus-repair split.
+
 ## Risks / Trade-offs
 
 - **A missing skill now stops work instead of self-healing** → Report the exact
@@ -100,9 +117,11 @@ inherits that authority.
 
 1. Add the workflow prohibition and blocking lifecycle handoff.
 2. Reconcile both affected canonical requirements.
-3. Validate the prose/specification artifacts and complete repository gates
+3. Remove the obsolete forced-initialization requirement from the canonical
+   provisioning specification.
+4. Validate the prose/specification artifacts and complete repository gates
    without adding BDD or TDD.
-4. Archive the change; existing user-scope projections require no migration.
+5. Archive the change; existing user-scope projections require no migration.
 
 Rollback removes the workflow prohibition and restores the prior provisioning
 wording. It does not change existing agent projections or repository planning

@@ -55,3 +55,10 @@ companion-skill or OpenSpec lifecycle option on that command group.
 #### Scenario: Keep grouped workflow lifecycle unchanged
 - **WHEN** a caller installs, updates, or removes the grouped workflow integration in user or project scope
 - **THEN** ZPP manages only the consolidated skill and native hook and exposes no companion-skill or OpenSpec option
+
+## REMOVED Requirements
+
+### Requirement: Forced complete initialization
+**Reason**: Root initialization now creates only integrations for agents carrying no ZPP projection; repair and complete owned reprojection belong exclusively to synchronization.
+
+**Migration**: Use root `zpp init` for an uninitialized agent, root `zpp sync` for drift-selected repair, and root `zpp sync --force` for complete ownership-safe reprojection of an installed integration.

@@ -1,13 +1,14 @@
 ## 1. Workflow Boundary
 
-- [ ] 1.1 Update the packaged `zpp-workflow` skill to consume only the exact ZPP-provisioned OpenSpec operation skills and prohibit workflow-owned initialization, generation, installation, projection, repair, or substitution.
-- [ ] 1.2 Define the blocking handoff for missing, invalid, or stale operation skills and preserve ordinary repo-local `openspec/` planning operations.
+- [x] 1.1 Update the packaged `zpp-workflow` skill to consume only the exact ZPP-provisioned OpenSpec operation skills and prohibit workflow-owned initialization, generation, installation, projection, repair, or substitution.
+- [x] 1.2 Define the blocking handoff for missing, invalid, or stale operation skills and preserve ordinary repo-local `openspec/` planning operations.
 
 ## 2. Specification Reconciliation
 
 - [ ] 2.1 Add the no-local-bootstrap requirement to the canonical `consolidated-workflow-skill` specification.
 - [ ] 2.2 Reconcile the canonical `openspec-skill-provisioning` requirement with `zpp init` creation, `zpp sync` repair, disposable generation, Agent Router projection, and user-scope exclusivity.
-- [ ] 2.3 Inspect the workflow instructions, both deltas, both canonical specifications, current lifecycle implementation, and existing generation tests for a coherent authority boundary.
+- [ ] 2.3 Remove the obsolete canonical `Forced complete initialization` requirement and preserve `zpp sync --force` as the ownership-safe repair path.
+- [ ] 2.4 Inspect the workflow instructions, both deltas, both canonical specifications, current lifecycle implementation, and existing generation tests for a coherent authority boundary.
 
 ## 3. Verification And Finalization
 

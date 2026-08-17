@@ -25,6 +25,8 @@ repository unexpectedly.
 - Correct the provisioning contract so first-time creation belongs to
   `zpp init`, repair belongs to `zpp sync`, and neither authority is attributed
   to workflow runs or project-scope lifecycle commands.
+- Remove the obsolete `zpp init --force` provisioning requirement; owned repair
+  and full reprojection belong to `zpp sync --force`.
 
 ## Capabilities
 
@@ -39,8 +41,8 @@ None.
   lifecycle commands.
 - `openspec-skill-provisioning`: Reconcile the existing initialization-only
   wording with the accepted initialization-versus-synchronization ownership
-  split and make disposable generation plus user-scope projection exclusive to
-  ZPP.
+  split, remove obsolete forced initialization, and make disposable generation
+  plus user-scope projection exclusive to ZPP.
 
 ## Impact
 
