@@ -11,5 +11,5 @@
 
 ## 3. Finalization
 
-- [ ] 3.1 Check the lock and supported Python, then run declared lint, format, test, skill-validation, and clean-build gates.
-- [ ] 3.2 Archive the completed change and verify the incremental checkpoint series and clean working tree.
+- [x] 3.1 Check the lock and supported Python, then run declared lint, format, test, skill-validation, and clean-build gates.
+- [x] 3.2 Archive the completed change and verify the incremental checkpoint series and clean working tree.
