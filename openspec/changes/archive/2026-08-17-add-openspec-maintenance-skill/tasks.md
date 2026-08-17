@@ -17,5 +17,5 @@
 
 ## 4. Final Verification
 
-- [ ] 4.1 Check the lock and supported Python, then run declared lint, format, test, and clean build gates.
-- [ ] 4.2 Archive this completed change and verify the incremental checkpoint series and clean working tree.
+- [x] 4.1 Check the lock and supported Python, then run declared lint, format, test, and clean build gates.
+- [x] 4.2 Archive this completed change and verify the incremental checkpoint series and clean working tree.
