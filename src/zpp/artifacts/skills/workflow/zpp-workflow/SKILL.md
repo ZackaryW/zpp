@@ -37,12 +37,24 @@ obligations.
 1. Identify the exact repository target and the user's requested product outcome.
 2. Require an explicit current stage. If no stage was supplied, ask for it; do not
    infer it from files, stored context, prior messages, or resolved traits.
-3. Apply complete trait bodies already injected by the agent-native ZPP hook as
+3. Before executing the requested stage, read and apply the complete
+   [stage assessment contract](references/stage-assessment.md). Present its
+   eligibility assessment explicitly. A stage name is dispatch input only; it
+   never satisfies that stage, a predecessor gate, verification, or mutation
+   authority.
+4. Apply complete trait bodies already injected by the agent-native ZPP hook as
    contextual policy. The hook is stage-neutral and its bodies remain advisory.
-4. Treat canonical OpenSpec specifications as current product authority, the
+5. Treat canonical OpenSpec specifications as current product authority, the
    active proposal and capability delta specifications as mutable authority for
    the change, and zmem as temporal evidence that must be checked against current
    authority.
+
+If the assessment finds a missing, stale, failed, or superseded predecessor,
+block the requested stage. Identify the earliest unsatisfied predecessor, but do
+not execute it without a new explicit invocation unless separate end-to-end
+progression authority is already in force. A changed contract reopens
+clarification and invalidates every downstream assessment derived from the older
+contract revision.
 
 ## Reconcile the complete agreement
 
@@ -68,8 +80,18 @@ finalize from an assistant-inferred choice.
 
 ## Run the stages
 
-Each stage is a distinct, visible action. Use the installed skill that owns the
-OpenSpec operation. Use OpenLease only through its public coordination and
+Each stage is a distinct, visible action. Follow the exact installed skill that
+owns each OpenSpec operation:
+
+- `openspec-explore` for exploration;
+- `openspec-propose` for creating a change and its planning artifacts;
+- `openspec-update-change` for revising existing planning artifacts;
+- `openspec-apply-change` for implementing change tasks;
+- `openspec-sync-specs` for synchronizing delta specifications without archival;
+- `openspec-archive-change` for archiving a completed change.
+
+These skills are component operation integrations, not ZPP stage authorities or
+one-to-one stage aliases. Use OpenLease only through its public coordination and
 configuration contracts, and Agent Router only through its public discovery and
 projection contracts.
 
