@@ -95,6 +95,24 @@ one-to-one stage aliases. Use OpenLease only through its public coordination and
 configuration contracts, and Agent Router only through its public discovery and
 projection contracts.
 
+The six OpenSpec operation skills must already be available through the
+initialized ZPP agent integration. During a workflow run, never invoke or
+authorize `openspec init`, generate or vendor an OpenSpec skill tree, install or
+project an OpenSpec operation skill, repair one, or create a substitute operation
+owner in the target repository or any other location.
+
+When an operation required by the current stage is absent, unreadable, invalid,
+stale, or requires local initialization, leave that stage blocked and identify
+the exact operation skill. Direct the owner to root `zpp init` when the agent has
+no ZPP integration or root `zpp sync` when an integration already exists. Never
+invoke either lifecycle command on the owner's behalf; workflow progression does
+not grant user-scope integration mutation authority.
+
+This prohibition covers operation skills, not product planning state. An
+installed operation skill may create, update, validate, synchronize, or archive
+ordinary repository-local OpenSpec artifacts under `openspec/`. Never treat that
+planning directory as a skill installation or use it to justify skill bootstrap.
+
 1. `clarify`: settle the complete product boundary, constraints, decisions, and
    deferrals in one coherent proposal and capability-delta contract.
 2. `shape`: translate that confirmed contract into the complete capability-owned
