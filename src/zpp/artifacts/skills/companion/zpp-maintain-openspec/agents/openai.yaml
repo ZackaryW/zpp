@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintain OpenSpec"
+  short_description: "Audit and consolidate OpenSpec safely"
+  default_prompt: "Use $zpp-maintain-openspec to audit legacy OpenSpec archives and prepare a safe consolidation or exact-path removal plan."

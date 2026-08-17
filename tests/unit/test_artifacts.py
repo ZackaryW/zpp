@@ -145,13 +145,14 @@ def test_packaged_companion_inventory_binds_the_vendored_zmem_skills() -> None:
         "zmem-query-memory",
         "zpp-author-trait",
         "zpp-configure-behave",
+        "zpp-maintain-openspec",
     )
 
 
 def test_packaged_authoring_skill_guidance_is_complete_and_cross_agent() -> None:
-    trait, configure = (
-        skill for skill in packaged_companion_skills() if skill.name.startswith("zpp-")
-    )
+    companions = {skill.name: skill for skill in packaged_companion_skills()}
+    trait = companions["zpp-author-trait"]
+    configure = companions["zpp-configure-behave"]
 
     assert configure.compatible_agents == trait.compatible_agents == frozenset(Agent)
     configure_text = next(
