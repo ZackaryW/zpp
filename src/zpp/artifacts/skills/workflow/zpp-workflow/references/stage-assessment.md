@@ -28,7 +28,8 @@ Before executing the explicitly requested stage, present:
 
 After an eligible stage runs, record its observed result. `clarify` and
 `finalize` must be `completed`; each middle stage must be `completed` or
-`skipped: not applicable` under its evidence gate.
+`skipped: not applicable` under its evidence gate. Before recording a stage as
+`completed`, apply the material-checkpoint assessment below.
 
 ## Enforce predecessor gates
 
@@ -40,7 +41,7 @@ After an eligible stage runs, record its observed result. `clarify` and
 | `mature-utilities` | Through `plan-utilities` | Fail-first proof, minimum implementation, independent verification, and checkpoint for planned utility behavior |
 | `wire` | Through `mature-utilities` | Public-boundary bindings and product composition for approved behavior and utilities |
 | `form-specs` | Through `wire` | Canonical specification reconciliation for every mature behavior or accepted capability delta |
-| `finalize` | All prior stages | Complete verification, retained-successor reconciliation, OpenSpec archival, and only separately authorized commit work |
+| `finalize` | All prior stages | Complete verification, retained-successor reconciliation, OpenSpec archival, checkpoint-series verification, and remaining finalization-owned commit work |
 
 A predecessor outcome is current only when it applies to the same accepted
 contract revision. If any required predecessor is absent, stale, failed, or
@@ -98,6 +99,39 @@ A failed command, incomplete implementation, selected trait, descriptive
 repository value, or confident agent statement cannot establish
 not-applicability. When evidence is insufficient, run the stage normally or
 report the unresolved owner decision; never guess a skip.
+
+## Assess material checkpoint completion
+
+After an eligible stage produces its owned output, inspect the actual diff and
+record all of the following before declaring the gate complete:
+
+1. Stage name and accepted contract revision.
+2. Stage-owned non-empty coherent diff, or evidence that no owned diff exists.
+3. Applicable stage verification and its observed result.
+4. Checkpoint commit authority and its source.
+5. Exact paths or hunks proposed for staging, with unrelated changes identified
+   and excluded.
+6. Dependency-ordered proposed commit series, keeping responsibilities together
+   when an intermediate split would knowingly break the repository.
+7. Complete proposed messages and their successful zmem validation results.
+8. Every resulting commit SHA and its successful `zmem show` inspection.
+
+A non-empty coherent stage-owned diff makes the gate material. Invoke the exact
+installed `zmem-author-commits` skill and complete every authorized commit in its
+series before recording that gate as `completed`. Missing authority, failed
+verification, zmem validation failure, commit failure, or inspection failure
+leaves the gate incomplete. Preserve unrelated work throughout.
+
+A `skipped: not applicable` stage and a completed stage with no owned diff have
+no commit subject. Record the observed outcome and create no empty commit.
+`zmem-author-commits` owns whether durable memory warrants an annotation; the
+workflow never requires a meaningless annotation.
+
+Explicit end-to-end workflow delegation supplies authority only for new
+checkpoint commits produced by the automatically progressed stage series. It
+does not authorize amend, merge, rebase, push, callback selection, conflict
+reconciliation, or inclusion of unrelated work. A standalone material stage
+requires separately granted commit authority.
 
 ## Preserve visible progression
 

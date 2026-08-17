@@ -112,7 +112,8 @@ projection contracts.
    into canonical OpenSpec specifications, then checkpoint them.
 7. `finalize`: run the complete verification set, inspect every retained OpenLease
    successor cohort, reconcile or explicitly dispose of it, archive the OpenSpec
-   change, and create only an authorized logical commit.
+   change, verify the retained checkpoint series, and checkpoint only remaining
+   finalization-owned work.
 
 Create or change Gherkin only from accepted externally observable behavior in
 active capability delta specs. Never translate proposals, designs, tasks, docs,
@@ -194,6 +195,44 @@ At every stage, preserve current specifications, accepted intent, and repository
 evidence. Expose any outcome-changing unresolved product policy or ownership
 boundary to its owner instead of inventing an answer.
 
+## Checkpoint every material gate
+
+Before declaring a stage `completed`, decide from the observed stage-owned diff
+whether its gate is material. A material gate owns a non-empty coherent diff. A
+skipped stage or a completed stage with no owned diff records its outcome without
+an empty commit.
+
+For every material gate, invoke the exact installed `zmem-author-commits` skill
+and complete its workflow before declaring the stage complete:
+
+1. Record the checkpoint evidence required by the
+   [stage assessment contract](references/stage-assessment.md), including the
+   accepted contract revision, stage-owned diff, applicable verification and
+   observed result, commit authority, and exact paths or hunks proposed for
+   staging.
+2. Preserve unrelated working-tree changes. Split distinct responsibilities in
+   dependency order only when every intermediate commit is independently
+   coherent and verifiable; do not create a split known to break the repository.
+3. Run stage-appropriate verification before each commit, validate the complete
+   proposed message with zmem, and create the commit only under checkpoint commit
+   authority.
+4. Record every resulting SHA and inspect it with `zmem show`. Let
+   `zmem-author-commits` decide whether durable memory warrants an annotation;
+   never manufacture an annotation merely to label a checkpoint.
+
+Explicit end-to-end workflow delegation grants checkpoint commit authority for
+the new commits produced by its automatically progressed stage series. A
+standalone stage action requires separately granted commit authority. Missing
+authority or any failed verification, zmem validation, commit, or resulting-
+commit inspection leaves a material gate incomplete.
+
+Checkpoint authority never includes amend, merge, rebase, push, callback
+selection, conflict reconciliation, inclusion of unrelated work, or any other
+component-owned mutation. At `finalize`, verify that every material completed
+gate has its checkpoint evidence, archive the OpenSpec change, and commit only
+the remaining finalization-owned diff. Do not collapse or replace the preceding
+checkpoint series.
+
 ## Automatic progression
 
 Under explicit end-to-end delegation, continue through a satisfied checkpoint to
@@ -203,9 +242,11 @@ for unresolved clarification, a contradiction with accepted input, a new or
 changed product boundary, a missing or changed utility shape, missing authority,
 a failed gate, or a component-owned conflict that requires the owner.
 
-Automatic progression does not itself run verification, choose callbacks,
-reconcile retained work, stage files, commit, merge, rebase, or grant authority.
-Those actions remain subject to their owning stage and component contracts.
+Apart from the narrow checkpoint commit authority carried by explicit end-to-end
+delegation, automatic progression does not itself run verification, choose
+callbacks, reconcile retained work, stage files, commit, merge, rebase, or grant
+authority. Those actions remain subject to their owning stage and component
+contracts.
 
 Ignore retained ZPP 1.x stage skills. Do not invoke, translate, or treat them as
 migration sources.
