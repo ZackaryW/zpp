@@ -43,6 +43,15 @@ After an eligible stage runs, record its observed result. `clarify` and
 | `form-specs` | Through `wire` | Canonical specification reconciliation for every mature behavior or accepted capability delta |
 | `finalize` | All prior stages | Complete verification, retained-successor reconciliation, OpenSpec archival, checkpoint-series verification, and remaining finalization-owned commit work |
 
+For `clarify`, inventory every outcome-changing owner decision that remains after
+reconciling accepted authority and repository evidence. The stage cannot complete
+while a required owner question is unasked or unanswered. Require evidence that
+the workflow asked one to three focused questions at a time, used the available
+structured question mechanism or the same direct fallback, received an explicit
+answer, and reconciled that answer across the complete agreement. An unresolved
+record, vague clarification request, recommendation, or presumed default is not
+completion evidence.
+
 A predecessor outcome is current only when it applies to the same accepted
 contract revision. If any required predecessor is absent, stale, failed, or
 superseded, block the requested stage. Identify the earliest unsatisfied stage,

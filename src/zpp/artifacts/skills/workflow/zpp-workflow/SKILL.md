@@ -65,12 +65,26 @@ the contract:
    recommendation, exploration, or deferral.
 2. Reconcile it against canonical specifications, every older accepted owner
    statement for the change, the proposal overview, every capability delta, and
-   every downstream checkpoint already formed.
+   every downstream checkpoint and current repository fact that can settle the
+   outcome without an owner decision.
 3. Preserve older accepted requirements unless the owner explicitly corrects or
    supersedes them. Recency alone is not authority. A recommendation is not confirmation.
-4. Record unconfirmed outcome-changing input under `Unresolved — Do Not Assume`.
-   Clarification has not converged while that section contains a product decision.
-5. If reconciliation exposes a contradiction or an assumed decision, reopen
+4. Identify every outcome-changing behavior, constraint, serialization, or owner
+   boundary that remains unresolved. Do not ask the owner to decide a matter the
+   accepted contract or repository evidence already settles.
+5. Record each remaining decision under `Unresolved — Do Not Assume`, then ask
+   one to three focused owner questions at a time. Each question must name the
+   exact missing decision and meaningful consequences. Present concrete mutually
+   exclusive choices when alternatives are bounded; otherwise ask one precise
+   open question. A vague request such as "can you clarify?" is not sufficient.
+6. Use the active agent's structured user-question mechanism when available. If
+   it is unavailable, ask the same focused question directly. Wait for an
+   explicit owner answer; a recommendation, default, or unresolved record never
+   substitutes for asking and receiving that answer.
+7. Reconcile each answer against the complete agreement and repeat the question
+   loop until no outcome-changing owner decision remains. Clarification has not
+   converged while a required question is unasked or unanswered.
+8. If reconciliation exposes a contradiction or an assumed decision, reopen
    clarification and supersede downstream checkpoints derived from it. Replace
    those gates only after the complete contract converges again.
 
