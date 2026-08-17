@@ -5,7 +5,6 @@ import os
 import shutil
 import subprocess
 import sys
-import tomllib
 from functools import lru_cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -18,9 +17,7 @@ from typer.testing import CliRunner
 from zpp.artifacts import (
     packaged_companion_skills,
     packaged_trait_source,
-    packaged_traits,
     packaged_workflow_hook,
-    packaged_workflow_skill,
 )
 from zpp.cli import app
 from zpp.cli.reset import reset_projections
@@ -43,75 +40,6 @@ from zpp.utils.openlease import (
     create_zpp_openlease,
 )
 from zpp.utils.openspec import OPENSPEC_CORE_SKILL_NAMES
-
-
-def verify_workflow_contract() -> None:
-    skill = packaged_workflow_skill()
-    text = next(
-        item.content.decode("utf-8")
-        for item in skill.files
-        if item.relative_path == "SKILL.md"
-    )
-    families = {item.family for item in packaged_traits()}
-    assert skill.name == "zpp-workflow"
-    assert skill.compatible_agents == frozenset(Agent)
-    assert "workflow" not in families
-    assert "automatic-workflow" not in families
-    assert "workflow-authority" not in families
-    for phrase in (
-        "Require an explicit current stage",
-        "Traits advise the selected stage",
-        "Automatic progression",
-        "distinct, visible action",
-        "OpenLease only through its public",
-        "Agent Router only through its public",
-        "Ignore retained ZPP 1.x stage skills",
-        "already injected by the agent-native ZPP hook",
-        "stage-neutral",
-        "Reconcile the complete agreement",
-        "A recommendation is not confirmation",
-        "Unresolved — Do Not Assume",
-        "supersede downstream checkpoints",
-        "skipped: not applicable",
-        "Clarification has not converged",
-    ):
-        assert phrase in text
-    assert "zpp resolve" not in text
-    assert "ZPP_CONTEXT" not in text
-    assert {
-        "bdd",
-        "bdd-execution",
-        "bdd-structure",
-        "build",
-        "dependencies",
-        "tdd",
-        "tooling",
-        "zero-assumptions",
-    } == families
-
-    documents = {
-        item.family: tomllib.loads(item.content.decode("utf-8"))
-        for item in packaged_traits()
-    }
-    assert documents["zero-assumptions"]["meta"]["activation"] == "always-run"
-    assert [
-        flavor.get("facet", {}).get("bdd_mode")
-        for flavor in documents["bdd-execution"]["trait"]
-    ] == ["manual", "disabled", "complete", "targeted", None]
-    execution_bodies = [
-        flavor["content"]["body"] for flavor in documents["bdd-execution"]["trait"]
-    ]
-    assert "absence of `zpp.behave.yaml` never blocks native BDD" in text
-    assert "complete established native BDD suite" in text
-    assert "optional `zpp behave` coordination" in execution_bodies[2]
-    assert "established native BDD feature surface directly" in execution_bodies[3]
-    assert "established native feature surface directly" in execution_bodies[4]
-    assert "zpp-flow-wire-feature" not in text
-    assert all("zpp-flow-" not in body for body in execution_bodies)
-    assert [flavor["facet"]["tool"] for flavor in documents["tooling"]["trait"]] == [
-        "rg",
-        "jq",
-    ]
 
 
 def verify_repository_contract() -> None:
@@ -181,7 +109,7 @@ def verify_repository_contract() -> None:
         assert bound.context is not None
         assert [item.family for item in bound.source.documents] == ["bdd"]
         assert sorted(
-            str(path.relative_to(repository))
+            path.relative_to(repository).as_posix()
             for path in repository.rglob("*")
             if path.is_file()
         ) == [".zpp/traits/bdd.toml", ".zpp/zpp.toml"]
@@ -416,14 +344,8 @@ def verify_product_home_contract() -> None:
         for item in (
             (agent, "hook"),
             (agent, "skill"),
-            *(
-                (agent, f"skill:{skill.name}")
-                for skill in companion_skills
-            ),
-            *(
-                (agent, f"skill:{name}")
-                for name in OPENSPEC_CORE_SKILL_NAMES
-            ),
+            *((agent, f"skill:{skill.name}") for skill in companion_skills),
+            *((agent, f"skill:{name}") for name in OPENSPEC_CORE_SKILL_NAMES),
         )
     ]
 
@@ -674,7 +596,6 @@ def verify_behavior_contract() -> None:
 
 VERIFIERS = {
     "behavior_verification": verify_behavior_contract,
-    "consolidated_workflow_skill": verify_workflow_contract,
     "repository_trait_bootstrap": verify_repository_contract,
     "toml_trait_catalog": verify_catalog_contract,
     "trait_resolution": verify_resolution_contract,

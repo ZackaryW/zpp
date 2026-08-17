@@ -11,7 +11,7 @@ workspace_contains = ".behaverc"
 [[trait.when]]
 workspace_contains = "features/*/steps/bindings.py"
 [trait.content]
-body = """Use Behave for integration behavior exercised through the public system. Keep pure-functionality case matrices in unit tests, while retaining one end-to-end scenario when needed to prove that a rule is enforced through the public boundary. Keep bindings thin and run each capability-owned BDD root independently."""
+body = """Use Behave for integration behavior exercised through the public system. Keep pure-functionality case matrices in unit tests, while retaining one end-to-end scenario when needed to prove that a rule is enforced through the public boundary. Keep bindings thin and run each capability-owned BDD root independently. Bind every scenario to verification that exercises the behavior it names and selects on that scenario; a step that records its own phrase, asserts only that it ran, or shares one capability-wide assertion block is not a binding. Route an obligation with no executable public-system observation to a specification requirement instead of a scenario, and never assert artifact wording a specification already governs."""
 
 [[trait]]
 [trait.facet]
@@ -21,7 +21,7 @@ workspace_contains = "integration_test/*.dart"
 [[trait.when]]
 workspace_contains = "integration_test/**/*.dart"
 [trait.content]
-body = """Express user-visible behavior in capability-cohesive tests without requiring Gherkin or a Python filesystem shape."""
+body = """Express user-visible behavior in capability-cohesive tests without requiring Gherkin or a Python filesystem shape. Bind every case to verification that exercises the behavior it names; route an obligation with no executable observation to a specification requirement, and never assert artifact wording a specification already governs."""
 
 [[trait]]
 [trait.facet]
@@ -37,4 +37,4 @@ workspace_contains = "cucumber.yml"
 [[trait.when]]
 workspace_contains = "**/steps/*.ts"
 [trait.content]
-body = """Keep scenarios capability-cohesive and bind them through the selected TypeScript runner without imposing Python layouts."""
+body = """Keep scenarios capability-cohesive and bind them through the selected TypeScript runner without imposing Python layouts. Bind every scenario to verification that exercises the behavior it names and selects on that scenario; route an obligation with no executable observation to a specification requirement, and never assert artifact wording a specification already governs."""

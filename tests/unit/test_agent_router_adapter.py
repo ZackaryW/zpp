@@ -132,7 +132,7 @@ def test_trait_artifact_extension_locates_only_ordered_top_level_toml(
     paths = tuple(extension.locate(SimpleNamespace(root=tmp_path)))
 
     assert extension.manifest.identifier == ZPP_TRAITS_ARTIFACT_ID
-    assert [str(path) for path in paths] == ["traits/a.toml", "traits/z.toml"]
+    assert [path.as_posix() for path in paths] == ["traits/a.toml", "traits/z.toml"]
 
 
 def test_project_workflow_skill_delegates_exact_arguments() -> None:

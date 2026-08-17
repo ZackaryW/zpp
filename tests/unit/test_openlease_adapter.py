@@ -134,7 +134,7 @@ def test_read_repository_adapts_exact_documents_for_core(tmp_path: Path) -> None
     bound = OpenLeaseTraitDocuments(_Lifecycle()).read_repository(repository)
 
     assert bound.context is not None
-    assert bound.context.identifier.endswith("/.zpp/zpp.toml")
+    assert Path(bound.context.identifier) == repository.resolve() / ".zpp" / "zpp.toml"
     assert bound.source.kind is SourceKind.REPOSITORY
     assert bound.source.identifier == str(repository.resolve())
     assert [item.family for item in bound.source.documents] == ["bdd"]

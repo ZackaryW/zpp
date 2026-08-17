@@ -12,18 +12,25 @@ a stage, authorize a mutation, satisfy a gate, or establish completion.
 ## Route artifact-only maintenance
 
 Before requiring a workflow stage, classify the requested outcome. When the
-entire change is limited to non-runtime artifacts such as README or reference
-docs, repository-local ZPP traits or context, packaged skill or trait prose, or
-commit metadata, use the owning artifact guidance and edit directly. Do not
-create an OpenSpec change, Gherkin, a utility plan, TDD, or workflow-stage
-outcomes. Run only relevant structural, format, resolution, and diff validation,
-then create an authorized commit when requested.
+entire change is limited to ungoverned non-runtime artifacts such as README or
+reference docs, repository-local ZPP traits or context, or commit metadata, use
+the owning artifact guidance and edit directly. Do not create an OpenSpec
+change, Gherkin, a utility plan, TDD, or workflow-stage outcomes. Run only
+relevant structural, format, resolution, and diff validation, then create an
+authorized commit when requested.
+
+This route never covers a spec-governed artifact. The packaged workflow skill
+document, a packaged trait document, and a canonical OpenSpec specification are
+spec-governed, because canonical requirements describe their content as
+observable behavior. Change them through the product workflow and reconcile
+canonical specifications before finalization, even when no executable behavior
+changes.
 
 Classify by effect, not filename. Artifact loading, parsing, validation, class
-conversion, canonical product-specification changes, or any artifact-backed
-change to executable or public behavior uses the product workflow. For a mixed
-change, apply the workflow to its behavioral portion while keeping supporting
-artifact text out of BDD and TDD obligations.
+conversion, or any artifact-backed change to executable or public behavior uses
+the product workflow. For a mixed change, apply the workflow to its behavioral
+portion while keeping supporting ungoverned artifact text out of BDD and TDD
+obligations.
 
 ## Establish the invocation
 
@@ -91,6 +98,15 @@ artifacts, configuration-only work, or implementation details into scenarios;
 when no delta behavior remains, record `shape` as not applicable. Otherwise cover
 every delta behavior or mark it non-BDD with a concrete reason.
 Reject every untraced scenario or coverage gap.
+
+Bind every scenario to executable verification that exercises the behavior it
+names through the public system, selected by that scenario. A step that records
+its own phrase, asserts only that it ran, or relies on one capability-wide
+assertion block running after every scenario is not a binding and establishes no
+coverage. Record an obligation with no executable public-system observation as a
+canonical specification requirement or a concrete non-BDD classification instead
+of an unbound scenario. Never assert the literal wording of an artifact whose
+content a canonical requirement already governs.
 
 Create or change TDD tests only for executable behavior. Artifact loading,
 unloading, parsing, validation, and conversion into runtime classes are eligible.

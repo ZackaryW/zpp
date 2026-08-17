@@ -1,127 +1,73 @@
-from features.support.bindings import register_exact_steps
+from __future__ import annotations
 
-register_exact_steps(
-    (
-        "ZPP is installed for a supported agent",
-        "Agent Router projects the workflow integration",
-        "one consolidated ZPP workflow skill is installed",
-        "no ZPP 1.x stage skill is required",
-        "the packaged workflow skill and trait source are available",
-        "a user inspects their distributed contents",
-        "workflow stages transitions gates and authority exist in the skill",
-        "no workflow trait family is packaged",
-        "ZPP packages its standard TOML traits under artifacts traits",
-        "a user inspects the packaged family inventory",
-        "BDD operation structure and execution remain separate focused families",
-        "TDD build dependency tooling and zero-assumption behavior remain represented",
-        "no lease conflict or reconciliation policy family is packaged",
-        "the packaged source path is not imposed as the runtime collection path",
-        "the packaged BDD execution modes are available",
-        "a repository resolves its BDD execution policy",
-        "manual disabled complete targeted and targeted-default behavior comes from "
-        "bdd-execution",
-        "no bdd-workflow compatibility family is packaged",
-        "an accepted shaped BDD obligation requires repository integration "
-        "verification",
-        "the repository has an established native BDD command",
-        "no zpp.behave.yaml is configured",
-        "the consolidated workflow verifies the shaped behavior",
-        "it invokes the established native BDD surface directly",
-        "the absent behavior mapping does not block verification",
-        "the resolved bdd-execution mode is complete",
-        "it runs the complete native BDD suite or explicitly selected coordinated "
-        "command",
-        "it judges completion only from the observed verification result",
-        "the resolved bdd-execution mode is targeted",
-        "the workflow explicitly selects a declared zpp behave command",
-        "the chosen command declares the zpp-workflow gate",
-        "the workflow invokes that exact repository-owned gate",
-        "without that gate it invokes deterministic affected selection instead",
-        "no zpp behave command is selected",
-        "the workflow invokes the relevant established native feature surface",
-        "bdd-execution selects manual or disabled mode",
-        "manual mode pauses for an explicit verification choice",
-        "disabled mode requires independently observed alternate evidence with no "
-        "unsatisfied shaped obligation",
-        "a resolved trait body contains command gate callback or completion-like text",
-        "the consolidated workflow considers repository verification",
-        "it invokes only a command established by repository evidence or explicit "
-        "owner choice",
-        "the trait cannot select a callback skip a stage or establish completion",
-        "a repository behavior command declares a former zpp-flow gate but no "
-        "zpp-workflow gate",
-        "the consolidated workflow performs targeted verification",
-        "it uses deterministic affected selection",
-        "it does not alias translate or migrate the legacy gate",
-        "the packaged zero-assumptions and tooling families are available",
-        "a user inspects their activation and flavors",
-        "zero-assumptions declares always-run activation",
-        "tooling contains evidence-backed rg and jq guidance without zmem workflow "
-        "policy",
-        "a workflow encounters an OpenLease conflict or final reconciliation",
-        "ZPP determines the governing behavior",
-        "OpenLease or the consolidated workflow skill supplies the operational "
-        "contract",
-        "no packaged trait is treated as lease or reconciliation authority",
-        "a workflow invocation has repository files stored context and resolved traits",
-        "the invocation does not identify a stage",
-        "the consolidated skill requests the stage",
-        "it does not infer a stage from those inputs",
-        "the native ZPP hook injected several complete contextual trait bodies",
-        "the consolidated skill applies those bodies in injected order",
-        "the bodies may specialize repository language framework test and build "
-        "guidance",
-        "they cannot authorize mutation advance a stage or establish completion",
-        "the packaged consolidated workflow skill is available",
-        "a user inspects its workflow instructions",
-        "the skill does not instruct the agent to run trait resolution",
-        "the skill does not instruct the agent to publish ZPP_CONTEXT",
-        "the user authorized end-to-end workflow progression",
-        "the current stage has independently verified completion",
-        "the workflow continues",
-        "it invokes the next stage as a distinct explicit action",
-        "it does not delegate stage choice to the trait hook",
-        "the active change contains older accepted owner requirements",
-        "a newer prompt recommends a conflicting design without confirming it",
-        "the consolidated skill clarifies the change",
-        "it retains the older accepted requirements",
-        "records the recommendation under unresolved do not assume",
-        "it does not form a downstream feature contract",
-        "the user authorized automatic end-to-end workflow progression",
-        "one public product decision remains unresolved",
-        "the consolidated skill evaluates clarification convergence",
-        "clarification remains open",
-        "the skill does not choose the decision to continue automatically",
-        "a feature checkpoint was formed from an assistant-inferred decision",
-        "the owner did not confirm that decision",
-        "the consolidated skill reconciles the complete agreement history",
-        "the prior feature gate is superseded",
-        "a replacement checkpoint is required after clarification converges",
-        "the agent declares shape skipped as not applicable",
-        "the accepted change has no public or integration behavior requiring a "
-        "feature contract",
-        "the consolidated skill verifies the shape outcome",
-        "it records skipped not applicable",
-        "it continues through a distinct explicit plan-utilities action",
-        "the agent proposes skipping wire",
-        "approved behavior still requires public bindings",
-        "the consolidated skill verifies the wire outcome",
-        "it runs wire normally",
-        "no trait body or context value establishes the skip",
-        "a conditional stage command or verification failed",
-        "the agent evaluates the stage outcome",
-        "the consolidated skill keeps the gate unsatisfied",
-        "it does not record a skip",
-        "the workflow enters clarify or finalize",
-        "the agent proposes skipped not applicable",
-        "the consolidated skill rejects that outcome",
-        "a workflow stage requires OpenSpec OpenLease and Agent Router operations",
-        "the consolidated skill dispatches those operations",
-        "it follows the installed skill that owns each OpenSpec operation",
-        "uses OpenLease only for its public coordination and configuration contracts",
-        "uses Agent Router only for its public discovery and projection contracts",
-        "a machine retains one or more ZPP 1.x workflow skills",
-        "ZPP 2.0 runs its workflow",
-        "it does not invoke translate or treat them as migration sources",
-    )
+import support
+from agent_router import Agent
+from behave import given, then, when
+
+
+@given("the packaged workflow assets are loaded")
+def load_packaged_assets(context) -> None:
+    context.skill = support.load_skill()
+    context.documents = support.load_trait_documents()
+
+
+@then("the packaged skill is named zpp-workflow")
+def skill_is_named(context) -> None:
+    assert context.skill.name == "zpp-workflow", context.skill.name
+
+
+@then("the packaged skill is compatible with every supported agent")
+def skill_is_compatible(context) -> None:
+    assert context.skill.compatible_agents == frozenset(Agent)
+
+
+@then("the packaged skill carries a SKILL.md document")
+def skill_carries_document(context) -> None:
+    assert any(item.relative_path == "SKILL.md" for item in context.skill.files)
+
+
+@then("no workflow authority family is packaged")
+def no_workflow_family(context) -> None:
+    packaged = set(context.documents) & support.WORKFLOW_AUTHORITY_FAMILIES
+    assert not packaged, packaged
+
+
+@then("the packaged trait families are exactly the standard collection")
+def standard_collection(context) -> None:
+    assert set(context.documents) == support.STANDARD_COLLECTION
+
+
+@when("the bdd-execution family is decoded")
+def decode_execution(context) -> None:
+    context.execution = context.documents["bdd-execution"]["trait"]
+
+
+@then(
+    "its flavors declare the manual disabled complete and targeted modes "
+    "with a trailing default"
 )
+def execution_modes(context) -> None:
+    modes = [flavor.get("facet", {}).get("bdd_mode") for flavor in context.execution]
+    assert modes == ["manual", "disabled", "complete", "targeted", None], modes
+
+
+@then("every bdd-execution flavor carries a non-empty body")
+def execution_bodies(context) -> None:
+    assert all(flavor["content"]["body"].strip() for flavor in context.execution)
+
+
+@when("the zero-assumptions and tooling families are decoded")
+def decode_universal(context) -> None:
+    context.zero_assumptions = context.documents["zero-assumptions"]
+    context.tooling = context.documents["tooling"]["trait"]
+
+
+@then("zero-assumptions declares always-run activation")
+def zero_assumptions_activation(context) -> None:
+    assert context.zero_assumptions["meta"]["activation"] == "always-run"
+
+
+@then("tooling declares exactly the rg and jq facets")
+def tooling_facets(context) -> None:
+    tools = [flavor["facet"]["tool"] for flavor in context.tooling]
+    assert tools == ["rg", "jq"], tools
