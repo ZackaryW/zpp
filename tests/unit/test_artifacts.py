@@ -146,6 +146,7 @@ def test_packaged_companion_inventory_binds_the_vendored_zmem_skills() -> None:
         "zpp-author-trait",
         "zpp-configure-behave",
         "zpp-maintain-openspec",
+        "zpp-workspace-management",
     )
 
 

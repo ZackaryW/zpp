@@ -1,6 +1,6 @@
 ---
 name: zpp-workflow
-description: Run the complete ZPP product-change workflow through explicit stages while preserving OpenSpec, OpenLease, Agent Router, verification, and commit authority boundaries.
+description: Run the complete ZPP product-change workflow through explicit stages while preserving OpenSpec, workspace coordination, Agent Router, verification, and commit authority boundaries.
 ---
 
 # ZPP workflow
@@ -91,9 +91,12 @@ owns each OpenSpec operation:
 - `openspec-archive-change` for archiving a completed change.
 
 These skills are component operation integrations, not ZPP stage authorities or
-one-to-one stage aliases. Use OpenLease only through its public coordination and
-configuration contracts, and Agent Router only through its public discovery and
-projection contracts.
+one-to-one stage aliases. Before performing a cross-repository topology,
+workspace lifecycle, lock, successor, reconciliation, handoff, recovery,
+abandonment, or cleanup operation, name and follow the installed
+`zpp-workspace-management` companion skill. Keep provider-specific operation
+guidance out of this general workflow. Use Agent Router only through its public
+discovery and projection contracts.
 
 The six OpenSpec operation skills must already be available through the
 initialized ZPP agent integration. During a workflow run, never invoke or
@@ -128,10 +131,12 @@ planning directory as a skill installation or use it to justify skill bootstrap.
    and capability-local.
 6. `form-specs`: reconcile the mature green behavior and current change contract
    into canonical OpenSpec specifications, then checkpoint them.
-7. `finalize`: run the complete verification set, inspect every retained OpenLease
-   successor cohort, reconcile or explicitly dispose of it, archive the OpenSpec
-   change, verify the retained checkpoint series, and checkpoint only remaining
-   finalization-owned work.
+7. `finalize`: run the complete verification set, delegate inspection and
+   authorized disposition of every retained cross-repository successor or
+   reconciliation item to `zpp-workspace-management`, archive the OpenSpec change,
+   verify the retained checkpoint series, and checkpoint only remaining
+   finalization-owned work. Finalization remains incomplete for every blocked
+   retained item.
 
 Create or change Gherkin only from accepted externally observable behavior in
 active capability delta specs. Never translate proposals, designs, tasks, docs,
@@ -160,6 +165,32 @@ subpackages own focused fail-first unit TDD, not feature-level acceptance
 contracts. Public BDD may compose those packages but never replaces their unit
 tests. Inspect package topology and dependency direction directly instead of
 encoding repository structure as behavior tests; expose unresolved ownership.
+
+## Form specifications without duplicated scenarios
+
+During `form-specs`, replace an OpenSpec scenario's repeated executable body with
+an exact BDD target only when all of these facts are observed:
+
+- the target is `features/<capability>/<capability>.feature::<scenario name>` and
+  belongs to the same capability owner as the requirement;
+- that exact feature scenario exists and traces to the requirement;
+- its scenario-selected bindings exercise the behavior it names through the
+  public system rather than recording phrases, asserting wording, or sharing one
+  capability-wide assertion; and
+- relevant verification for that exact scenario passes.
+
+Use this retained OpenSpec form:
+
+```markdown
+#### Scenario: BDD target — <scenario name>
+- **WHEN** executable behavior is covered by `features/<capability>/<capability>.feature::<scenario name>`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
+```
+
+Every scenario without qualifying BDD coverage remains a complete OpenSpec
+WHEN/THEN scenario. A missing, stale, cross-capability, untraced, recorder-only,
+capability-wide, wording-only, or unverified target blocks `form-specs`; it never
+justifies removing or redirecting the specification scenario.
 
 ## Verify repository behavior
 
