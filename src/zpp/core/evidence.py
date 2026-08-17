@@ -71,9 +71,7 @@ def _workspace_observation(
         else:
             candidate = _confined(target, target / relative)
             matches = (
-                [candidate]
-                if candidate is not None and candidate.exists()
-                else []
+                [candidate] if candidate is not None and candidate.exists() else []
             )
     else:
         matches = sorted(target.glob(f"**/{pattern}"))
@@ -138,9 +136,9 @@ def collect_evidence(
                 branch.workspace_contains, runtime
             )
             matches.append(matched)
-            fingerprints[
-                f"workspace_contains:{branch.workspace_contains}"
-            ] = fingerprint
+            fingerprints[f"workspace_contains:{branch.workspace_contains}"] = (
+                fingerprint
+            )
         if branch.file_contains is not None:
             matched, fingerprint = _file_observation(
                 branch.file_contains.path,
@@ -149,8 +147,7 @@ def collect_evidence(
             )
             matches.append(matched)
             fingerprints[
-                "file_contains:"
-                f"{branch.file_contains.path}:{branch.file_contains.text}"
+                f"file_contains:{branch.file_contains.path}:{branch.file_contains.text}"
             ] = fingerprint
         if branch.which is not None:
             matched, fingerprint, fact = _which_observation(branch.which, runtime)

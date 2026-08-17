@@ -119,9 +119,7 @@ class FacetContext:
     values: Mapping[str, str | tuple[str, ...] | bool] = field(
         default_factory=lambda: MappingProxyType({})
     )
-    provenance: Mapping[str, str] = field(
-        default_factory=lambda: MappingProxyType({})
-    )
+    provenance: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,9 +154,7 @@ class EvidenceRef:
 @dataclass(frozen=True, slots=True)
 class EvidenceResult:
     matched: bool
-    facts: Mapping[str, bool] = field(
-        default_factory=lambda: MappingProxyType({})
-    )
+    facts: Mapping[str, bool] = field(default_factory=lambda: MappingProxyType({}))
     fingerprints: Mapping[str, str] = field(
         default_factory=lambda: MappingProxyType({})
     )

@@ -86,16 +86,12 @@ def test_restore_session_context_ignores_another_target() -> None:
             "version": 1,
             "target": {"repository": "/other"},
             "facets": {"language": "python"},
-            "provenance": {
-                "language": {"source": "evidence", "evidence": []}
-            },
+            "provenance": {"language": {"source": "evidence", "evidence": []}},
             "fingerprints": {},
         }
     )
 
-    restored = restore_session_context(
-        raw, TargetIdentity(repository="/repo"), {}
-    )
+    restored = restore_session_context(raw, TargetIdentity(repository="/repo"), {})
 
     assert restored.values == {}
     assert restored.target.repository == "/repo"
@@ -223,16 +219,17 @@ def test_complete_stored_context_preserves_resolution_provenance() -> None:
     assert stored.target.repository == "/repo"
     assert stored.values == resolution.context.values
     assert stored.provenance["framework"].evidence == ()
-    assert stored.provenance["language"].evidence == (
-        "workspace:/pyproject.toml",
-    )
+    assert stored.provenance["language"].evidence == ("workspace:/pyproject.toml",)
     assert stored.fingerprints == {
         "workspace:/pyproject.toml": "present",
         "which:uv": "missing",
     }
     encoded = encode_session_context(stored)
-    assert restore_session_context(
-        encoded,
-        TargetIdentity("/repo"),
-        stored.fingerprints,
-    ) == stored
+    assert (
+        restore_session_context(
+            encoded,
+            TargetIdentity("/repo"),
+            stored.fingerprints,
+        )
+        == stored
+    )

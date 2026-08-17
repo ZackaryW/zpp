@@ -96,15 +96,10 @@ def render_lifecycle_summary(
         ("no-op", "unchanged"),
         ("absent", "already absent"),
     )
-    parts = [
-        f"{counts[status]} {label}"
-        for status, label in labels
-        if counts[status]
-    ]
+    parts = [f"{counts[status]} {label}" for status, label in labels if counts[status]]
     known = {status for status, _ in labels}
     parts.extend(
-        f"{counts[status]} {status}"
-        for status in sorted(counts.keys() - known)
+        f"{counts[status]} {status}" for status in sorted(counts.keys() - known)
     )
     outcomes = ", ".join(parts) if parts else "no changes"
     noun = "agent" if agent_count == 1 else "agents"

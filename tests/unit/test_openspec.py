@@ -46,9 +46,7 @@ def test_generation_returns_exact_agent_skills_and_cleans_project(
         _write_generated(cwd, agent)
         return ProcessResult(argv, 0, "initialized\n", "")
 
-    with generated_openspec_skills(
-        agent, openspec_version="1.7.0", run=run
-    ) as skills:
+    with generated_openspec_skills(agent, openspec_version="1.7.0", run=run) as skills:
         assert tuple(skill.name for skill in skills) == OPENSPEC_CORE_SKILL_NAMES
         assert all(skill.path.is_dir() for skill in skills)
         assert all(
@@ -95,9 +93,7 @@ def test_malformed_generation_fails_and_cleans_project() -> None:
             OpenSpecGenerationError,
             match="unexpected core skill inventory",
         ),
-        generated_openspec_skills(
-            Agent.CODEX, openspec_version="1.7.0", run=run
-        ),
+        generated_openspec_skills(Agent.CODEX, openspec_version="1.7.0", run=run),
     ):
         pytest.fail("malformed generation yielded")
 
@@ -107,9 +103,7 @@ def test_malformed_generation_fails_and_cleans_project() -> None:
 def test_provenance_is_deterministic_and_changes_fingerprint(tmp_path: Path) -> None:
     skill = tmp_path / "skill"
     skill.mkdir()
-    path = write_openspec_provenance(
-        skill, OpenSpecProvenance(1, "zpp", "1.7.0")
-    )
+    path = write_openspec_provenance(skill, OpenSpecProvenance(1, "zpp", "1.7.0"))
 
     assert path.read_text(encoding="utf-8") == (
         '{"generator":"zpp","openspec_version":"1.7.0","schema":1}\n'
@@ -173,9 +167,7 @@ def test_multi_agent_failure_yields_nothing_and_cleans_prior_projects(
 
     with (
         pytest.raises(OpenSpecGenerationError, match="OpenSpec"),
-        generated_openspec_skill_sets(
-            (Agent.CODEX, Agent.PI), run=run, cwd=tmp_path
-        ),
+        generated_openspec_skill_sets((Agent.CODEX, Agent.PI), run=run, cwd=tmp_path),
     ):
         pytest.fail("partial selected inventories yielded")
 

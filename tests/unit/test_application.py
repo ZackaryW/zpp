@@ -71,9 +71,7 @@ def test_application_resolves_classified_sources_without_layout_assumptions(
     )
 
     assert [item.body for item in result.bodies] == ["repository body"]
-    assert result.explanation["families"][0]["policy_source"] == (
-        "selected-repository"
-    )
+    assert result.explanation["families"][0]["policy_source"] == ("selected-repository")
     assert "artifacts/traits" not in str(result.explanation)
     assert result.resolution.context.values["stage"] == "wire"
     assert '"stage":"wire"' not in result.context

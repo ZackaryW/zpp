@@ -156,9 +156,7 @@ def _enrich_resolution_context(
                         context.provenance[key],
                         context.evidence.get(key, ()),
                     )
-                    for value in (
-                        item if isinstance(item, tuple) else (item,)
-                    )
+                    for value in (item if isinstance(item, tuple) else (item,))
                 ),
             )
         )
@@ -313,17 +311,16 @@ def resolve_trait_family(
         )
 
     retained_positions = {item.effective_position for item in retained}
-    candidate_positions = {
-        item.effective_position for item in direct
-    } | set(evidence_selected)
+    candidate_positions = {item.effective_position for item in direct} | set(
+        evidence_selected
+    )
     decisions = tuple(
         FlavorDecision(
             flavor=flavor,
             selected=flavor.effective_position in retained_positions,
             reason=(
                 "selected-always-run"
-                if activate_all
-                and flavor.effective_position in retained_positions
+                if activate_all and flavor.effective_position in retained_positions
                 else "selected-evidence"
                 if flavor.effective_position in retained_positions
                 and flavor.effective_position in evidence_selected

@@ -62,10 +62,8 @@ def _manage(
         hook = packaged_workflow_hook(agent)
         if operation == "remove":
             hook_result = user_action(
-                lambda selected_router=router, selected_hook=hook: (
-                    remove_workflow_hook(
-                        selected_router, selected_hook.name, scope, project_root
-                    )
+                lambda selected_router=router, selected_hook=hook: remove_workflow_hook(
+                    selected_router, selected_hook.name, scope, project_root
                 )
             )
             skill_result = user_action(
@@ -80,9 +78,7 @@ def _manage(
                     skill,
                     scope,
                     project_root,
-                    replace_project=(
-                        operation == "update" and scope is Scope.PROJECT
-                    ),
+                    replace_project=(operation == "update" and scope is Scope.PROJECT),
                 )
             )
             hook_result = user_action(

@@ -59,9 +59,7 @@ def _validate_facets(value: object) -> object:
             or any(not isinstance(entry, str) or not entry for entry in item)
             or len(set(item)) != len(item)
         ):
-            raise ValueError(
-                "facet arrays must contain distinct non-empty strings"
-            )
+            raise ValueError("facet arrays must contain distinct non-empty strings")
     return value
 
 
@@ -201,8 +199,7 @@ def restore_session_context(
             member
             for member in candidates
             if not any(
-                decoded.fingerprints.get(evidence_key)
-                != fingerprints.get(evidence_key)
+                decoded.fingerprints.get(evidence_key) != fingerprints.get(evidence_key)
                 for evidence_key in member.evidence
             )
         )
@@ -212,9 +209,7 @@ def restore_session_context(
         provenance[key] = _provenance_for_members(retained)
         members[key] = retained
     relevant_keys = {
-        evidence_key
-        for item in provenance.values()
-        for evidence_key in item.evidence
+        evidence_key for item in provenance.values() for evidence_key in item.evidence
     }
     current_fingerprints = {
         key: fingerprints[key] for key in relevant_keys if key in fingerprints
@@ -330,13 +325,9 @@ def complete_stored_context(
         for key, value in result.context.values.items()
         if key not in PROTECTED_CONTEXT_KEYS
     }
-    provenance = {
-        key: _provenance_for_members(items) for key, items in members.items()
-    }
+    provenance = {key: _provenance_for_members(items) for key, items in members.items()}
     relevant = {
-        evidence_key
-        for item in provenance.values()
-        for evidence_key in item.evidence
+        evidence_key for item in provenance.values() for evidence_key in item.evidence
     }
     return StoredContext(
         target=target,

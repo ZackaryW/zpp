@@ -110,9 +110,7 @@ class TraitApplication:
             invocation_values["stage"] = stage.value
         direct = FacetContext(
             values=frozen_mapping(invocation_values),
-            provenance=frozen_mapping(
-                {key: "invocation" for key in invocation_values}
-            ),
+            provenance=frozen_mapping({key: "invocation" for key in invocation_values}),
         )
         known = build_resolution_context(direct, repository_context, stored)
         resolved = resolve_traits(
@@ -164,9 +162,7 @@ class TraitApplication:
                     document.path,
                 )
                 grouped[document.family].append(
-                    decode_trait_document(
-                        document.family, document.values, reference
-                    )
+                    decode_trait_document(document.family, document.values, reference)
                 )
         return tuple(
             compose_trait_family(family, contributions)
@@ -230,9 +226,7 @@ class TraitApplication:
                     "mode": effective[resolution.family].mode.value,
                     "excluded_sources": [
                         source.identifier
-                        for source in effective[
-                            resolution.family
-                        ].excluded_sources
+                        for source in effective[resolution.family].excluded_sources
                     ],
                     "decisions": [
                         {

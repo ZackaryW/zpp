@@ -123,9 +123,7 @@ class _ContextInput(_StrictModel):
                 or any(not isinstance(entry, str) or not entry for entry in item)
                 or len(set(item)) != len(item)
             ):
-                raise ValueError(
-                    "facet arrays must contain distinct non-empty strings"
-                )
+                raise ValueError("facet arrays must contain distinct non-empty strings")
         return value
 
 

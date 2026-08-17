@@ -72,15 +72,10 @@ def test_packaged_companion_skills_are_detached_in_deterministic_order(
         "zpp-configure-behave",
     )
     assert [
-        next(
-            item.content
-            for item in skill.files
-            if item.relative_path == "SKILL.md"
-        )
+        next(item.content for item in skill.files if item.relative_path == "SKILL.md")
         for skill in loaded
     ] == [
-        b"---\nname: vendor-skill\ndescription: Author with ZPP.\n---\n"
-        b"vendor-skill\n",
+        b"---\nname: vendor-skill\ndescription: Author with ZPP.\n---\nvendor-skill\n",
         b"---\nname: zpp-author-trait\ndescription: Author with ZPP.\n---\n"
         b"zpp-author-trait\n",
         b"---\nname: zpp-configure-behave\ndescription: Author with ZPP.\n---\n"
@@ -155,9 +150,7 @@ def test_packaged_companion_inventory_binds_the_vendored_zmem_skills() -> None:
 
 def test_packaged_authoring_skill_guidance_is_complete_and_cross_agent() -> None:
     trait, configure = (
-        skill
-        for skill in packaged_companion_skills()
-        if skill.name.startswith("zpp-")
+        skill for skill in packaged_companion_skills() if skill.name.startswith("zpp-")
     )
 
     assert configure.compatible_agents == trait.compatible_agents == frozenset(Agent)

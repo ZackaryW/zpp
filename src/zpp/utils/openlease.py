@@ -165,8 +165,7 @@ def _run_behavior_invocation(
     state_root: Path | None,
 ) -> object:
     if invocation.event is not None and (
-        not isinstance(invocation.input, Mapping)
-        or "complete" not in invocation.input
+        not isinstance(invocation.input, Mapping) or "complete" not in invocation.input
     ):
         raise BehaviorExecutionError(
             "behavior callback requires an explicit complete or affected selection mode"
