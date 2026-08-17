@@ -12,8 +12,8 @@
 
 ## 3. Specification Reconciliation
 
-- [ ] 3.1 Synchronize the accepted `openspec-maintenance-skill` delta into canonical specifications without initializing local OpenSpec skills.
-- [ ] 3.2 Run strict OpenSpec validation and inspect the canonical diff for complete requirement and scenario preservation.
+- [x] 3.1 Synchronize the accepted `openspec-maintenance-skill` delta into canonical specifications without initializing local OpenSpec skills.
+- [x] 3.2 Run strict OpenSpec validation and inspect the canonical diff for complete requirement and scenario preservation.
 
 ## 4. Final Verification
 
