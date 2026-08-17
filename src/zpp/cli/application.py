@@ -12,6 +12,7 @@ from zpp.cli.open import open_home
 from zpp.cli.reset import reset
 from zpp.cli.resolution import resolve
 from zpp.cli.shared import Runtime
+from zpp.cli.sync import sync
 from zpp.cli.traits import app as trait_app
 from zpp.cli.workflow import app as workflow_app
 from zpp.utils.product_home import selected_zpp_home
@@ -22,6 +23,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 app.command("init")(initialize)
+app.command("sync")(sync)
 app.command("open")(open_home)
 app.command("reset")(reset)
 app.command("resolve")(resolve)

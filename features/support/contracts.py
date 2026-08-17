@@ -412,26 +412,27 @@ def verify_openspec_skill_provisioning_contract() -> None:
             repeated = runner.invoke(app, ["init", "--agent", "codex"])
             detailed = runner.invoke(
                 app,
-                ["init", "--agent", "codex", "--json"],
+                ["sync", "--agent", "codex", "--json"],
             )
             assert initialized.exit_code == repeated.exit_code == 0
             assert len(initialized.stdout.splitlines()) == 1
             assert initialized.stdout.startswith("Initialized 1 agent:")
-            assert len(repeated.stdout.splitlines()) == 1
-            assert f"{expected_assets} unchanged" in repeated.stdout
+            assert "already initialized" in repeated.stdout
+            assert "zpp sync" in repeated.stdout
             assert detailed.exit_code == 0, detailed.output
             report = json.loads(detailed.stdout)
             assert len(report) == expected_assets
+            assert {item["decision"] for item in report} == {"current"}
             generated = user_home / ".codex/skills/openspec-apply-change"
             provenance = generated / ".zpp-openspec.json"
             assert json.loads(provenance.read_text())["generator"] == "zpp"
             (generated / "SKILL.md").write_text("modified", encoding="utf-8")
-            forced = runner.invoke(
+            repaired = runner.invoke(
                 app,
-                ["init", "--agent", "codex", "--force"],
+                ["sync", "--agent", "codex", "--force"],
             )
-            assert forced.exit_code == 0, forced.output
-            assert len(forced.stdout.splitlines()) == 1
+            assert repaired.exit_code == 0, repaired.output
+            assert len(repaired.stdout.splitlines()) == 1
             assert generated.joinpath("SKILL.md").read_text() != "modified"
 
             product_home = root / "zpp-home"
@@ -454,9 +455,19 @@ def verify_openspec_skill_provisioning_contract() -> None:
         ):
             rejected = runner.invoke(
                 app,
-                ["init", "--agent", "codex", "--force"],
+                ["init", "--agent", "codex"],
             )
-        assert rejected.exit_code == 2
+            preserved = runner.invoke(
+                app,
+                ["sync", "--agent", "codex", "--force", "--json"],
+            )
+        assert rejected.exit_code == 0, rejected.output
+        assert "already initialized" in rejected.stdout
+        assert preserved.exit_code == 0, preserved.output
+        decisions = {
+            item["asset"]: item["decision"] for item in json.loads(preserved.stdout)
+        }
+        assert decisions["skill"] == "preserve", decisions
         assert unmanaged.read_text() == "unmanaged"
 
 

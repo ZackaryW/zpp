@@ -18,6 +18,7 @@ runner = CliRunner()
 open_cli = import_module("zpp.cli.open")
 reset_cli = import_module("zpp.cli.reset")
 initialization_cli = import_module("zpp.cli.initialization")
+lifecycle_cli = import_module("zpp.cli.lifecycle")
 
 
 def test_public_cli_preserves_grouped_shape() -> None:
@@ -86,10 +87,7 @@ def test_init_preflights_every_generated_inventory_before_projection(
         yield tuple(
             (
                 agent,
-                tuple(
-                    SimpleNamespace(name=f"openspec-{index}")
-                    for index in range(6)
-                ),
+                tuple(SimpleNamespace(name=f"openspec-{index}") for index in range(6)),
             )
             for agent in selected
         )
@@ -104,6 +102,16 @@ def test_init_preflights_every_generated_inventory_before_projection(
         initialization_cli,
         "agent_router",
         lambda agent, root: agent,
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "installed_agents",
+        lambda inspected: frozenset(),
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "packaged_entries",
+        lambda agents, target=None: (),
     )
     monkeypatch.setattr(
         initialization_cli,
@@ -169,84 +177,80 @@ def test_lifecycle_summary_aggregates_stable_human_statuses() -> None:
     assert summary == "Initialized 2 agents: 1 installed, 1 updated, 2 unchanged."
 
 
-def test_forced_init_reprojects_every_prepared_asset(monkeypatch, tmp_path) -> None:
-    events: list[str] = []
-
-    class Result:
-        def __init__(self, name: str) -> None:
-            self.name = name
-
-        def to_dict(self):
-            return {"name": self.name, "status": "updated"}
-
-    @contextmanager
-    def generated(agents, *, cwd):
-        del cwd
-        yield tuple(
-            (
-                agent,
-                tuple(SimpleNamespace(name=f"openspec-{index}") for index in range(6)),
-            )
-            for agent in agents
-        )
-
-    monkeypatch.setattr(initialization_cli, "generated_openspec_skill_sets", generated)
-    monkeypatch.setattr(initialization_cli, "agent_router", lambda agent, root: agent)
+def test_init_rejects_an_installed_agent_and_directs_it_to_sync(monkeypatch) -> None:
     monkeypatch.setattr(
         initialization_cli,
-        "packaged_workflow_skill",
-        lambda: SimpleNamespace(name="zpp-workflow"),
+        "packaged_entries",
+        lambda agents, target=None: (),
     )
     monkeypatch.setattr(
         initialization_cli,
-        "packaged_companion_skills",
-        lambda: (
-            SimpleNamespace(name="zpp-configure-behave"),
-            SimpleNamespace(name="zpp-author-trait"),
-        ),
+        "installed_agents",
+        lambda inspected: frozenset({"codex"}),
     )
     monkeypatch.setattr(
         initialization_cli,
-        "packaged_workflow_hook",
-        lambda agent: SimpleNamespace(name="zpp-session", agent=agent),
+        "_initialize_selected",
+        lambda agents, root: pytest.fail(f"initialized {agents}"),
     )
 
-    def reproject_skill(router, skill, scope, project_root):
-        events.append(f"skill:{router.value}:{skill.name}")
-        return Result(skill.name)
+    result = runner.invoke(app, ["init", "--agent", "codex", "--json"])
 
-    def reproject_hook(router, hook, scope, project_root):
-        events.append(f"hook:{router.value}:{hook.name}")
-        return Result(hook.name)
+    assert result.exit_code == 0, result.output
+    records = json.loads(result.stdout)
+    assert [item["status"] for item in records] == ["already-initialized"]
+    assert records[0]["agent"] == "codex"
 
+
+def test_init_initializes_absent_agents_alongside_a_rejected_one(monkeypatch) -> None:
     monkeypatch.setattr(
         initialization_cli,
-        "reproject_workflow_skill",
-        reproject_skill,
+        "packaged_entries",
+        lambda agents, target=None: (),
     )
     monkeypatch.setattr(
         initialization_cli,
-        "reproject_workflow_hook",
-        reproject_hook,
+        "installed_agents",
+        lambda inspected: frozenset({"codex"}),
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "_initialize_selected",
+        lambda agents, root: [
+            {"agent": item.value, "status": "installed"} for item in agents
+        ],
     )
 
-    results = initialization_cli._initialize_selected(
-        (Agent.CODEX,),
-        tmp_path,
-        force=True,
+    result = runner.invoke(
+        app,
+        ["init", "--agent", "codex", "--agent", "pi", "--json"],
     )
 
-    assert len(results) == 10
-    assert events == [
-        "skill:codex:zpp-workflow",
-        "hook:codex:zpp-session",
-        "skill:codex:zpp-configure-behave",
-        "skill:codex:zpp-author-trait",
-        *(f"skill:codex:openspec-{index}" for index in range(6)),
+    assert result.exit_code == 0, result.output
+    records = json.loads(result.stdout)
+    assert [(item["agent"], item["status"]) for item in records] == [
+        ("pi", "installed"),
+        ("codex", "already-initialized"),
     ]
 
 
+def test_init_exposes_no_force_option() -> None:
+    assert "--force" not in runner.invoke(app, ["init", "--help"]).stdout
+    assert runner.invoke(app, ["init", "--force"]).exit_code != 0
+
+
 def test_init_generation_failure_precedes_every_projection(monkeypatch) -> None:
+    monkeypatch.setattr(
+        initialization_cli,
+        "packaged_entries",
+        lambda agents, target=None: (),
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "installed_agents",
+        lambda inspected: frozenset(),
+    )
+
     @contextmanager
     def fail_generation(agents, *, cwd):
         del agents, cwd
@@ -271,6 +275,17 @@ def test_init_generation_failure_precedes_every_projection(monkeypatch) -> None:
 
 
 def test_init_packaged_authoring_failure_precedes_generation(monkeypatch) -> None:
+    monkeypatch.setattr(
+        initialization_cli,
+        "packaged_entries",
+        lambda agents, target=None: (),
+    )
+    monkeypatch.setattr(
+        initialization_cli,
+        "installed_agents",
+        lambda inspected: frozenset(),
+    )
+
     def fail_packaged():
         raise ValueError("invalid authoring skill")
 
@@ -382,24 +397,24 @@ def test_reset_catalog_preflights_packaged_companion_skills_before_generated(
     monkeypatch,
 ) -> None:
     monkeypatch.setattr(reset_cli, "agent_router", lambda agent, target: agent)
+    monkeypatch.setattr(lifecycle_cli, "agent_router", lambda agent, target: agent)
     monkeypatch.setattr(
-        reset_cli,
+        lifecycle_cli,
         "packaged_workflow_skill",
         lambda: SimpleNamespace(name="zpp-workflow"),
     )
     monkeypatch.setattr(
-        reset_cli,
+        lifecycle_cli,
         "packaged_workflow_hook",
         lambda agent: SimpleNamespace(name="zpp-session", agent=agent),
     )
     monkeypatch.setattr(
-        reset_cli,
+        lifecycle_cli,
         "packaged_companion_skills",
         lambda: (
             SimpleNamespace(name="zpp-configure-behave"),
             SimpleNamespace(name="zpp-author-trait"),
         ),
-        raising=False,
     )
 
     projections = reset_cli.reset_projections()

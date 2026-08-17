@@ -11,6 +11,7 @@ from zpp.artifacts import (
     packaged_workflow_hook,
     packaged_workflow_skill,
 )
+from zpp.cli.lifecycle import packaged_entries
 from zpp.cli.shared import (
     abort_cancelled,
     agent_router,
@@ -23,10 +24,9 @@ from zpp.cli.shared import (
 from zpp.utils.agent_router import (
     project_workflow_hook,
     project_workflow_skill,
-    reproject_workflow_hook,
-    reproject_workflow_skill,
 )
 from zpp.utils.agent_selection import AgentSelectionError, select_many_agents
+from zpp.utils.lifecycle import inspect_entries, installed_agents
 from zpp.utils.openspec import generated_openspec_skill_sets
 
 
@@ -35,16 +35,12 @@ def initialize(
         list[Agent] | None,
         typer.Option("--agent", help="Set up one or more supported agents."),
     ] = None,
-    force: Annotated[
-        bool,
-        typer.Option("--force", help="Reproject every selected owned integration."),
-    ] = False,
     json_output: Annotated[
         bool,
         typer.Option("--json", help="Emit the complete lifecycle report as JSON."),
     ] = False,
 ) -> None:
-    """Set up the consolidated workflow for selected agents."""
+    """Set up the consolidated workflow for agents that carry no ZPP projection."""
     try:
         selection = select_many_agents(
             tuple(agent or ()),
@@ -57,28 +53,43 @@ def initialize(
     if selection.cancelled:
         abort_cancelled()
     root = Path.cwd().resolve()
-    results = user_action(
-        lambda: _initialize_selected(selection.agents, root, force=force)
+    installed = user_action(
+        lambda: installed_agents(
+            inspect_entries(packaged_entries(selection.agents, target=root))
+        )
     )
+    absent = tuple(item for item in selection.agents if item.value not in installed)
+    rejected = [
+        {
+            "agent": item.value,
+            "asset": "-",
+            "status": "already-initialized",
+            "action": "run `zpp sync` for this agent",
+        }
+        for item in selection.agents
+        if item.value in installed
+    ]
+    results = user_action(lambda: _initialize_selected(absent, root)) if absent else []
+    results.extend(rejected)
     if json_output:
         emit_json(results)
         return
-    typer.echo(render_lifecycle_summary("Initialized", len(selection.agents), results))
+    typer.echo(render_lifecycle_summary("Initialized", len(absent), results))
+    for record in rejected:
+        typer.echo(
+            f"{record['agent']} is already initialized; run `zpp sync` to update it."
+        )
 
 
 def _initialize_selected(
     agents: tuple[Agent, ...],
     root: Path,
-    *,
-    force: bool = False,
 ) -> list[dict]:
     skill = packaged_workflow_skill()
     companion_skills = packaged_companion_skills()
     results: list[dict] = []
-    skill_projection = (
-        reproject_workflow_skill if force else project_workflow_skill
-    )
-    hook_projection = reproject_workflow_hook if force else project_workflow_hook
+    skill_projection = project_workflow_skill
+    hook_projection = project_workflow_hook
     with generated_openspec_skill_sets(agents, cwd=root) as generated:
         generated_by_agent = dict(generated)
         for selected in agents:

@@ -6,44 +6,20 @@ from pathlib import Path
 from typing import Annotated, Protocol
 
 import typer
-from agent_router import Agent, Scope
+from agent_router import Scope
 
-from zpp.artifacts import (
-    packaged_companion_skills,
-    packaged_workflow_hook,
-    packaged_workflow_skill,
-)
+from zpp.cli.lifecycle import SUPPORTED_AGENTS, packaged_entries
 from zpp.cli.shared import agent_router, emit_json, runtime, user_action
-from zpp.utils.agent_router import (
-    inspect_workflow_hook,
-    inspect_workflow_skill,
-    remove_workflow_hook,
-    remove_workflow_skill,
-)
+from zpp.utils.agent_router import remove_workflow_skill
+from zpp.utils.lifecycle import LifecycleEntry
 from zpp.utils.openspec import OPENSPEC_CORE_SKILL_NAMES
 from zpp.utils.product_home import PreparedOpenLeaseState
-
-SUPPORTED_AGENTS = (Agent.CODEX, Agent.CLAUDE, Agent.PI, Agent.KIMI)
-
-
-class _RouterResult(Protocol):
-    status: str
-
-    def to_dict(self) -> dict[str, object]: ...
 
 
 class _PreparedState(Protocol):
     def replace(self) -> None: ...
 
     def discard(self) -> None: ...
-
-
-@dataclass(frozen=True, slots=True)
-class _ResetProjection:
-    agent: str
-    kind: str
-    inspect: Callable[[], _RouterResult] | None
-    remove: Callable[[], _RouterResult]
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,89 +66,35 @@ def reset(
     typer.echo(_reset_summary(report))
 
 
-def reset_projections() -> tuple[_ResetProjection, ...]:
+def reset_projections() -> tuple[LifecycleEntry, ...]:
+    """Derive reset targets from the shared lifecycle inventory.
+
+    Packaged entries come from the inventory that initialization and
+    synchronization also use. The canonical OpenSpec skills are appended per
+    agent as removal-only entries, because they are generated rather than
+    packaged and reset deletes them by stable name under Agent Router's
+    forced-owned deletion contract.
+    """
     target = Path.cwd().resolve()
-    skill = packaged_workflow_skill()
-    companion_skills = packaged_companion_skills()
-    projections: list[_ResetProjection] = []
+    projections: list[LifecycleEntry] = []
     for agent in SUPPORTED_AGENTS:
+        projections.extend(packaged_entries((agent,), target=target))
         router = agent_router(agent, target)
-        hook = packaged_workflow_hook(agent)
         projections.extend(
-            (
-                _ResetProjection(
-                    agent.value,
-                    "hook",
-                    lambda selected_router=router, selected_hook=hook: (
-                        inspect_workflow_hook(
+            LifecycleEntry(
+                agent=agent.value,
+                kind=f"skill:{name}",
+                inspect=None,
+                project=None,
+                remove=(
+                    lambda selected_router=router, selected_name=name: (
+                        remove_workflow_skill(
                             selected_router,
-                            selected_hook,
+                            selected_name,
                             Scope.USER,
                             None,
+                            force=True,
                         )
-                    ),
-                    lambda selected_router=router, selected_hook=hook: (
-                        remove_workflow_hook(
-                            selected_router,
-                            selected_hook.name,
-                            Scope.USER,
-                            None,
-                        )
-                    ),
-                ),
-                _ResetProjection(
-                    agent.value,
-                    "skill",
-                    lambda selected_router=router: inspect_workflow_skill(
-                        selected_router,
-                        skill,
-                        Scope.USER,
-                        None,
-                    ),
-                    lambda selected_router=router: remove_workflow_skill(
-                        selected_router,
-                        skill.name,
-                        Scope.USER,
-                        None,
-                    ),
-                ),
-            )
-        )
-        projections.extend(
-            _ResetProjection(
-                agent.value,
-                f"skill:{companion_skill.name}",
-                lambda selected_router=router, selected_skill=companion_skill: (
-                    inspect_workflow_skill(
-                        selected_router,
-                        selected_skill,
-                        Scope.USER,
-                        None,
-                    )
-                ),
-                lambda selected_router=router, selected_skill=companion_skill: (
-                    remove_workflow_skill(
-                        selected_router,
-                        selected_skill.name,
-                        Scope.USER,
-                        None,
-                    )
-                ),
-            )
-            for companion_skill in companion_skills
-        )
-        projections.extend(
-            _ResetProjection(
-                agent.value,
-                f"skill:{name}",
-                None,
-                lambda selected_router=router, selected_name=name: (
-                    remove_workflow_skill(
-                        selected_router,
-                        selected_name,
-                        Scope.USER,
-                        None,
-                        force=True,
                     )
                 ),
             )
@@ -182,11 +104,11 @@ def reset_projections() -> tuple[_ResetProjection, ...]:
 
 
 def _reset_state(
-    projections: Sequence[_ResetProjection],
+    projections: Sequence[LifecycleEntry],
     *,
     prepare: Callable[[], _PreparedState],
 ) -> _ResetReport:
-    inspected: list[tuple[_ResetProjection, dict[str, object]]] = []
+    inspected: list[tuple[LifecycleEntry, dict[str, object]]] = []
     inspections_by_projection: dict[int, dict[str, object]] = {}
     conflicts: list[dict[str, object]] = []
     for projection in projections:
@@ -244,7 +166,7 @@ def _reset_state(
 
 
 def _record(
-    projection: _ResetProjection,
+    projection: LifecycleEntry,
     values: Mapping[str, object],
 ) -> dict[str, object]:
     return {
@@ -255,9 +177,7 @@ def _record(
 
 
 def _reset_summary(report: _ResetReport) -> str:
-    removed = sum(
-        record.get("status") == "removed" for record in report.removals
-    )
+    removed = sum(record.get("status") == "removed" for record in report.removals)
     absent = sum(
         record.get("status") == "absent"
         for record in (*report.inspections, *report.removals)

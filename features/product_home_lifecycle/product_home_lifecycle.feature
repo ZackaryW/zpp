@@ -1,60 +1,66 @@
 @product-home-lifecycle
-Feature: Manage one bounded ZPP home
-  ZPP gives users one stable home to inspect and one ownership-safe reset
-  without treating repositories or agent projects as disposable state.
-
-  Scenario: Route managed state through the selected home
-    Given a caller selects an eligible ZPP home
-    When an OpenLease-backed ZPP command runs
-    Then ZPP uses only that home's openlease child as managed state
-    And selecting the home alone creates no directory
+Feature: Manage one bounded ZPP integration lifecycle
+  ZPP gives users one stable home, one command to create an integration, one to
+  repair it, and one ownership-safe reset, without treating repositories or
+  agent projects as disposable state. Ownership and destructive-boundary rules
+  are canonical requirements verified by inspection, not scenarios.
 
   Scenario: Open the selected ZPP home explicitly
-    Given the selected eligible ZPP home is absent
-    When a user runs zpp open
+    Given a temporary user environment
+    When a user opens an absent selected ZPP home
     Then ZPP creates and natively opens that exact home
-    And it reports the resolved home without initializing the openlease child
+    And it does not initialize the openlease child
 
   Scenario: Require reset confirmation before external inspection
-    Given user integrations and OpenLease state may exist
-    When a user runs zpp reset without confirmation
-    Then ZPP rejects the command before inspecting or changing external state
-
-  Scenario: Reset complete user integration and managed state
-    Given every supported agent user integration is absent or ownership-safe removable
-    And the selected ZPP home and its openlease child are safe
-    When a user runs zpp reset with confirmation
-    Then ZPP removes every present user workflow skill hook and generated OpenSpec operation skill through Agent Router
-    And ZPP replaces only the selected home's openlease child with fresh state
-    And repository project plugin worktree and other home contents remain unchanged
-
-  Scenario: Target every discovered companion skill during reset
-    Given ZPP discovers its packaged companion skills from their role directory
-    When a user inspects the confirmed reset target catalog
-    Then every discovered companion skill is targeted for each supported agent
-    And those targets follow hook workflow skill then deterministic companion order
-    And no declared list of companion skill names determines that catalog
+    Given a temporary user environment
+    When a user runs reset without confirmation
+    Then ZPP rejects the command and names the required confirmation
 
   Scenario: Summarize reset unless JSON is requested
-    Given confirmed reset can complete against safe user integrations and state
-    When the user runs confirmed reset with and without JSON output
-    Then the default reset result is one concise line with removal and state outcomes
-    And the JSON reset result retains complete inspection removal and state details
+    Given a temporary user environment
+    When a user runs confirmed reset with and without JSON output
+    Then the default reset result is one concise line
+    And the JSON reset result reports the replaced state
 
-  Scenario: Abort complete reset on a preflight conflict
-    Given one supported agent user workflow skill or hook conflicts with its packaged asset
-    When a user runs zpp reset with confirmation
-    Then ZPP identifies the conflicting agent integration
-    And no user workflow integration or OpenLease state is changed
+  Scenario: Initialize an agent that carries no projection
+    Given a temporary user environment
+    When a user initializes the codex agent
+    Then every packaged and generated integration entry is installed
 
-  Scenario: Preserve state when integration removal is incomplete
-    Given complete reset preflight succeeds
-    When one Agent Router integration removal fails
-    Then ZPP attempts every preflighted removal and reports their outcomes
-    And the prior OpenLease state remains unchanged
-    And a retry accepts already absent integrations and can complete the reset
+  Scenario: Reject initialization of an already installed agent
+    Given a temporary user environment
+    And the codex agent is already initialized
+    When a user initializes the codex agent again
+    Then ZPP reports it as already initialized and directs the caller to sync
+    And no integration entry is reprojected
 
-  Scenario: Reject an unsafe destructive boundary
-    Given the selected home or openlease child cannot be proven to be a safe directory boundary
-    When a user runs zpp reset with confirmation
-    Then ZPP fails before changing an agent integration or filesystem path
+  Scenario: Report an already current integration during synchronization
+    Given a temporary user environment
+    And the codex agent is already initialized
+    When a user synchronizes the codex agent
+    Then synchronization reprojects nothing and reports every entry as current
+
+  Scenario: Report a modified owned integration without force
+    Given a temporary user environment
+    And the codex agent is already initialized
+    And one owned workflow skill has drifted from its packaged asset
+    When a user synchronizes the codex agent
+    Then synchronization reports the modified entry and leaves its content unchanged
+
+  Scenario: Repair a modified owned integration under force
+    Given a temporary user environment
+    And the codex agent is already initialized
+    And one owned workflow skill has drifted from its packaged asset
+    When a user synchronizes the codex agent with force
+    Then synchronization repairs the modified entry and restores its packaged content
+
+  Scenario: Reproject every owned entry under force
+    Given a temporary user environment
+    And the codex agent is already initialized
+    When a user synchronizes the codex agent with force
+    Then synchronization reprojects every owned entry despite no observed drift
+
+  Scenario: Skip an agent that carries no projection during synchronization
+    Given a temporary user environment
+    When a user synchronizes the codex agent
+    Then synchronization reports the agent as uninitialized and projects nothing

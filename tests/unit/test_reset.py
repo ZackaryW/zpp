@@ -2,7 +2,8 @@ from dataclasses import dataclass
 
 import pytest
 
-from zpp.cli.reset import _reset_state, _reset_summary, _ResetProjection, _ResetReport
+from zpp.cli.reset import _reset_state, _reset_summary, _ResetReport
+from zpp.utils.lifecycle import LifecycleEntry as _ResetProjection
 
 
 @dataclass
@@ -61,7 +62,7 @@ def projection(
             raise OSError(removal_error)
         return Result("removed", f"{agent}:{kind}")
 
-    return _ResetProjection(agent, kind, inspect, remove)
+    return _ResetProjection(agent, kind, inspect, None, remove)
 
 
 def forced_projection(
@@ -78,7 +79,7 @@ def forced_projection(
             raise OSError(removal_error)
         return Result(status, f"{agent}:{kind}")
 
-    return _ResetProjection(agent, kind, None, remove)
+    return _ResetProjection(agent, kind, None, None, remove)
 
 
 def test_reset_preflights_every_projection_before_preparation_and_removal() -> None:
@@ -135,7 +136,7 @@ def test_reset_inspection_failure_still_inspects_remaining_catalog() -> None:
         raise OSError("cannot inspect")
 
     projections = (
-        _ResetProjection("codex", "hook", fail, lambda: None),
+        _ResetProjection("codex", "hook", fail, None, lambda: None),
         projection("claude", "skill", "absent", events),
     )
 

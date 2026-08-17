@@ -55,8 +55,7 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
     for agent, router in routers.items():
         assert router.inspect_skill(skill, scope=Scope.USER).status == "absent"
         assert all(
-            router.inspect_skill(companion_skill, scope=Scope.USER).status
-            == "absent"
+            router.inspect_skill(companion_skill, scope=Scope.USER).status == "absent"
             for companion_skill in companion_skills
         )
         assert (
@@ -78,13 +77,19 @@ def test_init_regenerates_and_reset_force_removes_openspec_skills(
 
     first = runner.invoke(app, ["init", "--agent", "codex"])
     second = runner.invoke(app, ["init", "--agent", "codex"])
-    detailed = runner.invoke(app, ["init", "--agent", "codex", "--json"])
+    synced = runner.invoke(app, ["sync", "--agent", "codex"])
+    detailed = runner.invoke(app, ["sync", "--agent", "codex", "--json"])
 
-    assert first.exit_code == second.exit_code == detailed.exit_code == 0
+    assert first.exit_code == second.exit_code == 0
+    assert synced.exit_code == detailed.exit_code == 0, synced.output
     companion_skills = packaged_companion_skills()
     expected = 2 + len(companion_skills) + 6
     assert first.stdout == f"Initialized 1 agent: {expected} installed.\n"
-    assert second.stdout == f"Initialized 1 agent: {expected} unchanged.\n"
+    assert "already initialized" in second.stdout
+    assert "zpp sync" in second.stdout
+    assert synced.stdout == (
+        f"Synchronized: 0 reprojected, {expected} already current.\n"
+    )
     assert len(json.loads(detailed.stdout)) == expected
     for name in (skill.name for skill in companion_skills):
         assert (user_home / ".codex/skills" / name / "SKILL.md").is_file()
