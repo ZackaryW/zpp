@@ -1,69 +1,101 @@
 # OpenSpec maintenance contract
 
-Apply this contract before changing a canonical specification or deleting an archived change.
+Apply this contract before changing canonical specifications, affecting zmem, or deleting an archived change.
 
-## Audit record
+## Output order
 
-Record one row per exact archived-change path with these fields:
+Lead with a short decision summary:
 
-| Field | Required evidence |
+1. removable exact paths;
+2. paths waiting for ten-version age and their current counts;
+3. canonical merges required;
+4. zmem cancellations required;
+5. unresolved owner decisions.
+
+Place detailed evidence after the summary. Do not make the owner interpret the full audit to discover the next action.
+
+## Preservation map
+
+Classify each accepted archive item by what it represents:
+
+| Item | Required authority |
 | --- | --- |
-| Exact path | Resolved path below the active OpenSpec archive root |
-| Capabilities | Every capability delta carried by the archive |
-| Canonical coverage | Destination requirement and scenario for every delta requirement and scenario |
-| Unique content | Accepted proposal, design, task, requirement, scenario, or decision not represented elsewhere |
-| Contradictions | Conflicting normative constraint, scenario, serialization, owner boundary, or policy |
-| Task state | Complete, intentionally deferred with accepted disposition, or unresolved |
-| Git recoverability | Exact path and content recoverable from inspected Git history |
-| Validation | Current strict OpenSpec result and the revision it covers |
-| Outcome | `eligible`, `blocked`, or `retained` |
-| Reason | Concrete evidence supporting the outcome |
+| Current behavior or constraint | Canonical OpenSpec requirement |
+| Current scenario or serialization | Canonical OpenSpec scenario or clause |
+| Current owner boundary | Canonical OpenSpec requirement |
+| Historical rationale | Traceable zmem decision or lesson |
+| Fully superseded decision | Traceable zmem decision, followed by exact `CANCEL` |
 
-Do not collapse candidates into a directory-wide conclusion. Evidence may differ between archives from the same day or capability.
+The appropriate destination is sufficient. Do not require every proposal sentence, design explanation, task checkbox, requirement, and scenario in both stores. A stale task checkbox is evidence to inspect, not an independent blocker when code, canonical specs, or repository history proves its outcome.
 
-## Eligibility matrix
+Never use zmem as the only home of current normative behavior. Partial preservation, unresolved policy, contradictory destinations, and ambiguous ownership block removal.
 
-Mark an archive `eligible` only when all conditions are true:
+## Same-behavior consolidation
 
-- it is an archived change, not active planning state;
-- every delta requirement and scenario has an unambiguous current canonical destination;
-- no accepted proposal, design, task, requirement, scenario, or decision remains unique;
-- tasks are complete or carry an accepted explicit disposition;
-- no unresolved contradiction or ownership ambiguity remains;
-- strict validation passes for the reconciled canonical state;
-- Git can recover the exact archived path and inspected content;
-- the audit evidence still matches the working tree.
-
-Mark it `blocked` when a condition might become true after reconciliation or an owner decision. Name the missing evidence or decision. Mark it `retained` when it is active, intentionally preserved, outside scope, or carries unique historical content the owner wants available in-tree.
-
-Never use age, naming convention, apparent duplication, completed checkboxes, successful validation, or Git recoverability alone as eligibility proof.
-
-## Consolidation mapping
-
-Before editing, record one mapping per source requirement:
+Create this mapping when canonical requirements may overlap:
 
 | Field | Required content |
 | --- | --- |
-| Source | Capability, requirement heading, and all scenario headings |
-| Destination | Exact canonical capability and requirement heading |
-| Preserved contract | Normative clauses, constraints, scenarios, and owner boundary retained |
-| Difference | Every semantic difference, including stronger or weaker language |
-| Resolution | Current authority or explicit owner decision resolving each difference |
-| Proposed removal | Exact duplicated requirement or capability path, if any |
+| Sources | Exact capabilities, requirements, and scenarios |
+| Behavior and owner | The behavior and owner boundary each source governs |
+| Destination | One authoritative canonical capability and requirement |
+| Preserved contract | Every mutually accepted current constraint and scenario |
+| Superseded content | Clauses or scenarios current authority replaces |
+| Conflict | Any unresolved semantic or ownership difference |
+| Removal | Exact redundant requirement or capability path |
 
-A consolidation is lossless only when every accepted source clause and scenario survives at an explicit destination. Similar wording is not semantic equivalence. If the mapping depends on a new product choice, stop and expose it under `Unresolved — Do Not Assume` in the active workflow change.
+Merge only when behavior and owner match. Shared terminology is not duplication. Preserve the strongest mutually accepted current contract, not obsolete stronger wording. Expose an unresolved choice under `Unresolved — Do Not Assume` in the active workflow change.
+
+## Ten-version age
+
+For each superseded archive or spec item:
+
+1. Identify its capability from the delta path.
+2. Resolve the Git commit that archived its change.
+3. Order later archive commits by Git history.
+4. Count each later archived change once when its delta contains that capability.
+5. Mark the item aged only when the count reaches ten.
+
+For a multi-capability archive, every superseded item must satisfy its own capability count. The archive gate is the least-aged superseded item. Do not count arbitrary commits, project releases, filename dates, or later archives that omit the capability.
+
+Do not apply this grace period to non-superseded redundant content whose current behavior or historical rationale is already preserved.
+
+## zmem effects
+
+When current authority proves a valid `DECISION` fully superseded:
+
+1. Use `zmem-query-memory` to find it.
+2. Inspect it with `zmem show` and copy its exact SHA and one-based annotation index.
+3. Use `zmem-author-commits` to add `zmem(CANCEL)[sha, index]` to an authorized commit.
+4. Validate the complete message with deep replay and inspect the resulting commit with `zmem show`.
+
+Cancel immediately; do not wait for ten archive versions. Do not cancel a lesson, a partly valid decision, or an unresolved conflict. A partly valid decision may warrant deliberate `DECAY` after its exact target and surviving scope are established.
+
+## Per-path audit record
+
+Record each exact archived path with:
+
+- affected capabilities;
+- item-level canonical or zmem preservation destinations;
+- required canonical merges;
+- superseded items and capability-version counts;
+- required zmem effects;
+- unresolved semantic or owner decisions;
+- Git archive commit and recoverability;
+- strict validation revision;
+- outcome: `removable`, `waiting-age`, `merge-required`, `cancel-required`, or `blocked`;
+- concise reason and exact next action.
 
 ## Mutation sequence
 
-1. Complete the read-only audit and consolidation mapping.
-2. Revalidate evidence immediately before mutation.
-3. Reconcile canonical specifications through the explicit `zpp-workflow` change and exact installed OpenSpec operations.
-4. Run strict validation and inspect the full canonical diff.
-5. Present only currently eligible exact archive paths.
+1. Complete the read-only summary, preservation map, consolidation map, age calculation, and zmem target resolution.
+2. Reconcile canonical specifications through explicit `zpp-workflow` authority and installed OpenSpec operation skills.
+3. Apply authorized zmem effects through `zmem-author-commits` and deep validation.
+4. Run strict OpenSpec validation and inspect the full diff.
+5. Present only removable exact archive paths.
 6. Obtain owner authorization naming each path.
 7. Reconfirm the authorized set is unchanged and contained by the archive root.
-8. Remove only the authorized exact paths.
-9. Show the deletion diff and rerun strict validation.
-10. Use `zmem-author-commits` for an authorized commit and inspect the resulting commit with `zmem show`.
+8. Remove only the authorized paths, show the deletion diff, and rerun strict validation.
+9. Use `zmem-author-commits` for an authorized deletion commit and inspect it with `zmem show`.
 
-Canonical reconciliation authority, exact-path deletion authority, and commit authority are separate. One never implies another.
+Canonical reconciliation, zmem effects, exact-path deletion, and commit creation are separate authorities. One never implies another.
