@@ -8,7 +8,7 @@ The gap is also agent-visible. `zpp-workspace-management` instructs agents to lo
 
 - **BREAKING** ZPP owns the complete OpenLease command surface. The packaged `zpp-workspace-management` skill no longer locates the `openlease` executable, reads its `--help`, or assembles provider argv; `references/workspace-command-contract.md` is replaced by ZPP-owned command guidance. Agents get no route to the OpenLease binary.
 - **BREAKING** Repository session establishment registers topology. ZPP files a minimal floorplan for a single repository — registering the repository and one authority covering the worktree — so an affected claim has a graph to resolve against. This supersedes the 2026-08-11 decision that repository trait resolution requires no registration or space selection.
-- ZPP derives and persists its own session identity rather than consuming `OPENLEASE_SESSION_TOKEN` from the host, and establishes the session as an OpenLease temporary space over the auto-registered repository.
+- ZPP keys the session to the worktree rather than consuming `OPENLEASE_SESSION_TOKEN` from the host, offers an explicit session name when a distinct session is wanted, and establishes the session as an OpenLease temporary space over the auto-registered repository.
 - ZPP arms the blast-surface permit: before an operation that modifies the worktree, ZPP requires a declared affected claim, resolves its closure, evaluates lockability, and acquires the lease under an explicit go-ahead. Read-only trait resolution stays permit-free on direct invocation-scoped bindings.
 - ZPP owns explicit unlock as the guarantee check: a normal boundary-safe release, and a forced path that requires explicit force authority and books reconciliation debt.
 - ZPP exposes complete parity of the OpenLease surface, including abandonment, cleanup, handoff, and preparation repair. Destructive operations are gated by ZPP in the CLI through an argument ZPP validates, so a skill instruction alone cannot satisfy the gate.
@@ -42,3 +42,4 @@ Recorded as explicitly deferred by the owner. Do not design or implement in this
 
 - **Subagent granularity**: whether a subagent inherits its parent's permit or must hold its own. OpenLease excludes a space's own leases from conflict detection, so a subagent resolving to the parent's space is invisible to the guard by construction.
 - **Stale session cleanup**: the policy for reclaiming sessions abandoned by crashed or exited agents.
+- **Concurrent agent separation**: distinguishing two unnamed concurrent agent sessions in one worktree. No observable channel identifies a host agent session on every supported platform, so unnamed concurrent sessions share one session and an explicit session name is the supported way to separate them.

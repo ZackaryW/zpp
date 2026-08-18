@@ -1,7 +1,7 @@
 @openlease-session-lifecycle
 Feature: Establish a repository session automatically
-  ZPP files the minimal topology a blast-surface claim needs, derives and keeps
-  its own session identity, and establishes the session as a temporary space.
+  ZPP files the minimal topology a blast-surface claim needs, keys the session
+  to the worktree unless one is named, and establishes it as a temporary space.
   Registration supplies existence only; a relationship stays an explicit act.
 
   Scenario: Register an unregistered worktree
@@ -24,19 +24,19 @@ Feature: Establish a repository session automatically
 
   Scenario: Reuse one session across invocations
     Given a disposable Git worktree with an established session
-    When ZPP is invoked again within the same host agent session
+    When ZPP is invoked again for that worktree without an explicit session name
     Then both invocations report the same session identity and the same session
-
-  Scenario: Separate concurrent host sessions
-    Given a disposable Git worktree with an established session
-    When a second concurrent host agent session establishes a session for that worktree
-    Then the two sessions carry distinct identities
-    And neither session displaces the other
 
   Scenario: Establish a session without a host token
     Given a disposable Git worktree and an environment supplying no OpenLease session token
     When ZPP establishes the session for that worktree
-    Then session establishment succeeds using the ZPP-derived identity
+    Then session establishment succeeds using the worktree-derived identity
+
+  Scenario: Name a distinct session explicitly
+    Given a disposable Git worktree with an established default session
+    When a caller establishes a session for that worktree under an explicit session name
+    Then that session is distinct from the worktree's default session
+    And neither session displaces the other
 
   Scenario: Establish a temporary session space
     Given a disposable Git worktree with a registered repository

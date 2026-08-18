@@ -32,7 +32,7 @@ OpenLease is pinned at `f9416008` in `pyproject.toml`. This change consumes its 
 
 **Registration supplies existence; relationships stay explicit.** Automatic registration declares no parent, no dependency, and no authority beyond the worktree. Multi-repository work is gated on those relationships, which preserves the owner's boundary: what makes work cross-repository is a declared relationship, not the mere fact that two repositories are known.
 
-**ZPP derives session identity rather than consuming `OPENLEASE_SESSION_TOKEN`.** The upstream CLI takes the token from the environment. ZPP deriving and persisting its own identity keeps sessions automatic where no host exports a token, and keeps the identity in the temporary-space key so two concurrent host sessions in one worktree get distinct spaces instead of displacing each other. Keying on the worktree alone was rejected for exactly that reason.
+**The session is keyed to the worktree, with an explicit name as the override.** The upstream CLI takes a session token from the environment; ZPP does not require one. Deriving a host agent session identity was investigated and rejected on evidence. `os.getsid` is POSIX-only and, when measured, returned the shell spawned for the individual call rather than anything session-scoped. Process ancestry via psutil does surface the agent process on macOS, but a Windows chain reaches `pwsh.exe` and then `Code.exe` with no separately named agent process to anchor on, so the rule degrades to the editor window and cannot separate two agent sessions hosted in it. Rather than ship a guarantee that holds on one platform and silently fails on another, ZPP keys the session to the worktree and lets a caller name a session explicitly when a distinct one is wanted. Unnamed concurrent sessions in one worktree therefore share a session by design. This preserves the guarantee that matters — no modification without a declared claim, a resolved closure, a check, and an explicit go-ahead — and gives up only mutual exclusion between concurrent agents, which explicit naming or a separate worktree both address.
 
 **Identifiers are derived deterministically from the worktree.** `register_repository` raises on a duplicate identifier and `register_authority` likewise, so idempotent establishment depends on deriving stable identifiers and treating an existing matching registration as reuse rather than error.
 
@@ -50,7 +50,7 @@ OpenLease is pinned at `f9416008` in `pyproject.toml`. This change consumes its 
 
 [A SessionStart hook now writes durable state on every agent session] → Establishment is idempotent, creates only a `draft` space holding no authorities, and reclaims a disposable prior session for the same identity rather than appending. `StateRepository.mutate` serializes writes under a `FileLock` with generation checks and atomic replacement, and `resolve_session_space` already retries on `StaleStateError`.
 
-[Deriving session identity is host-dependent and may be wrong across agents] → The identity must be stable within one host agent session and distinct across concurrent ones. Getting this wrong degrades toward either shared sessions or session churn, both observable through session status; the spec fixes both properties as scenarios.
+[Two unnamed concurrent agents in one worktree share a session and so cannot be excluded from each other] → Accepted deliberately, since no observable channel identifies a host agent session on every supported platform. The blast-surface guarantee is unaffected: every modification still requires a declared claim, a resolved closure, a check, and an explicit go-ahead. An explicit session name separates concurrent work today, and generated worktree cohorts remain the structural answer.
 
 [Complete surface parity means ZPP tracks OpenLease drift across every family] → ZPP calls the library API rather than assembling argv, so a signature change surfaces as an import or call error at build and test time rather than as a malformed command at runtime.
 
@@ -74,3 +74,4 @@ Both are recorded as owner-deferred in the proposal and are out of scope here:
 
 - Subagent granularity — inherit the parent's permit, or hold a distinct one.
 - Stale session cleanup — how sessions abandoned by crashed or exited agents are reclaimed.
+- Concurrent agent separation beyond explicit session naming, most plausibly through generated worktree cohorts as a separate change.

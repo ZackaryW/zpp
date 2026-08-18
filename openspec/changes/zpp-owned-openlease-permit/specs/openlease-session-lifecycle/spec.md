@@ -15,20 +15,20 @@ When ZPP establishes a session for a Git worktree whose common directory matches
 - **WHEN** automatic registration completes for a single repository
 - **THEN** ZPP declares no parent relationship, dependency relationship, or authority beyond the worktree-covering authority
 
-### Requirement: ZPP-derived persisted session identity
-ZPP SHALL derive and persist its own session identity for session establishment and SHALL NOT require or consume a host-supplied `OPENLEASE_SESSION_TOKEN`. Repeated ZPP invocations within one host agent session SHALL resolve to the same session identity, and distinct concurrent host agent sessions in one worktree SHALL resolve to distinct session identities.
+### Requirement: Worktree-keyed session identity with explicit override
+ZPP SHALL derive the session identity from the worktree and SHALL NOT require or consume a host-supplied `OPENLEASE_SESSION_TOKEN`. Repeated ZPP invocations for one worktree SHALL resolve to the same session. A caller MAY name a session explicitly to obtain a distinct session for the same worktree. ZPP SHALL NOT infer a host agent session identity from process ancestry, inherited environment, or terminal state, because no observable channel identifies a host agent session on every supported platform; concurrent unnamed sessions in one worktree therefore share one session by design.
 
 #### Scenario: Reuse one session across invocations
-- **WHEN** ZPP is invoked more than once within a single host agent session in one worktree
+- **WHEN** ZPP is invoked more than once for the same worktree without an explicit session name
 - **THEN** every invocation resolves the same session identity and the same established session
-
-#### Scenario: Separate concurrent host sessions
-- **WHEN** two concurrent host agent sessions establish sessions in the same worktree
-- **THEN** ZPP resolves a distinct session identity for each and neither displaces the other
 
 #### Scenario: Require no host token
 - **WHEN** ZPP establishes a session in an environment that sets no `OPENLEASE_SESSION_TOKEN`
-- **THEN** session establishment succeeds using the ZPP-derived identity
+- **THEN** session establishment succeeds using the worktree-derived identity
+
+#### Scenario: Name a distinct session explicitly
+- **WHEN** a caller establishes a session for a worktree under an explicit session name
+- **THEN** ZPP establishes a session distinct from that worktree's default session and neither displaces the other
 
 ### Requirement: Temporary-space session establishment
 ZPP SHALL establish the session as an OpenLease temporary space keyed to the registered repository, the worktree, and the ZPP-derived session identity. An established session SHALL supply the selected space for space-scoped trait sources without requiring an explicit `--space` argument or `OPENLEASE_SPACE` value.
