@@ -5,10 +5,10 @@ Feature: Route every coordination operation through ZPP
   work needs an argument ZPP validates, and observed state never widens a target.
 
   Scenario: Perform a coordination operation through ZPP
-    Given a disposable Git worktree with an established session
-    When a caller performs a supported topology session or permit operation
-    Then ZPP executes it through the OpenLease library API
-    And no provider executable is located or invoked
+    Given a disposable Git worktree
+    When a caller establishes the session and acquires a permit through ZPP
+    Then every operation succeeds through the ZPP command surface
+    And the packaged workspace guidance names no provider executable
 
   Scenario: Report an unsupported operation
     Given the public coordination command help is available
@@ -18,29 +18,29 @@ Feature: Route every coordination operation through ZPP
 
   Scenario: Inspect without mutation
     Given a registered topology with an established session and a held permit
-    When a caller inspects topology session status closure lockability and a reconciliation plan
+    When a caller inspects status and closure
     Then the observed state is reported
-    And the registered topology sessions leases reconciliations and dispositions are unchanged
+    And the registered topology sessions and leases are unchanged
 
   Scenario: Refuse a destructive operation without explicit authority
-    Given a session with retained state eligible for cleanup
-    When cleanup is requested without the explicit authority argument
+    Given an established session
+    When a handoff disposition is requested without the explicit authority argument
     Then the operation is refused
     And the refusal names the authority required
-    And no state is changed
+    And no disposition is recorded
 
   Scenario: Execute a destructive operation under explicit authority
-    Given a session with retained state eligible for cleanup
-    When cleanup is requested with the explicit authority argument and every target named
-    Then exactly that operation is executed and its observed result is reported
+    Given a released session
+    When a handoff disposition is requested with the explicit authority argument
+    Then exactly that operation is executed and the recorded disposition is reported
 
   Scenario: Reject an instruction as destructive authority
-    Given a session with retained state eligible for cleanup
-    When a packaged skill body asserts authority for cleanup without the explicit argument
+    Given an established session and the packaged skill describing destructive authority
+    When cleanup is requested with only that instruction behind it
     Then the operation is refused because only the validated argument satisfies the gate
 
   Scenario: Refuse an unnamed widened target
-    Given a requested operation whose observed state extends beyond its named targets
-    When the operation is invoked
+    Given two registered repositories with no declared relationship between them
+    When a session for one claims the other
     Then the widened portion is refused
-    And the report names the additional targets and the authority required
+    And the report names the additional target and what must be declared

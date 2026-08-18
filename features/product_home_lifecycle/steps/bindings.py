@@ -153,3 +153,37 @@ def sync_forced(context) -> None:
 def sync_uninitialized(context) -> None:
     assert [record["status"] for record in context.records] == ["uninitialized"]
     assert context.records[0]["decision"] == "skip"
+
+
+@given("a disposable Git worktree and an absent ZPP home")
+def worktree_and_absent_home(context) -> None:
+    from features.support.coordination import CoordinationEnvironment
+
+    context.coordination = CoordinationEnvironment()
+    context.worktree = context.coordination.worktree()
+    assert not context.coordination.home.exists()
+
+
+@when("ZPP establishes the session for that worktree")
+def establish_session_for_worktree(context) -> None:
+    context.session = context.coordination.workspace_json(
+        "session", str(context.worktree)
+    )
+
+
+@then("the selected home and its openlease child exist")
+def home_and_state_exist(context) -> None:
+    assert context.coordination.home.is_dir()
+    assert (context.coordination.home / "openlease").is_dir()
+
+
+@then("that state records the registered repository worktree authority and session")
+def state_records_topology(context) -> None:
+    state = context.coordination.state()
+    assert [item["identifier"] for item in state["repositories"]] == [
+        context.session["repository"]
+    ]
+    assert [item["relative_path"] for item in state["authorities"]] == ["."]
+    assert [item["identifier"] for item in state["spaces"]] == [
+        context.session["space"]
+    ]

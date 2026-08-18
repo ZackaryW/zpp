@@ -25,6 +25,13 @@ COMMAND_NAMES = (
 WORKFLOW_OPERATIONS = ("install", "update", "remove")
 
 
+def coordination_environment():
+    """Shared isolated home and worktree lifecycle for session-aware scenarios."""
+    from features.support.coordination import CoordinationEnvironment
+
+    return CoordinationEnvironment()
+
+
 def root_command_names() -> set[str]:
     """Registered root command names, so `workspace` cannot mask a bare `space`."""
     names = {info.name for info in app.registered_commands if info.name}

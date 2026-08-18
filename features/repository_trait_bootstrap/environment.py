@@ -3,6 +3,7 @@ def before_scenario(context, scenario):
 
 
 def after_scenario(context, scenario):
-    repository = getattr(context, "repository", None)
-    if repository is not None:
-        repository.close()
+    for attribute in ("repository", "coordination"):
+        subject = getattr(context, attribute, None)
+        if subject is not None:
+            subject.close()

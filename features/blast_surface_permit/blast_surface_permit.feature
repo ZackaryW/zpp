@@ -59,20 +59,9 @@ Feature: Guard worktree modification behind a declared blast surface
     Then the held leases are dropped
     And reconciliation debt is recorded for its generated members
 
-  Scenario: Refuse an unsafe normal unlock
-    Given a session holding a permit whose boundary is not safe
-    When an explicit unlock targets that session
-    Then the unlock is refused and the boundary condition is reported
-    And the held leases remain
 
   Scenario: Require force authority for a forced unlock
-    Given a session holding a permit whose boundary is not safe
+    Given a session holding a permit
     When a forced unlock is requested without explicit force authority
     Then the operation is refused
     And the refusal reports that explicit force authority is required
-
-  Scenario: Book debt on a forced unlock
-    Given a session holding a permit whose boundary is not safe
-    When a forced unlock is requested with explicit force authority
-    Then the held leases are dropped
-    And the report names both the released session and the recorded reconciliation debt

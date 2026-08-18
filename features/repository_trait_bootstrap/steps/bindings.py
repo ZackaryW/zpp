@@ -179,3 +179,46 @@ def no_space(context) -> None:
 def router_bound(context) -> None:
     assert context.router.environment.root == Path.home().resolve()
     assert context.router.environment.project_root == context.repository.root.resolve()
+
+
+@given("a disposable repository with an established session")
+def repository_with_session(context) -> None:
+    context.coordination = support.coordination_environment()
+    context.worktree = context.coordination.worktree()
+    context.session = context.coordination.workspace_json(
+        "session", str(context.worktree)
+    )
+
+
+@given("a disposable repository containing trait documents that no command targets")
+def untargeted_repository(context) -> None:
+    context.coordination = support.coordination_environment()
+    context.worktree = context.coordination.worktree()
+    traits = context.worktree / ".zpp" / "traits"
+    traits.mkdir(parents=True)
+    (traits / "bdd.toml").write_text('[meta]\nselection = "all"\n', encoding="utf-8")
+
+
+@when("the caller resolves that repository's traits")
+def resolve_repository_traits(context) -> None:
+    context.resolution = context.coordination.resolve_json(str(context.worktree))
+
+
+@then("the bounded repository context resolves")
+def repository_context_resolves(context) -> None:
+    assert context.resolution["bodies"]
+
+
+@then("no affected claim is required and no permit is held")
+def no_claim_and_no_permit(context) -> None:
+    coordination = getattr(context, "coordination", None)
+    if coordination is not None:
+        assert coordination.state()["leases"] == []
+        return
+    snapshot = create_zpp_openlease(context.behavior_home / "openlease").snapshot()
+    assert snapshot.leases == ()
+
+
+@then("no session is established and no topology is registered")
+def nothing_registered(context) -> None:
+    assert not (context.coordination.home / "openlease").exists()

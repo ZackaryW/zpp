@@ -1,7 +1,7 @@
 @openlease-session-lifecycle
 Feature: Establish a repository session automatically
   ZPP files the minimal topology a blast-surface claim needs, keys the session
-  to the worktree unless one is named, and establishes it as a temporary space.
+  to the worktree unless one is named, and reuses that space on every invocation.
   Registration supplies existence only; a relationship stays an explicit act.
 
   Scenario: Register an unregistered worktree
@@ -38,10 +38,10 @@ Feature: Establish a repository session automatically
     Then that session is distinct from the worktree's default session
     And neither session displaces the other
 
-  Scenario: Establish a temporary session space
+  Scenario: Establish a session space
     Given a disposable Git worktree with a registered repository
     When ZPP establishes the session for that worktree
-    Then a temporary space is held for that repository worktree and session identity
+    Then one space is held and associated with that repository
     And ZPP reports that space identifier
 
   Scenario: Supply space-scoped sources without explicit selection

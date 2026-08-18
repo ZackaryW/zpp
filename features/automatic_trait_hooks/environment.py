@@ -3,6 +3,7 @@ def before_scenario(context, scenario):
 
 
 def after_scenario(context, scenario):
-    project = getattr(context, "project", None)
-    if project is not None:
-        project.close()
+    for attribute in ("project", "coordination"):
+        subject = getattr(context, attribute, None)
+        if subject is not None:
+            subject.close()

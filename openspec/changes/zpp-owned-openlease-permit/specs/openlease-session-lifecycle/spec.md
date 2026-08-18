@@ -30,12 +30,12 @@ ZPP SHALL derive the session identity from the worktree and SHALL NOT require or
 - **WHEN** a caller establishes a session for a worktree under an explicit session name
 - **THEN** ZPP establishes a session distinct from that worktree's default session and neither displaces the other
 
-### Requirement: Temporary-space session establishment
-ZPP SHALL establish the session as an OpenLease temporary space keyed to the registered repository, the worktree, and the ZPP-derived session identity. An established session SHALL supply the selected space for space-scoped trait sources without requiring an explicit `--space` argument or `OPENLEASE_SPACE` value.
+### Requirement: Session space establishment
+ZPP SHALL establish the session as an OpenLease space named deterministically from the registered repository, the worktree, and the session identity, and SHALL reuse that space on every later invocation. The session SHALL be an ordinary space rather than a temporary one, because OpenLease clears a space's temporary descriptor as soon as durable configuration binds to it, so a temporary session could not carry space-scoped trait sources. An established session SHALL supply the selected space for space-scoped trait sources without requiring an explicit `--space` argument or `OPENLEASE_SPACE` value.
 
-#### Scenario: Establish a temporary session space
+#### Scenario: Establish a session space
 - **WHEN** ZPP establishes a session for a registered worktree
-- **THEN** OpenLease holds a temporary space for that repository, worktree, and session identity, and ZPP reports its identifier
+- **THEN** OpenLease holds one space associated with that repository, ZPP reports its identifier, and a later invocation reuses it
 
 #### Scenario: Supply space-scoped sources without explicit selection
 - **WHEN** trait resolution runs under an established session and receives no `--space` argument and no `OPENLEASE_SPACE` value

@@ -3,6 +3,7 @@ def before_scenario(context, scenario):
 
 
 def after_scenario(context, scenario):
-    environment = getattr(context, "env", None)
-    if environment is not None:
-        environment.close()
+    for attribute in ("env", "coordination"):
+        subject = getattr(context, attribute, None)
+        if subject is not None:
+            subject.close()

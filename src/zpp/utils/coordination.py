@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from openlease import OpenLease
+from openlease.core.graph import AccessRole
 from openlease.utils.git_adapter import GitAdapter
 
 from zpp.core.coordination import (
@@ -91,7 +92,14 @@ class OpenLeaseCoordination:
     def declare_dependency(
         self, consumer_id: str, authority_id: str, access: str
     ) -> object:
-        return self._lifecycle.relate_dependency(consumer_id, authority_id, access).data
+        try:
+            role = AccessRole(access)
+        except ValueError as error:
+            allowed = ", ".join(item.value for item in AccessRole)
+            raise CoordinationError(
+                f"dependency access must be one of {allowed}"
+            ) from error
+        return self._lifecycle.relate_dependency(consumer_id, authority_id, role).data
 
     def register_authority(self, repository_id: str, relative_path: str) -> object:
         identifier = f"{repository_id}-{relative_path.strip('/').replace('/', '-')}"
@@ -106,31 +114,19 @@ class OpenLeaseCoordination:
     ) -> EstablishedSession:
         """Establish the worktree's session, registering topology if needed.
 
-        The default session is an OpenLease temporary space, so it stays
-        reclaimable while it holds nothing. OpenLease keeps exactly one
-        disposable temporary space per worktree and re-stamps it, so a named
-        session is a deliberate durable space instead; that is also the right
-        lifetime for a session someone asked for by name.
+        The session is an ordinary space named deterministically from the
+        worktree. A temporary space cannot serve, because OpenLease clears the
+        temporary descriptor as soon as durable configuration binds to a space,
+        so a session carrying space-scoped trait sources would stop matching
+        and a fresh session would be created on the next invocation.
         """
         identity = self.ensure_registered(worktree)
         session_identity = derive_session_identity(identity, name)
-        if name is None:
-            result = self._lifecycle.resolve_session_space(worktree, session_identity)
-            space_id = getattr(result.data, "identifier", None)
-        else:
-            space_id = self._ensure_named_space(session_identity, identity)
-        if not isinstance(space_id, str):
-            raise CoordinationError("session establishment returned no space identity")
-        return EstablishedSession(space_id, session_identity, identity)
-
-    def _ensure_named_space(
-        self, session_identity: str, identity: WorktreeIdentity
-    ) -> str:
         state = self._lifecycle.snapshot()
         if not any(item.identifier == session_identity for item in state.spaces):
             self._lifecycle.create_space(session_identity)
         self._lifecycle.associate(session_identity, (identity.repository_id,))
-        return session_identity
+        return EstablishedSession(session_identity, session_identity, identity)
 
     def status(self, space_id: str | None = None) -> object:
         return self._lifecycle.status(space_id).data
@@ -138,11 +134,55 @@ class OpenLeaseCoordination:
     # -- claim and permit -------------------------------------------------
 
     def declare_claim(self, space_id: str, claim: AffectedClaim) -> object:
+        self._require_declared_relationships(space_id, claim)
         return self._lifecycle.set_affected(
             space_id,
             repository_ids=claim.repository_ids,
             authority_ids=claim.authority_ids,
         ).data
+
+    def _require_declared_relationships(
+        self, space_id: str, claim: AffectedClaim
+    ) -> None:
+        """A relationship, not mere registration, makes work cross-repository."""
+        state = self._lifecycle.snapshot()
+        own = self._session_repositories(state, space_id)
+        owner_of = {item.identifier: item.repository_id for item in state.authorities}
+        claimed = set(claim.repository_ids)
+        claimed.update(
+            owner_of[item] for item in claim.authority_ids if item in owner_of
+        )
+        related = set(own)
+        for item in state.parents:
+            if item.child_id in related:
+                related.add(item.parent_id)
+            if item.parent_id in related:
+                related.add(item.child_id)
+        for item in state.dependencies:
+            authority_owner = owner_of.get(item.authority_id)
+            if item.consumer_id in related and authority_owner is not None:
+                related.add(authority_owner)
+            if authority_owner in related:
+                related.add(item.consumer_id)
+        outside = sorted(claimed - related)
+        if outside:
+            raise CoordinationError(
+                "claim names a repository with no declared relationship: "
+                f"{', '.join(outside)}; declare a parent or dependency relationship "
+                "before this session may claim it"
+            )
+
+    @staticmethod
+    def _session_repositories(state: object, space_id: str) -> tuple[str, ...]:
+        space = next(
+            (item for item in state.spaces if item.identifier == space_id), None
+        )
+        if space is None:
+            raise CoordinationError(f"session is not established: {space_id}")
+        if space.associated_repository_ids:
+            return tuple(space.associated_repository_ids)
+        temporary = space.temporary
+        return (temporary.repository_id,) if temporary is not None else ()
 
     def resolve_closure(self, space_id: str) -> ClosureReport:
         """Expand the declared claim to its closure and evaluate lockability."""

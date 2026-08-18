@@ -169,7 +169,7 @@ def relate(
     child: Annotated[str, typer.Option("--child")],
     parent: Annotated[str | None, typer.Option("--parent")] = None,
     dependency: Annotated[str | None, typer.Option("--dependency")] = None,
-    access: Annotated[str, typer.Option("--access")] = "read",
+    access: Annotated[str, typer.Option("--access")] = "read_only",
 ) -> None:
     """Declare the relationship that makes work cross-repository."""
     coordination = _coordination(ctx)
