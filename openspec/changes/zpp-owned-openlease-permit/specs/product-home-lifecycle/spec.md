@@ -15,6 +15,6 @@ ZPP SHALL treat root `--path` as the selected ZPP home and SHALL default it to `
 - **WHEN** a caller only requests help, version, or another operation that does not require filesystem state
 - **THEN** selecting the ZPP home creates no directory or OpenLease state
 
-#### Scenario: Create state when establishing a session
-- **WHEN** ZPP establishes a session for a repository and the selected home or its `openlease` child does not exist
-- **THEN** ZPP creates them and records the registered repository, worktree-covering authority, and session in that state root
+#### Scenario: BDD target — Create home state when establishing a session
+- **WHEN** executable behavior is covered by `features/product_home_lifecycle/product_home_lifecycle.feature::Create home state when establishing a session`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps

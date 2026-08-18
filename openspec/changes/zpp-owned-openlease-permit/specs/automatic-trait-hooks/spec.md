@@ -7,13 +7,17 @@ ZPP SHALL package one native trait-context hook for each supported Agent Router 
 - **WHEN** an installed Codex, Claude Code, Pi, or Kimi integration begins its earliest supported context-injection event in a repository
 - **THEN** its native hook resolves traits with that agent identity, establishes the session, and contributes the successful prompt-ready body output as environment policy
 
-#### Scenario: Resolve space-scoped sources without explicit selection
-- **WHEN** a native hook resolves traits in a repository and supplies no `--space` argument and no `OPENLEASE_SPACE` value
-- **THEN** the established session supplies the selected space and its space-scoped sources contribute to resolution
+#### Scenario: BDD target — Establish the session from a native hook resolution
+- **WHEN** executable behavior is covered by `features/automatic_trait_hooks/automatic_trait_hooks.feature::Establish the session from a native hook resolution`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
 
-#### Scenario: Keep permit authority out of the hook
-- **WHEN** a native hook establishes the session for a repository
-- **THEN** it declares no affected claim and acquires no permit, leaving every modification gated by an explicit claim and go-ahead
+#### Scenario: BDD target — Resolve space-scoped sources without explicit selection
+- **WHEN** executable behavior is covered by `features/automatic_trait_hooks/automatic_trait_hooks.feature::Resolve space-scoped sources without explicit selection`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
+
+#### Scenario: BDD target — Keep permit authority out of the hook
+- **WHEN** executable behavior is covered by `features/automatic_trait_hooks/automatic_trait_hooks.feature::Keep permit authority out of the hook`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
 
 #### Scenario: Keep workflow authority out of the hook
 - **WHEN** an injected trait body describes a workflow action or claims completion

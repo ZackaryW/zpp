@@ -7,30 +7,26 @@ Define direct repository trait use, explicit initialization, stable commands, an
 ## Requirements
 
 ### Requirement: Bounded repository trait documents
-ZPP SHALL open an existing `.zpp/zpp.toml` context document or existing `.zpp/traits/{name}.toml` one-family trait documents, and SHALL explicitly initialize only an exact requested document, through OpenLease's invocation-scoped direct document contract with the selected repository path as provenance. These operations SHALL NOT require durable OpenLease repository registration or create a persistent configuration-source record.
+ZPP SHALL open an existing `.zpp/zpp.toml` context document or existing `.zpp/traits/{name}.toml` one-family trait documents, and SHALL explicitly initialize only an exact requested document, through OpenLease's invocation-scoped direct document contract with the selected repository path as provenance. These document operations SHALL NOT themselves create a persistent configuration-source record, declare a relationship, or acquire a permit. Establishing a session for the repository SHALL register the repository and its worktree-covering authority as specified by the session lifecycle capability, and document binding SHALL remain invocation-scoped whether or not a session is established.
 
-#### Scenario: Open an unregistered repository document
-- **WHEN** ZPP receives an eligible unregistered repository path containing `.zpp/zpp.toml` and `.zpp/traits/bdd.toml`
-- **THEN** OpenLease returns invocation-scoped bound documents with repository-path provenance and no registration mutation
+#### Scenario: Bind documents through the direct contract
+- **WHEN** ZPP receives an eligible repository path containing `.zpp/zpp.toml` and `.zpp/traits/bdd.toml`
+- **THEN** OpenLease returns invocation-scoped bound documents with repository-path provenance and creates no persistent configuration-source record
 
 #### Scenario: Initialize the exact missing document
 - **WHEN** an authorized initialization targets an absent `.zpp/traits/bdd.toml` within its permitted repository boundary
-- **THEN** OpenLease initializes exactly that document without creating repository topology or a persistent source binding
+- **THEN** OpenLease initializes exactly that document without declaring a relationship or acquiring a permit
 
 ### Requirement: Invocation-authorized read-only loading
-An explicit workflow invocation against a selected repository SHALL authorize ZPP to request read-only OpenLease direct bindings for existing `.zpp/zpp.toml` and `.zpp/traits/{name}.toml` documents in that repository. File presence without such an invocation SHALL perform no operation. Missing repository documents SHALL NOT be created implicitly and SHALL leave available space and global trait contributions eligible for resolution.
+An explicit workflow invocation against a selected repository SHALL authorize ZPP to request read-only OpenLease direct bindings for existing `.zpp/zpp.toml` and `.zpp/traits/{name}.toml` documents in that repository. File presence without such an invocation SHALL perform no operation, establish no session, and register no topology. Missing repository documents SHALL NOT be created implicitly and SHALL leave available space and global trait contributions eligible for resolution.
 
 #### Scenario: Read existing traits during workflow invocation
 - **WHEN** a user invokes the workflow against a repository containing `.zpp/traits/bdd.toml`
-- **THEN** ZPP reads that document through an invocation-scoped OpenLease binding without requiring a separate trust, initialization, registration, or space-selection step
+- **THEN** ZPP reads that document through an invocation-scoped OpenLease binding without requiring a separate trust or initialization step
 
-#### Scenario: Do nothing before invocation
-- **WHEN** a repository contains ZPP trait documents but no workflow or trait command targets it
-- **THEN** ZPP does not open, evaluate, register, or mutate those documents
-
-#### Scenario: Fall through when repository traits are absent
-- **WHEN** a workflow invocation targets a repository without `.zpp/traits/bdd.toml`
-- **THEN** ZPP performs no implicit creation and may resolve `bdd` from available space and global contributions
+#### Scenario: BDD target — Do nothing before an invocation targets the repository
+- **WHEN** executable behavior is covered by `features/repository_trait_bootstrap/repository_trait_bootstrap.feature::Do nothing before an invocation targets the repository`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
 
 ### Requirement: Explicit repository mutation authority
 Creating or modifying `.zpp/zpp.toml` or `.zpp/traits/{name}.toml` SHALL require grouped `zpp trait init` to identify the intended exact context or trait-family document and repository target. Root `zpp init` SHALL retain agent setup selection rather than becoming an ambiguous repository-document mutation. Workflow invocation and read-only resolution SHALL NOT themselves authorize a write.
@@ -84,15 +80,15 @@ ZPP CLI commands SHALL use Agent Router's `Agent` type as the supported agent id
 - **THEN** ZPP rejects the request instead of combining several invoking-agent artifact contexts
 
 ### Requirement: No-space repository operation
-Ordinary repository trait opening, initialization, and resolution and direct `zpp behave init` or execution SHALL NOT create, select, lock, or require an OpenLease space. An explicitly selected space MAY supply additional trait context or a real reconciliation callback context, but its lifecycle SHALL remain independent from baseline repository trait availability and direct behavior verification.
+Ordinary repository trait opening, initialization, and resolution and direct `zpp behave init` or execution SHALL NOT require a declared affected claim, evaluate lockability, or acquire, hold, or release a permit. These operations SHALL run under the session ZPP establishes for the worktree and SHALL remain available as read-only work. An explicitly selected space MAY supply additional trait context or a real reconciliation callback context, and its lifecycle SHALL remain independent from baseline repository trait availability and direct behavior verification.
 
-#### Scenario: Resolve repository traits without a space
-- **WHEN** an unregistered repository uses its direct trait document without explicit space selection
-- **THEN** ZPP resolves the bounded repository context without creating or selecting a space
+#### Scenario: BDD target — Resolve repository traits without a permit
+- **WHEN** executable behavior is covered by `features/repository_trait_bootstrap/repository_trait_bootstrap.feature::Resolve repository traits without a permit`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
 
-#### Scenario: Run repository behavior without a space
-- **WHEN** an unregistered Git worktree invokes `zpp behave` against its dedicated root mapping
-- **THEN** ZPP uses an invocation-scoped direct document binding without creating or selecting a space
+#### Scenario: BDD target — Run direct repository behavior without a permit
+- **WHEN** executable behavior is covered by `features/repository_trait_bootstrap/repository_trait_bootstrap.feature::Run direct repository behavior without a permit`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
 
 ### Requirement: OpenLease configuration authority
 OpenLease SHALL remain the owner of direct document binding, codec and layout handling, repository-path provenance, bounded initialization, managed writes, and explicit extension invocation and callback boundaries. ZPP SHALL own the `zpp.traits` schemas and semantic resolution of context and one-family trait documents and the independent `zpp.behave` version-one schema, deterministic selection, and provider execution supplied through those bindings. The dedicated root `zpp.behave.yaml` SHALL be bound wholly to `zpp.behave` without a namespace wrapper.

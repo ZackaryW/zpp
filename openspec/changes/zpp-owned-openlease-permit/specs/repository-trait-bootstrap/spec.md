@@ -14,13 +14,13 @@ ZPP SHALL open an existing `.zpp/zpp.toml` context document or existing `.zpp/tr
 ### Requirement: No-space repository operation
 Ordinary repository trait opening, initialization, and resolution and direct `zpp behave init` or execution SHALL NOT require a declared affected claim, evaluate lockability, or acquire, hold, or release a permit. These operations SHALL run under the session ZPP establishes for the worktree and SHALL remain available as read-only work. An explicitly selected space MAY supply additional trait context or a real reconciliation callback context, and its lifecycle SHALL remain independent from baseline repository trait availability and direct behavior verification.
 
-#### Scenario: Resolve repository traits without a permit
-- **WHEN** a repository resolves its trait documents under an established session
-- **THEN** ZPP resolves the bounded repository context without requiring a declared affected claim or acquiring a permit
+#### Scenario: BDD target — Resolve repository traits without a permit
+- **WHEN** executable behavior is covered by `features/repository_trait_bootstrap/repository_trait_bootstrap.feature::Resolve repository traits without a permit`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
 
-#### Scenario: Run repository behavior without a permit
-- **WHEN** a Git worktree invokes `zpp behave` against its dedicated root mapping
-- **THEN** ZPP uses an invocation-scoped direct document binding without requiring a declared affected claim or acquiring a permit
+#### Scenario: BDD target — Run direct repository behavior without a permit
+- **WHEN** executable behavior is covered by `features/repository_trait_bootstrap/repository_trait_bootstrap.feature::Run direct repository behavior without a permit`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
 
 ### Requirement: Invocation-authorized read-only loading
 An explicit workflow invocation against a selected repository SHALL authorize ZPP to request read-only OpenLease direct bindings for existing `.zpp/zpp.toml` and `.zpp/traits/{name}.toml` documents in that repository. File presence without such an invocation SHALL perform no operation, establish no session, and register no topology. Missing repository documents SHALL NOT be created implicitly and SHALL leave available space and global trait contributions eligible for resolution.
@@ -29,6 +29,6 @@ An explicit workflow invocation against a selected repository SHALL authorize ZP
 - **WHEN** a user invokes the workflow against a repository containing `.zpp/traits/bdd.toml`
 - **THEN** ZPP reads that document through an invocation-scoped OpenLease binding without requiring a separate trust or initialization step
 
-#### Scenario: Do nothing before invocation
-- **WHEN** a repository contains ZPP trait documents but no workflow or trait command targets it
-- **THEN** ZPP does not open, evaluate, register, establish a session for, or mutate those documents
+#### Scenario: BDD target — Do nothing before an invocation targets the repository
+- **WHEN** executable behavior is covered by `features/repository_trait_bootstrap/repository_trait_bootstrap.feature::Do nothing before an invocation targets the repository`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps

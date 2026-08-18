@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Blast-Surface Permit Specification
+
+## Purpose
+
+Define the declared affected claim, closure resolution and lockability, explicit go-ahead before permit acquisition, and explicit unlock as the guarantee check.
+
+## Requirements
 
 ### Requirement: Declared affected claim before worktree modification
 Before performing an operation that modifies a worktree under an established session, ZPP SHALL require an explicit declared affected claim naming the repositories and authorities the operation intends to affect. ZPP SHALL refuse the operation when no claim has been declared and SHALL NOT synthesize, widen, or infer a claim from observed changes, command arguments, or repository layout.

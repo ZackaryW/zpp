@@ -5,7 +5,7 @@
 Define ZPP home selection, native folder opening, and the complete integration lifecycle: first-time root initialization, drift-selected synchronization, confirmed state replacement, all-agent reset preflight, reset ownership exclusions, and the shared projection inventory those commands share.
 ## Requirements
 ### Requirement: Selected ZPP home layout
-ZPP SHALL treat root `--path` as the selected ZPP home and SHALL default it to `~/.zpp`. Every OpenLease-backed ZPP operation SHALL use the exact `openlease` child of that selected home as its state root. Selecting or resolving a home SHALL NOT by itself create the home or state.
+ZPP SHALL treat root `--path` as the selected ZPP home and SHALL default it to `~/.zpp`. Every OpenLease-backed ZPP operation SHALL use the exact `openlease` child of that selected home as its state root, and that state root SHALL hold registered repository topology, authorities, relationships, sessions, and leases in addition to bound configuration. Selecting or resolving a home SHALL NOT by itself create the home or state; establishing a session SHALL create the home and state when they are absent.
 
 #### Scenario: Use the default ZPP home
 - **WHEN** a caller omits root `--path`
@@ -18,6 +18,10 @@ ZPP SHALL treat root `--path` as the selected ZPP home and SHALL default it to `
 #### Scenario: Avoid eager home mutation
 - **WHEN** a caller only requests help, version, or another operation that does not require filesystem state
 - **THEN** selecting the ZPP home creates no directory or OpenLease state
+
+#### Scenario: BDD target — Create home state when establishing a session
+- **WHEN** executable behavior is covered by `features/product_home_lifecycle/product_home_lifecycle.feature::Create home state when establishing a session`
+- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
 
 ### Requirement: Explicit native home opening
 Root `zpp open` SHALL create the selected ZPP home when absent and open that exact directory through the host platform's native folder-opening facility without a command shell. It SHALL report the resolved home path. It SHALL NOT open only the OpenLease child, inspect or rewrite home contents, initialize OpenLease state, install agent assets, or execute repository behavior.

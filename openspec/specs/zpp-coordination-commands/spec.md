@@ -1,4 +1,10 @@
-## ADDED Requirements
+# ZPP Coordination Commands Specification
+
+## Purpose
+
+Define the ZPP-owned coordination command surface, its read-only inspection boundary, CLI-enforced destructive authority, and refusal of widened targets.
+
+## Requirements
 
 ### Requirement: ZPP-owned coordination command surface
 ZPP SHALL own the complete coordination command surface an agent uses for OpenLease operations, covering topology registration and relationship declaration, session establishment, affected-claim declaration, closure and lockability inspection, permit acquisition and unlock, successor preparation, reconciliation planning and application, handoff, recovery, abandonment, cleanup, and preparation repair. ZPP SHALL execute these operations through the OpenLease library API. An agent SHALL NOT need to locate the `openlease` executable, read its help output, or assemble provider argv to perform any of them.

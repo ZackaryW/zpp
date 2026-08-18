@@ -1,4 +1,10 @@
-## ADDED Requirements
+# OpenLease Session Lifecycle Specification
+
+## Purpose
+
+Define automatic single-repository registration, worktree-keyed session identity, session space establishment, and the relationship gate for cross-repository work.
+
+## Requirements
 
 ### Requirement: Automatic single-repository floorplan registration
 When ZPP establishes a session for a Git worktree whose common directory matches no registered OpenLease repository, ZPP SHALL register that repository and one authority covering the worktree before session establishment continues. ZPP SHALL derive the repository and authority identifiers deterministically from the worktree so repeated establishment is idempotent. ZPP SHALL NOT declare parent relationships, dependency relationships, or additional authorities as part of automatic registration.
