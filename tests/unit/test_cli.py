@@ -57,7 +57,14 @@ def test_public_cli_preserves_grouped_shape() -> None:
     assert "install-workflow" not in root.stdout
     assert "init-trait" not in root.stdout
     assert "explain" not in root.stdout
-    assert "space" not in root.stdout
+    assert "space" not in _root_command_names()
+
+
+def _root_command_names() -> set[str]:
+    """Registered root command names, so `workspace` cannot mask a bare `space`."""
+    names = {info.name for info in app.registered_commands if info.name}
+    names.update(group.name for group in app.registered_groups if group.name)
+    return names
 
 
 def test_workflow_lifecycle_exposes_no_openspec_control() -> None:

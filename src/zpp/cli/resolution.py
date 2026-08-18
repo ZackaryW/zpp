@@ -16,7 +16,8 @@ from zpp.core.evidence import EvidenceRuntime
 from zpp.core.rendering import render_prompt_bodies
 from zpp.utils.agent_router import active_trait_sources
 from zpp.utils.agent_selection import AgentSelectionError, select_one_agent
-from zpp.utils.openlease import create_trait_documents
+from zpp.utils.coordination import OpenLeaseCoordination
+from zpp.utils.openlease import create_trait_documents, create_zpp_openlease
 
 
 def _facets(values: list[str] | None) -> MappingProxyType:
@@ -100,9 +101,12 @@ def resolve(
     documents = create_trait_documents(runtime(ctx).state_root)
     repository = user_action(lambda: documents.read_repository(root))
     selected_space = space or os.environ.get("OPENLEASE_SPACE")
+    session_note: str | None = None
+    if selected_space is None:
+        selected_space, session_note = _establish_session(runtime(ctx).state_root, root)
     if authority is not None and selected_space is None:
         raise typer.BadParameter(
-            "--authority requires --space or OPENLEASE_SPACE",
+            "--authority requires an established session, --space, or OPENLEASE_SPACE",
             param_hint="--authority",
         )
     space_sources = (
@@ -162,8 +166,24 @@ def resolve(
                     for body in result.bodies
                 ],
                 "ZPP_CONTEXT": result.context,
+                "session": selected_space,
+                "session_note": session_note,
                 "explanation": dict(result.explanation),
             }
         )
         return
     typer.echo(render_prompt_bodies(result.resolution), nl=False)
+
+
+def _establish_session(state_root: Path, root: Path) -> tuple[str | None, str | None]:
+    """Establish this worktree's session so space-scoped sources resolve.
+
+    Resolution is read-only and must keep working outside a Git worktree, so a
+    directory that cannot hold a session resolves its repository, agent, and
+    packaged sources and reports why no session was established.
+    """
+    coordination = OpenLeaseCoordination(create_zpp_openlease(state_root))
+    try:
+        return coordination.establish_session(root).space_id, None
+    except Exception as error:  # reported to the caller, never silently dropped
+        return None, f"{type(error).__name__}: {error}"

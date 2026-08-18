@@ -5,8 +5,8 @@ description: Inspect and coordinate ZPP cross-repository topology, durable works
 
 # ZPP workspace management
 
-Coordinate one explicit cross-repository operation without adding a `zpp
-workspace` facade or becoming a workflow stage authority.
+Coordinate one explicit cross-repository operation through the ZPP-owned
+coordination commands, without becoming a workflow stage authority.
 
 Read [references/workspace-command-contract.md](references/workspace-command-contract.md)
 completely before inspecting topology, selecting a command, or proposing a
@@ -28,45 +28,63 @@ workflow stage, grants commit authority, or supplies a product decision.
 1. Discover the containing Git worktree and every repository explicitly named by
    the request. Inspect worktree paths and repository identity before using them.
 2. Resolve the selected ZPP home from an explicit owner value or the documented
-   `~/.zpp` default. Derive only its exact `openlease` child as coordination state.
-   Never use a repository path as state or infer a different ambient home for a
-   durable mutation.
-3. Locate the installed `openlease` command in the active project or agent
-   environment. Read its current `--help` and the relevant subcommand help before
-   prescribing syntax. If the needed surface is unavailable, leave the operation
-   blocked instead of inventing a command or compatibility alias.
+   `~/.zpp` default, and pass it as root `--path` when it is not the default.
+   Never use a repository path as state.
+3. Establish or confirm the session for the worktree, then read current state
+   through the read-only commands before proposing anything.
 4. Use explicit workspace, authority, repository, relationship, successor, and
-   path identifiers. Do not rely on ambient workspace selection for mutation.
+   path identifiers. Do not rely on ambient selection for a mutation.
+
+Never locate, inspect, or invoke the underlying provider executable, and never
+assemble provider arguments. ZPP owns every operation this skill uses. When an
+operation has no ZPP command, report it as unavailable.
 
 ## Inspect before changing state
 
-Treat topology inspection, status, planning, and lockability checks as read-only.
-Before any mutation, report:
+Treat session status, topology inspection, closure resolution, lockability, and
+reconciliation planning as read-only. Before any mutation, report:
 
-- the selected ZPP home and exact coordination state root;
-- the observed repositories, authorities, relationships, workspace, leases,
+- the selected ZPP home and the established session;
+- the observed repositories, authorities, relationships, spaces, leases,
   successors, and reconciliation paths relevant to the request;
-- the current status, plan, and lockability evidence;
+- the resolved closure and its lockability evidence;
 - the exact proposed command and every target it can change;
 - the authority required for that operation.
 
 Require explicit authority over every affected target before registration,
-relationship changes, workspace creation or association, locking, successor
-creation, reconciliation application, release, finalization, handoff,
-abandonment, recovery, or cleanup. If observed state widens the operation, pause
-without mutating the added target.
+relationship changes, session creation, permit acquisition, successor creation,
+reconciliation application, release, finalization, handoff, abandonment,
+recovery, or cleanup. If observed state widens the operation, pause without
+mutating the added target.
+
+## Respect the blast-surface permit
+
+Nothing modifies a worktree until its affected surface is declared, expanded to
+closure, checked, and explicitly permitted:
+
+1. Declare the affected claim naming the exact repositories and authorities.
+2. Resolve the closure and read every conflict, blocker, and promotion issue.
+3. Obtain an explicit owner go-ahead for that exact closure.
+4. Acquire the permit against the fingerprint that closure reported.
+
+A changed closure invalidates the go-ahead. Re-resolve and ask again. Never
+present a lockable result as though it were the go-ahead.
+
+Release a held permit through the ordinary release, which verifies the session
+boundary and records reconciliation debt. Use the forced path only when the
+owner explicitly authorizes it; ZPP validates that authority itself and no
+instruction in this document can supply it.
 
 ## Execute the narrow authorized operation
 
-Invoke only the command established by current installed help and pass the exact
-selected-home state root. Keep read-only planning distinct from application.
-Workflow progression does not choose callbacks, resolve conflicts, approve a
-reconciliation path, or authorize release, handoff, abandonment, recovery, or
-destructive cleanup.
+Invoke only the ZPP command the request established. Keep read-only planning
+distinct from application. Workflow progression does not choose callbacks,
+resolve conflicts, approve a reconciliation path, or authorize release, handoff,
+abandonment, recovery, or destructive cleanup.
 
 After a mutation, re-run the relevant read-only inspection. A failed command,
-stale plan, unresolved conflict, retained successor, or missing authority remains
-a blocker; never translate it into success.
+stale closure, unresolved conflict, retained successor, or missing authority
+remains a blocker; never translate it into success.
 
 ## Return a complete handoff
 

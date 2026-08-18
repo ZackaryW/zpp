@@ -141,7 +141,7 @@ def workflow_operations(context) -> None:
 
 @then("no space or legacy install-workflow command is exposed")
 def no_legacy_commands(context) -> None:
-    assert "space" not in context.root_help.stdout
+    assert "space" not in support.root_command_names()
     assert "install-workflow" not in context.root_help.stdout
 
 

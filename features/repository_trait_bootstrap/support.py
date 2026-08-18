@@ -25,6 +25,13 @@ COMMAND_NAMES = (
 WORKFLOW_OPERATIONS = ("install", "update", "remove")
 
 
+def root_command_names() -> set[str]:
+    """Registered root command names, so `workspace` cannot mask a bare `space`."""
+    names = {info.name for info in app.registered_commands if info.name}
+    names.update(group.name for group in app.registered_groups if group.name)
+    return names
+
+
 def help_for(*arguments: str):
     return CliRunner().invoke(app, [*arguments, "--help"])
 
