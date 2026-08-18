@@ -64,3 +64,10 @@ Feature: Manage one bounded ZPP integration lifecycle
     Given a temporary user environment
     When a user synchronizes the codex agent
     Then synchronization reports the agent as uninitialized and projects nothing
+
+  Scenario: Create home state when establishing a session
+    Given a temporary user environment
+    And a disposable Git worktree and an absent ZPP home
+    When ZPP establishes the session for that worktree
+    Then the selected home and its openlease child exist
+    And that state records the registered repository worktree authority and session

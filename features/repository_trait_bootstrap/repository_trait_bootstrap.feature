@@ -33,11 +33,21 @@ Feature: Bootstrap repository traits only when explicitly requested
     Given several invoking agents are supplied where one is required
     Then the selection is rejected
 
-  Scenario: Run direct repository behavior without a space
+  Scenario: Run direct repository behavior without a permit
     Given a disposable repository with a committed base
     When the caller initializes repository behavior verification
     Then a repository behavior mapping exists
-    And no OpenLease space is created
+    And no affected claim is required and no permit is held
+
+  Scenario: Resolve repository traits without a permit
+    Given a disposable repository with an established session
+    When the caller resolves that repository's traits
+    Then the bounded repository context resolves
+    And no affected claim is required and no permit is held
+
+  Scenario: Do nothing before an invocation targets the repository
+    Given a disposable repository containing trait documents that no command targets
+    Then no session is established and no topology is registered
 
   Scenario: Bind the invoking agent router to the repository
     Given a disposable repository

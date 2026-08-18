@@ -34,3 +34,18 @@ Feature: Inject repository traits through agent-native hooks
     And the codex workflow integration is installed into that project
     When a user removes that workflow integration
     Then Agent Router removes exactly the workflow skill and the native hook
+
+  Scenario: Establish the session from a native hook resolution
+    Given a disposable repository with no established session
+    When the packaged hook resolution runs against that repository
+    Then the session for that repository is established
+
+  Scenario: Resolve space-scoped sources without explicit selection
+    Given a disposable repository with an established session contributing a space-scoped trait source
+    When the packaged hook resolution runs with no explicit space argument and no space environment value
+    Then the resolved sources include that space-scoped source
+
+  Scenario: Keep permit authority out of the hook
+    Given a disposable repository with no established session
+    When the packaged hook resolution runs against that repository
+    Then no affected claim is declared and no permit is acquired
