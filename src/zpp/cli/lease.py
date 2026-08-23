@@ -172,6 +172,7 @@ def audit(
         {
             "ok": result.ok,
             "accepted": [str(value) for value in result.accepted],
+            "ignored": [str(value) for value in result.ignored],
             "violations": [str(value) for value in result.violations],
         }
     )
