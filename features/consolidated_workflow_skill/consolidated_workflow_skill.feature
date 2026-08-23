@@ -12,6 +12,11 @@ Feature: Package one consolidated ZPP workflow authority
     And the packaged skill is compatible with every supported agent
     And the packaged skill carries a SKILL.md document
 
+  Scenario: Package automatic Bundler lease progression
+    Then the workflow acquires exact store change members before governed mutation
+    And it records archives and completes the bundle during finalization
+    And it delegates no workspace successor reconciliation or cleanup operation
+
   Scenario: Keep workflow authority out of the trait collection
     Then no workflow authority family is packaged
 

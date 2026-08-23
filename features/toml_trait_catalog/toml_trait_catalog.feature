@@ -44,18 +44,18 @@ Feature: Author one complete trait family per TOML document
     Then the complete document is rejected
     And the failure is a trait validation error rather than a stack trace
 
-  Scenario: Layer one family across repository space and global sources
-    Given repository space and global sources contribute ordered bdd documents
+  Scenario: Layer one family across repository and selected-store sources
+    Given repository parent child and sibling sources contribute ordered bdd documents
     When ZPP composes the effective bdd family
-    Then repository flavors precede space flavors which precede global flavors
-    And the repository document supplies the effective activation policy
+    Then repository flavors precede parent and selected-child flavors
+    And sibling flavors are excluded
 
   Scenario: Explicitly replace inherited family contributions
     Given the repository bdd document declares repository-overwrite mode
     When ZPP composes the effective bdd family
     Then only repository flavors remain eligible for selection
 
-  Scenario: Reject repository overwrite outside repository scope
-    Given a global trait document declares repository-overwrite mode
+  Scenario: Reject repository overwrite in a store attachment
+    Given a store trait contribution declares repository-overwrite mode
     When ZPP composes that source contribution
-    Then the contribution is rejected as valid only for repository sources
+    Then the contribution is rejected as valid only for repository documents

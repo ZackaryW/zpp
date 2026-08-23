@@ -14,7 +14,8 @@ Feature: Bootstrap repository traits only when explicitly requested
     Given the public command help is available
     Then every established root command is exposed
     And the grouped workflow exposes install update and remove
-    And no space or legacy install-workflow command is exposed
+    And the minimal lease bridge is exposed
+    And no workspace or legacy install-workflow command is exposed
 
   Scenario: Preserve explicit multi-agent selection order
     Given an explicit agent selection repeating one agent
@@ -33,21 +34,21 @@ Feature: Bootstrap repository traits only when explicitly requested
     Given several invoking agents are supplied where one is required
     Then the selection is rejected
 
-  Scenario: Run direct repository behavior without a permit
+  Scenario: Run direct repository behavior without lease state
     Given a disposable repository with a committed base
     When the caller initializes repository behavior verification
     Then a repository behavior mapping exists
-    And no affected claim is required and no permit is held
+    And no session claim permit or lease is created
 
-  Scenario: Resolve repository traits without a permit
-    Given a disposable repository with an established session
+  Scenario: Resolve repository traits without lease state
+    Given a disposable repository with repository trait documents
     When the caller resolves that repository's traits
     Then the bounded repository context resolves
-    And no affected claim is required and no permit is held
+    And no session claim permit or lease is created
 
   Scenario: Do nothing before an invocation targets the repository
     Given a disposable repository containing trait documents that no command targets
-    Then no session is established and no topology is registered
+    Then no attachment is read and no lease state is created
 
   Scenario: Bind the invoking agent router to the repository
     Given a disposable repository

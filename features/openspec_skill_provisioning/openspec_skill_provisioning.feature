@@ -7,6 +7,7 @@ Feature: Provision OpenSpec operation skills with the ZPP integration
   Scenario: Package the discovered companion inventory
     Given the packaged companion inventory is loaded
     Then it contains the vendored zmem authoring and query skills
+    And it contains no workspace-management skill
     And it contains no withdrawn zmem extension skill
 
   Scenario: Keep OpenSpec controls out of the grouped workflow lifecycle
@@ -39,7 +40,7 @@ Feature: Provision OpenSpec operation skills with the ZPP integration
     And a generated OpenSpec skill has been modified locally
     When a user confirms a complete reset
     Then the generated OpenSpec skill is removed
-    And managed OpenLease state is replaced
+    And managed Bundler state is replaced
 
   Scenario: Preserve an unmanaged same-named skill
     Given a disposable user home

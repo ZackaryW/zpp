@@ -1,15 +1,15 @@
 @behavior-verification
 Feature: Run repository-owned verification through zpp behave
   A repository declares its own verification commands, targets, and gates, and
-  ZPP selects affected targets deterministically without creating OpenLease
-  coordination state. Mapping validation and impact-selection case matrices are
+  ZPP selects affected targets deterministically without creating lease state.
+  Mapping validation and impact-selection case matrices are
   proven by unit tests; these scenarios prove the public boundary.
 
-  Scenario: Initialize the dedicated behavior mapping without a space
+  Scenario: Initialize the dedicated behavior mapping without lease state
     Given a committed repository
     When the caller initializes behavior verification
     Then a version-one behavior mapping exists
-    And no OpenLease space is created
+    And no session or lease state is created
 
   Scenario: Preserve an existing version-one mapping
     Given a committed repository with a declared behavior mapping

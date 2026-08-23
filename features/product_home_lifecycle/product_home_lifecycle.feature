@@ -9,7 +9,7 @@ Feature: Manage one bounded ZPP integration lifecycle
     Given a temporary user environment
     When a user opens an absent selected ZPP home
     Then ZPP creates and natively opens that exact home
-    And it does not initialize the openlease child
+    And it does not initialize the bundler child
 
   Scenario: Require reset confirmation before external inspection
     Given a temporary user environment
@@ -65,9 +65,9 @@ Feature: Manage one bounded ZPP integration lifecycle
     When a user synchronizes the codex agent
     Then synchronization reports the agent as uninitialized and projects nothing
 
-  Scenario: Create home state when establishing a session
+  Scenario: Create home state on first automatic lease acquisition
     Given a temporary user environment
     And a disposable Git worktree and an absent ZPP home
-    When ZPP establishes the session for that worktree
-    Then the selected home and its openlease child exist
-    And that state records the registered repository worktree authority and session
+    When ZPP automatically acquires a store change bundle
+    Then the selected home and its bundler child exist
+    And no legacy OpenLease state is created or changed

@@ -35,17 +35,14 @@ Feature: Inject repository traits through agent-native hooks
     When a user removes that workflow integration
     Then Agent Router removes exactly the workflow skill and the native hook
 
-  Scenario: Establish the session from a native hook resolution
-    Given a disposable repository with no established session
+  Scenario: Resolve traits from a native hook without coordination state
+    Given a disposable repository with no Bundler lease state
     When the packaged hook resolution runs against that repository
-    Then the session for that repository is established
+    Then the repository traits resolve
+    And no session or Bundler lease state is created
 
-  Scenario: Resolve space-scoped sources without explicit selection
-    Given a disposable repository with an established session contributing a space-scoped trait source
-    When the packaged hook resolution runs with no explicit space argument and no space environment value
-    Then the resolved sources include that space-scoped source
-
-  Scenario: Keep permit authority out of the hook
-    Given a disposable repository with no established session
-    When the packaged hook resolution runs against that repository
-    Then no affected claim is declared and no permit is acquired
+  Scenario: Package the hard-cut trait hook identity
+    Given ZPP packages the codex workflow integration
+    When the packaged native hook is inspected
+    Then the hook identity is zpp-traits
+    And no zpp-session compatibility hook is packaged
