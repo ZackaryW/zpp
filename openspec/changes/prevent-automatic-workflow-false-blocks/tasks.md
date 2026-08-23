@@ -11,13 +11,13 @@
 
 ## 3. Workflow Contract Utilities
 
-- [ ] 3.1 Implement bounded structural extraction and validation of explicit component uses in complete playbooks, requiring `zpps-planning-ponytail` before `zpps-wire` without parsing arbitrary narrative wording.
-- [ ] 3.2 Integrate structural validation into packaged workflow loading while retaining `zpp-auto` as the triage-only handoff entry.
+- [ ] 3.1 Implement bounded structural extraction and validation of explicit stage-component uses in complete workflows, requiring the complete ordered reusable-stage sequence without parsing arbitrary narrative wording.
+- [ ] 3.2 Integrate full stage-sequence validation into packaged workflow loading while retaining `zpp-auto` as the triage-only handoff entry.
 
 ## 4. Public Wiring
 
 - [ ] 4.1 Extend `zpp lease audit` to return audited, ignored, and violating paths while preserving `ok`, `accepted`, and `violations` compatibility fields.
-- [ ] 4.2 Update `zpp-auto`, every complete playbook, and `zpps-workflow-kernel` so handoff remains in the same invocation and wiring requires an actual same-revision Ponytail plan or evidence-backed skip.
+- [ ] 4.2 Update `zpp-auto`, every complete workflow, the affected reusable stage skills, and `zpps-workflow-kernel` so handoff remains in the same invocation and every stage has a distinct same-revision assessment and result before progression.
 - [ ] 4.3 Prove the public audit scenario GREEN and run the complete affected audit, CLI, artifact, and workflow-family unit surfaces.
 
 ## 5. Formation and Verification
