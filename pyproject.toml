@@ -1,6 +1,6 @@
 [project]
 name = "zpp"
-version = "2.1.1"
+version = "2.1.2"
 description = "Repository-oriented workflow traits for coding agents"
 readme = "README.md"
 authors = [
