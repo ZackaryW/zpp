@@ -17,6 +17,11 @@ revision, whether the action mutates governed state, predecessor evidence, and
 owner-granted mutation, checkpoint, archive, abandonment, and bypass authority.
 Assess only that selected action.
 
+Treat explicit owner-authorized end-to-end playbook delegation as checkpoint commit
+authority only for new stage-owned commits produced by that playbook. A standalone
+component or stage requires separately granted checkpoint authority. Neither form
+authorizes amend, merge, rebase, push, conflict resolution, or unrelated paths.
+
 Return one of `eligible`, `blocked`, `completed`, or `accepted-not-applicable`, plus
 the assessed action identity, reasons, required evidence, authority facts, and any
 runtime coordination conflict. The result has no next-step, next-stage, or
@@ -50,9 +55,24 @@ For leased execution, submit changed paths to ZPP's runtime audit operation, rec
 member archives only from observed archive results, and complete the bundle only
 after every declared member is archived and every required gate and path audit
 succeeds. For explicitly bypassed execution, retain structured bypass evidence and do
-not claim an audit or bundle transition occurred. At a material accepted result,
-author a checkpoint through `zmem-author-commits` only when the owner supplied
-checkpoint authority; otherwise report `accepted` without committing.
+not claim an audit or bundle transition occurred.
+
+At every material accepted result with a non-empty coherent stage-owned diff, require
+checkpoint authority and invoke the exact installed `zmem-author-commits` skill before
+returning stage completion. Supply the accepted contract revision, exact paths or
+hunks, passing stage verification, and authority. Require dependency-ordered commits,
+zmem validation of each complete message, preservation of unrelated work, and
+`zmem show` inspection of every resulting SHA. Return `checkpointed` only after all
+required checkpoint evidence succeeds. Without authority, return `blocked` with
+`checkpoint-authority-required`; do not call the gate accepted or defer its diff to
+finalization. A skipped action or empty diff returns `accepted` without an empty
+commit.
+
+Delegate annotation choice to `zmem-author-commits`. A durable accepted architecture,
+policy, constraint, or tradeoff and its rationale merits a selective `DECISION`; a
+verified reusable lesson merits `LESSON_LEARNT`. Routine implementation, sync, and
+archive narration needs no annotation, and later checkpoints must not duplicate
+memory already retained by an earlier commit.
 
 Owner-authorized end-to-end execution is interpreted only by the active playbook,
 which may follow its own declared branch after this assessment. Never invoke a

@@ -38,9 +38,10 @@ not a recommendation or route report. Pass that invocation the original request,
 exact roots, accepted classification evidence, accepted owner input,
 owner-authorized end-to-end mode when explicitly granted, and only authority the
 owner supplied. For the legacy fallback, invoke its first declared clarification
-action. End-to-end mode permits that playbook to follow its declared branches; it
-never answers owner decisions or supplies missing durable-owner, mutation,
-checkpoint, or archive authority. Do not preselect any later action.
+action. Explicit end-to-end mode permits that playbook to follow its declared
+branches and carries checkpoint commit authority only for new stage-owned commits
+produced by that run. It never answers owner decisions or supplies missing mutation,
+archive, abandonment, or bypass authority. Do not preselect any later action.
 
 After invocation, transfer control to that playbook and do not return to triage.
 The selected playbook owns its next action and all subsequent declared branches.

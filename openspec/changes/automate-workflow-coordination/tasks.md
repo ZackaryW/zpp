@@ -24,6 +24,7 @@
 - [x] 4.1 Reauthor `zpps-workflow-kernel` to accept exact roots/change names and consume the runtime's structured coordinated or bypassed result without requiring caller-supplied internal identifiers.
 - [x] 4.2 Update complete playbooks and mutating stage/OpenSpec components to call the kernel/runtime boundary, remove store-registration and durable-owner prompts, and preserve concrete conflict blocking.
 - [x] 4.3 Update README command guidance for automatic coordination, strict environment overrides, explicit recovery inputs, and visibly warned bypass execution.
+- [x] 4.4 Enforce the canonical incremental checkpoint contract in routing, complete playbooks, and the workflow kernel so material stages commit immediately with selective zmem retention.
 
 ## 5. Verification and Specification Formation
 

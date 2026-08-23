@@ -13,8 +13,27 @@ the kernel which component follows.
 
 Owner-authorized end-to-end mode may follow only these declared branches after
 accepted results. It never answers owner decisions, supplies missing mutation,
-checkpoint, archive, or bypass authority, or skips a component boundary. Internal
-coordination identity remains ZPP runtime state.
+archive, or bypass authority, or skips a component boundary. Explicit end-to-end
+delegation carries checkpoint commit authority only for new stage-owned commits
+produced by this playbook. Internal coordination identity remains ZPP runtime state.
+
+## Incremental checkpoint rule
+
+Before advancing past any stage or operation result that owns a non-empty coherent
+diff, submit its accepted contract revision, exact paths or hunks, and passing
+stage-appropriate verification to `zpps-workflow-kernel`. Do not defer stage-owned
+work into one final commit. With checkpoint authority, require `checkpointed` after
+the kernel follows `zmem-author-commits`, validates every message, creates only
+dependency-ordered coherent commits, and inspects every resulting SHA through
+`zmem show`. Preserve unrelated working-tree changes.
+
+Let `zmem-author-commits` decide whether durable memory is warranted. Retain an
+accepted architecture, policy, constraint, or tradeoff and its reason as a selective
+`DECISION`; retain a verified reusable lesson as `LESSON_LEARNT`; leave routine
+implementation and archival checkpoints unannotated. Do not duplicate an earlier
+memory merely because a later checkpoint implements or synchronizes it. Without
+checkpoint authority, return `checkpoint-authority-required` and leave the material
+gate incomplete. A skipped or empty stage records evidence without an empty commit.
 
 ## 1. Define the structural outcome
 
