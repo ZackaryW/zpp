@@ -66,9 +66,9 @@ def mapping_exists(context) -> None:
     assert "version: 1" in mapping.read_text(encoding="utf-8")
 
 
-@then("no OpenLease space is created")
-def no_space(context) -> None:
-    assert context.repository.spaces() == ()
+@then("no session or lease state is created")
+def no_lease_state(context) -> None:
+    assert not context.repository.has_lease_state()
 
 
 @then("the mapping is reported as validated")

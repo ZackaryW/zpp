@@ -73,10 +73,10 @@ def packaged_companion_skills() -> tuple[Skill, ...]:
 
 def packaged_workflow_hook(agent: Agent) -> Hook:
     relative_paths = {
-        Agent.CODEX: ("hooks", "codex", "zpp-session.json"),
-        Agent.CLAUDE: ("hooks", "claude", "zpp-session.json"),
-        Agent.KIMI: ("hooks", "kimi", "zpp-session.toml"),
-        Agent.PI: ("hooks", "pi", "zpp-session.ts"),
+        Agent.CODEX: ("hooks", "codex", "zpp-traits.json"),
+        Agent.CLAUDE: ("hooks", "claude", "zpp-traits.json"),
+        Agent.KIMI: ("hooks", "kimi", "zpp-traits.toml"),
+        Agent.PI: ("hooks", "pi", "zpp-traits.ts"),
     }
     resource = files("zpp.artifacts").joinpath(*relative_paths[agent])
     with as_file(resource) as path:

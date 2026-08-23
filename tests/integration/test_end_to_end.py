@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 from agent_router import AgentEnvironment, AgentRouter, Scope
@@ -15,6 +16,11 @@ from zpp.cli import app
 from zpp.cli.reset import SUPPORTED_AGENTS
 
 runner = CliRunner()
+
+
+def _git_repository(repository: Path) -> None:
+    repository.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "--quiet", str(repository)], check=True)
 
 
 def test_confirmed_reset_removes_every_agent_user_projection_through_router(
@@ -42,7 +48,7 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
         routers[agent] = router
 
     zpp_home = tmp_path / "zpp-home"
-    state = zpp_home / "openlease"
+    state = zpp_home / "bundler"
     state.mkdir(parents=True)
     (state / "old.json").write_text("old")
     result = runner.invoke(
@@ -51,7 +57,7 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
     )
 
     assert result.exit_code == 0, result.output
-    assert list(state.iterdir()) == []
+    assert not (state / "old.json").exists()
     for agent, router in routers.items():
         assert router.inspect_skill(skill, scope=Scope.USER).status == "absent"
         assert all(
@@ -109,7 +115,7 @@ def test_init_regenerates_and_reset_force_removes_openspec_skills(
     assert not generated.exists()
     assert not (user_home / ".codex/skills/zpp-configure-behave").exists()
     assert not (user_home / ".codex/skills/zpp-author-trait").exists()
-    assert (zpp_home / "openlease").is_dir()
+    assert (zpp_home / "bundler").is_dir()
 
 
 def test_reset_preserves_modified_packaged_authoring_skill_and_state(
@@ -125,7 +131,7 @@ def test_reset_preserves_modified_packaged_authoring_skill_and_state(
     skill = user_home / ".codex/skills/zpp-author-trait/SKILL.md"
     skill.write_text(skill.read_text() + "\nlocal modification\n")
     zpp_home = tmp_path / "zpp-home"
-    state = zpp_home / "openlease"
+    state = zpp_home / "bundler"
     state.mkdir(parents=True)
     marker = state / "old.json"
     marker.write_text("old")
@@ -145,7 +151,7 @@ def test_no_space_repository_resolution_selects_python_and_flutter(
     tmp_path: Path,
 ) -> None:
     repository = tmp_path / "repository"
-    repository.mkdir()
+    _git_repository(repository)
     local = repository / ".zpp"
     local.mkdir()
     (local / "zpp.toml").write_text(
@@ -191,6 +197,7 @@ def test_invalid_repository_trait_reports_clean_cli_error(tmp_path: Path) -> Non
     repository = tmp_path / "repository"
     traits = repository / ".zpp" / "traits"
     traits.mkdir(parents=True)
+    _git_repository(repository)
     (traits / "bdd.toml").write_text("[meta]\nselection='first-win'\n[[trait]]\n")
 
     result = runner.invoke(
@@ -205,7 +212,7 @@ def test_invalid_repository_trait_reports_clean_cli_error(tmp_path: Path) -> Non
 
 def test_unknown_workflow_stage_reports_clean_cli_error(tmp_path: Path) -> None:
     repository = tmp_path / "repository"
-    repository.mkdir()
+    _git_repository(repository)
 
     result = runner.invoke(
         app,
@@ -223,6 +230,7 @@ def test_manual_trait_requires_direct_query_and_uses_normal_matching(
     repository = tmp_path / "repository"
     traits = repository / ".zpp" / "traits"
     traits.mkdir(parents=True)
+    _git_repository(repository)
     (repository / ".zpp" / "zpp.toml").write_text("[facet]\nlanguage='python'\n")
     (traits / "manual-policy.toml").write_text(
         "[meta]\nselection='all'\nactivation='manual'\n"
@@ -249,6 +257,7 @@ def test_always_run_trait_bypasses_activation_and_preserves_extend(
     repository = tmp_path / "repository"
     traits = repository / ".zpp" / "traits"
     traits.mkdir(parents=True)
+    _git_repository(repository)
     (traits / "baseline.toml").write_text(
         "[meta]\nselection='extend'\nactivation='always-run'\n"
         "[[trait]]\n[trait.facet]\nlanguage='python'\n"
@@ -274,7 +283,7 @@ def test_unknown_direct_trait_query_returns_no_unrelated_output(
     tmp_path: Path,
 ) -> None:
     repository = tmp_path / "repository"
-    repository.mkdir()
+    _git_repository(repository)
 
     result = runner.invoke(
         app,
@@ -290,7 +299,7 @@ def test_reconciled_packaged_families_resolve_by_their_current_boundaries(
     tmp_path: Path,
 ) -> None:
     repository = tmp_path / "repository"
-    repository.mkdir()
+    _git_repository(repository)
 
     execution = runner.invoke(
         app,

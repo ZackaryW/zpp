@@ -70,14 +70,14 @@ def test_reproject_workflow_hook_removes_current_then_installs() -> None:
             return expected
 
     router = Router()
-    hook = SimpleNamespace(name="zpp-session")
+    hook = SimpleNamespace(name="zpp-traits")
 
     result = reproject_workflow_hook(router, hook, Scope.USER, None)
 
     assert result is expected
     assert events == [
         ("inspect", hook, Scope.USER, None),
-        ("remove", "zpp-session", Scope.USER, None),
+        ("remove", "zpp-traits", Scope.USER, None),
         ("install", hook, Scope.USER, None),
     ]
 
@@ -254,10 +254,10 @@ def test_remove_workflow_hook_delegates_exact_arguments() -> None:
     router = Router()
     project = Path("/repository")
 
-    result = remove_workflow_hook(router, "zpp-session", Scope.PROJECT, project)
+    result = remove_workflow_hook(router, "zpp-traits", Scope.PROJECT, project)
 
     assert result is expected
-    assert router.call == ("zpp-session", Scope.PROJECT, project)
+    assert router.call == ("zpp-traits", Scope.PROJECT, project)
 
 
 def test_active_trait_sources_use_only_router_selected_toml(tmp_path: Path) -> None:

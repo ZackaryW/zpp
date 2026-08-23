@@ -18,7 +18,7 @@ function currentTraits(cwd: string): Promise<string> {
   });
 }
 
-export default function zppSession(pi: ExtensionAPI) {
+export default function zppTraits(pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event, context) => {
     try {
       const traits = await currentTraits(event.systemPromptOptions.cwd);

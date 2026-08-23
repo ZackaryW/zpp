@@ -10,14 +10,13 @@ import typer
 from agent_router import Agent
 
 from zpp.artifacts import packaged_trait_source
-from zpp.cli.shared import agent_router, emit_json, runtime, user_action
+from zpp.cli.shared import agent_router, emit_json, user_action
 from zpp.core.application import TraitApplication, TraitInvocation
 from zpp.core.evidence import EvidenceRuntime
 from zpp.core.rendering import render_prompt_bodies
 from zpp.utils.agent_router import active_trait_sources
 from zpp.utils.agent_selection import AgentSelectionError, select_one_agent
-from zpp.utils.coordination import OpenLeaseCoordination
-from zpp.utils.openlease import create_trait_documents, create_zpp_openlease
+from zpp.utils.bundler import BundlerDocuments
 
 
 def _facets(values: list[str] | None) -> MappingProxyType:
@@ -68,20 +67,6 @@ def resolve(
             help="Include at most one invoking agent's active trait artifacts.",
         ),
     ] = None,
-    space: Annotated[
-        str | None,
-        typer.Option(
-            "--space",
-            help="Include sources from one selected OpenLease space.",
-        ),
-    ] = None,
-    authority: Annotated[
-        str | None,
-        typer.Option(
-            "--authority",
-            help="Resolve selected-space sources for one authority target.",
-        ),
-    ] = None,
     explain: Annotated[
         bool,
         typer.Option("--explain", help="Include deterministic selection evidence."),
@@ -98,28 +83,10 @@ def resolve(
     except AgentSelectionError as error:
         raise typer.BadParameter(str(error), param_hint="--agent") from error
 
-    documents = create_trait_documents(runtime(ctx).state_root)
+    del ctx
+    documents = BundlerDocuments()
     repository = user_action(lambda: documents.read_repository(root))
-    selected_space = space or os.environ.get("OPENLEASE_SPACE")
-    session_note: str | None = None
-    if selected_space is None:
-        selected_space, session_note = _establish_session(runtime(ctx).state_root, root)
-    if authority is not None and selected_space is None:
-        raise typer.BadParameter(
-            "--authority requires an established session, --space, or OPENLEASE_SPACE",
-            param_hint="--authority",
-        )
-    space_sources = (
-        ()
-        if selected_space is None
-        else user_action(
-            lambda: documents.read_space_sources(
-                root,
-                selected_space,
-                authority=authority,
-            )
-        )
-    )
+    store_sources = user_action(lambda: documents.read_store_chain(root))
     plugin_sources = (
         ()
         if selected_agent is None
@@ -129,7 +96,7 @@ def resolve(
     )
     sources = (
         repository.source,
-        *space_sources,
+        *store_sources,
         *plugin_sources,
         packaged_trait_source(),
     )
@@ -166,24 +133,8 @@ def resolve(
                     for body in result.bodies
                 ],
                 "ZPP_CONTEXT": result.context,
-                "session": selected_space,
-                "session_note": session_note,
                 "explanation": dict(result.explanation),
             }
         )
         return
     typer.echo(render_prompt_bodies(result.resolution), nl=False)
-
-
-def _establish_session(state_root: Path, root: Path) -> tuple[str | None, str | None]:
-    """Establish this worktree's session so space-scoped sources resolve.
-
-    Resolution is read-only and must keep working outside a Git worktree, so a
-    directory that cannot hold a session resolves its repository, agent, and
-    packaged sources and reports why no session was established.
-    """
-    coordination = OpenLeaseCoordination(create_zpp_openlease(state_root))
-    try:
-        return coordination.establish_session(root).space_id, None
-    except Exception as error:  # reported to the caller, never silently dropped
-        return None, f"{type(error).__name__}: {error}"

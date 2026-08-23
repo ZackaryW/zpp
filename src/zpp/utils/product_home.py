@@ -38,31 +38,31 @@ def validate_reset_boundary(home: ZppHome) -> None:
 
     state_root = home.state_root
     if state_root.is_symlink():
-        raise ValueError("ZPP openlease state cannot be a symlink")
+        raise ValueError("ZPP Bundler state cannot be a symlink")
     if state_root.exists() and not state_root.is_dir():
-        raise ValueError("ZPP openlease state must be a directory")
+        raise ValueError("ZPP Bundler state must be a directory")
 
 
 @dataclass(slots=True)
-class PreparedOpenLeaseState:
+class PreparedBundlerState:
     home: ZppHome
     staging_root: Path
 
     @property
     def staged_state(self) -> Path:
-        return self.staging_root / "openlease"
+        return self.staging_root / "bundler"
 
     @classmethod
-    def prepare(cls, home: ZppHome) -> PreparedOpenLeaseState:
+    def prepare(cls, home: ZppHome) -> PreparedBundlerState:
         validate_reset_boundary(home)
         home.path.mkdir(parents=True, exist_ok=True)
         staging_root = Path(tempfile.mkdtemp(prefix=".zpp-reset-", dir=home.path))
         prepared = cls(home, staging_root)
         try:
             prepared.staged_state.mkdir()
-            from zpp.utils.openlease import create_zpp_openlease
+            from openspec_bundler import LeaseStateRepository
 
-            create_zpp_openlease(prepared.staged_state).snapshot()
+            LeaseStateRepository(prepared.staged_state).read()
         except BaseException:
             prepared.discard()
             raise
@@ -71,12 +71,12 @@ class PreparedOpenLeaseState:
     def replace(self) -> None:
         validate_reset_boundary(self.home)
         if self.staging_root.is_symlink() or not self.staging_root.is_dir():
-            raise ValueError("prepared OpenLease staging root is unavailable")
+            raise ValueError("prepared Bundler staging root is unavailable")
         if self.staged_state.is_symlink() or not self.staged_state.is_dir():
-            raise ValueError("prepared OpenLease state is unavailable")
+            raise ValueError("prepared Bundler state is unavailable")
 
         current = self.home.state_root
-        backup = self.staging_root / "previous-openlease"
+        backup = self.staging_root / "previous-bundler"
         had_current = current.exists()
         if had_current:
             current.rename(backup)

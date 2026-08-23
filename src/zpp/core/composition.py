@@ -12,7 +12,7 @@ from zpp.core.models import (
 
 _SOURCE_RANK = {
     SourceKind.REPOSITORY: 0,
-    SourceKind.SPACE: 1,
+    SourceKind.STORE: 1,
     SourceKind.GLOBAL: 2,
 }
 

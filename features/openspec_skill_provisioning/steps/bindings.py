@@ -79,6 +79,11 @@ def contains_zmem(context) -> None:
     assert {"zmem-author-commits", "zmem-query-memory"} <= set(context.companions)
 
 
+@then("it contains no workspace-management skill")
+def excludes_workspace_management(context) -> None:
+    assert "zpp-workspace-management" not in context.companions
+
+
 @then("it contains no withdrawn zmem extension skill")
 def excludes_withdrawn(context) -> None:
     assert "zmem-design-extensions" not in context.companions
@@ -126,9 +131,9 @@ def generated_removed(context) -> None:
     assert not context.home.skill_path(support.GENERATED_SKILL).exists()
 
 
-@then("managed OpenLease state is replaced")
+@then("managed Bundler state is replaced")
 def state_replaced(context) -> None:
-    assert (context.home.product_home / "openlease").is_dir()
+    assert (context.home.product_home / "bundler").is_dir()
 
 
 @then("ZPP reports the agent as already initialized")

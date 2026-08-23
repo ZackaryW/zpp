@@ -41,7 +41,7 @@ After an eligible stage runs, record its observed result. `clarify` and
 | `mature-utilities` | Through `plan-utilities` | Fail-first proof, minimum implementation, independent verification, and checkpoint for planned utility behavior |
 | `wire` | Through `mature-utilities` | Public-boundary bindings and product composition for approved behavior and utilities |
 | `form-specs` | Through `wire` | Canonical specification reconciliation for every mature behavior or accepted capability delta |
-| `finalize` | All prior stages | Complete verification, retained-successor reconciliation, OpenSpec archival, checkpoint-series verification, and remaining finalization-owned commit work |
+| `finalize` | All prior stages | Complete verification, Bundler bundle audit and completion, OpenSpec archival, checkpoint-series verification, and remaining finalization-owned commit work |
 
 For `clarify`, inventory every outcome-changing owner decision that remains after
 reconciling accepted authority and repository evidence. The stage cannot complete

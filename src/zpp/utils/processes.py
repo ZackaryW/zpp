@@ -9,6 +9,7 @@ from typing import Protocol
 
 @dataclass(frozen=True, slots=True)
 class ProcessResult:
+    argv: tuple[str, ...]
     returncode: int
     stdout: str
     stderr: str
@@ -29,4 +30,6 @@ class SubprocessRunner:
             errors="replace",
             check=False,
         )
-        return ProcessResult(completed.returncode, completed.stdout, completed.stderr)
+        return ProcessResult(
+            tuple(argv), completed.returncode, completed.stdout, completed.stderr
+        )

@@ -14,7 +14,6 @@ from zpp.utils.agent_selection import (
     select_many_agents,
     select_one_agent,
 )
-from zpp.utils.openlease import create_zpp_openlease
 
 
 @given("a disposable repository")
@@ -25,7 +24,6 @@ def disposable_repository(context) -> None:
 @given("a disposable repository with a committed base")
 def committed_repository(context) -> None:
     context.repository = support.Repository()
-    context.repository.init_git()
     (context.repository.root / "tracked.txt").write_text("base\n", encoding="utf-8")
     context.repository.git("add", ".")
     context.repository.git("commit", "--quiet", "-m", "base")
@@ -101,6 +99,7 @@ def cancel_prompt(context) -> None:
 @when("the caller initializes repository behavior verification")
 def initialize_behavior(context) -> None:
     context.behavior_home = context.repository.base / "behavior-home"
+    context.state_home = context.behavior_home
     context.result = context.repository.run_in_root(
         "--path", str(context.behavior_home), "behave", "init"
     )
@@ -139,9 +138,14 @@ def workflow_operations(context) -> None:
         assert name in context.workflow_help.stdout, name
 
 
-@then("no space or legacy install-workflow command is exposed")
+@then("the minimal lease bridge is exposed")
+def lease_bridge(context) -> None:
+    assert "lease" in support.root_command_names()
+
+
+@then("no workspace or legacy install-workflow command is exposed")
 def no_legacy_commands(context) -> None:
-    assert "space" not in support.root_command_names()
+    assert "workspace" not in support.root_command_names()
     assert "install-workflow" not in context.root_help.stdout
 
 
@@ -169,10 +173,11 @@ def mapping_exists(context) -> None:
     assert (context.repository.root / "zpp.behave.yaml").is_file()
 
 
-@then("no OpenLease space is created")
-def no_space(context) -> None:
-    snapshot = create_zpp_openlease(context.behavior_home / "openlease").snapshot()
-    assert snapshot.spaces == ()
+@then("no session claim permit or lease is created")
+def no_coordination_state(context) -> None:
+    assert not (context.state_home / "bundler").exists()
+    if hasattr(context, "resolution"):
+        assert "session" not in context.resolution
 
 
 @then("the router resolves the user home and that repository as its project root")
@@ -181,44 +186,30 @@ def router_bound(context) -> None:
     assert context.router.environment.project_root == context.repository.root.resolve()
 
 
-@given("a disposable repository with an established session")
-def repository_with_session(context) -> None:
-    context.coordination = support.coordination_environment()
-    context.worktree = context.coordination.worktree()
-    context.session = context.coordination.workspace_json(
-        "session", str(context.worktree)
-    )
-
-
-@given("a disposable repository containing trait documents that no command targets")
-def untargeted_repository(context) -> None:
-    context.coordination = support.coordination_environment()
-    context.worktree = context.coordination.worktree()
-    traits = context.worktree / ".zpp" / "traits"
+@given("a disposable repository with repository trait documents")
+def repository_with_traits(context) -> None:
+    context.repository = support.Repository()
+    traits = context.repository.root / ".zpp" / "traits"
     traits.mkdir(parents=True)
-    (traits / "bdd.toml").write_text('[meta]\nselection = "all"\n', encoding="utf-8")
+    (traits / "repository-policy.toml").write_text(
+        '[meta]\nselection = "all"\n\n[[trait]]\n'
+        '[trait.content]\nbody = "bounded repository"\n',
+        encoding="utf-8",
+    )
 
 
 @when("the caller resolves that repository's traits")
 def resolve_repository_traits(context) -> None:
-    context.resolution = context.coordination.resolve_json(str(context.worktree))
+    context.state_home = context.repository.base / "resolution-home"
+    result = context.repository.run_in_root(
+        "--path", str(context.state_home), "resolve", ".", "--explain"
+    )
+    assert result.exit_code == 0, result.output
+    import json
+
+    context.resolution = json.loads(result.stdout)
 
 
 @then("the bounded repository context resolves")
 def repository_context_resolves(context) -> None:
     assert context.resolution["bodies"]
-
-
-@then("no affected claim is required and no permit is held")
-def no_claim_and_no_permit(context) -> None:
-    coordination = getattr(context, "coordination", None)
-    if coordination is not None:
-        assert coordination.state()["leases"] == []
-        return
-    snapshot = create_zpp_openlease(context.behavior_home / "openlease").snapshot()
-    assert snapshot.leases == ()
-
-
-@then("no session is established and no topology is registered")
-def nothing_registered(context) -> None:
-    assert not (context.coordination.home / "openlease").exists()

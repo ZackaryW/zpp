@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
+import importlib
 import json
+import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from openspec_bundler import InMemoryStoreProvider, RegisteredStore
 from typer.testing import CliRunner
 
 from zpp.artifacts import packaged_companion_skills
 from zpp.cli import app
+from zpp.utils.bundler import BundlerLeaseService
+
+STORE_UUID = "8f85ef9f-d18a-4787-903e-1ecb920acb77"
 
 CODEX_SKILLS = ".codex/skills"
 WORKFLOW_SKILL = "zpp-workflow"
@@ -26,17 +32,20 @@ class Environment:
 
     def __init__(self) -> None:
         self._temporary = TemporaryDirectory()
-        root = Path(self._temporary.name)
-        self.user_home = root / "user"
+        self.root = Path(self._temporary.name)
+        self.user_home = self.root / "user"
         self.user_home.mkdir()
-        self.zpp_home = root / "zpp-home"
+        self.zpp_home = self.root / "zpp-home"
         self._patch = patch.object(
             Path, "home", classmethod(lambda cls: self.user_home)
         )
         self._patch.start()
+        self._lease_patch = None
         self.runner = CliRunner()
 
     def close(self) -> None:
+        if self._lease_patch is not None:
+            self._lease_patch.stop()
         self._patch.stop()
         self._temporary.cleanup()
 
@@ -50,3 +59,20 @@ class Environment:
 
     def workflow_skill_document(self) -> Path:
         return self.user_home / CODEX_SKILLS / WORKFLOW_SKILL / "SKILL.md"
+
+    def configure_store(self) -> Path:
+        worktree = self.root / "worktree"
+        worktree.mkdir()
+        subprocess.run(["git", "init", "--quiet", str(worktree)], check=True)
+        manifest = worktree / "openspec" / "bundler.toml"
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text(f'version = 1\nuuid = "{STORE_UUID}"\n', encoding="utf-8")
+        provider = InMemoryStoreProvider((RegisteredStore("store", worktree),))
+        module = importlib.import_module("zpp.cli.lease")
+        self._lease_patch = patch.object(
+            module,
+            "_service",
+            lambda ctx: BundlerLeaseService(ctx.obj.home, provider),
+        )
+        self._lease_patch.start()
+        return worktree

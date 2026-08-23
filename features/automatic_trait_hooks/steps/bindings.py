@@ -91,84 +91,33 @@ def removed_pair(context) -> None:
     assert {record["request"] for record in context.records} == {"remove"}
 
 
-@given("a disposable repository with no established session")
-def repository_without_session(context) -> None:
-    from features.support.coordination import CoordinationEnvironment
-
-    context.coordination = CoordinationEnvironment()
-    context.worktree = context.coordination.worktree()
-
-
-@given(
-    "a disposable repository with an established session "
-    "contributing a space-scoped trait source"
-)
-def repository_with_space_source(context) -> None:
-    repository_without_session(context)
-    context.session = context.coordination.workspace_json(
-        "session", str(context.worktree)
-    )
-    context.expected_body = _bind_space_source(
-        context.coordination, context.worktree, context.session["space"]
-    )
-
-
-def _bind_space_source(env, root, space) -> str:
-    from openlease import ConfigurationLayout
-
-    from zpp.utils.openlease import create_zpp_openlease
-
-    document = root / "hook-tooling.toml"
-    document.write_text(
-        '[meta]\nselection = "all"\n\n[[trait]]\n[trait.content]\n'
-        'body = "Hook space-scoped body."\n',
-        encoding="utf-8",
-    )
-    create_zpp_openlease(env.home / "openlease").bind_configuration_source(
-        "zpp.traits",
-        "hook-tooling",
-        document,
-        "space",
-        space,
-        codec="toml",
-        layout=ConfigurationLayout.DEDICATED.value,
-    )
-    return "Hook space-scoped body."
+@given("a disposable repository with no Bundler lease state")
+def repository_without_state(context) -> None:
+    context.repository = support.HookRepository()
 
 
 @when("the packaged hook resolution runs against that repository")
 def hook_resolution(context) -> None:
-    context.resolution = context.coordination.resolve_json(
-        "--agent", "claude", str(context.worktree)
-    )
+    context.resolution = context.repository.resolve()
 
 
-@when(
-    "the packaged hook resolution runs with no explicit space argument "
-    "and no space environment value"
-)
-def hook_resolution_without_space(context) -> None:
-    hook_resolution(context)
-
-
-@then("the session for that repository is established")
-def hook_established_session(context) -> None:
-    assert context.resolution["session"]
-    assert context.resolution["session_note"] is None
-
-
-@then("the resolved sources include that space-scoped source")
-def hook_space_source(context) -> None:
+@then("the repository traits resolve")
+def hook_repository_source(context) -> None:
     bodies = [item["body"] for item in context.resolution["bodies"]]
-    assert context.resolution["session"] == context.session["space"]
-    assert context.expected_body in bodies
+    assert "hook repository body" in bodies
 
 
-@then("no affected claim is declared and no permit is acquired")
-def hook_no_permit(context) -> None:
-    state = context.coordination.state()
-    assert state["leases"] == []
-    assert all(
-        not item["affected_repository_ids"] and not item["affected_authority_ids"]
-        for item in state["spaces"]
-    )
+@then("no session or Bundler lease state is created")
+def no_coordination_state(context) -> None:
+    assert "session" not in context.resolution
+    assert not context.repository.environment.home.exists()
+
+
+@then("the hook identity is zpp-traits")
+def hook_identity(context) -> None:
+    assert context.hook.name == "zpp-traits"
+
+
+@then("no zpp-session compatibility hook is packaged")
+def no_compatibility_hook(context) -> None:
+    assert "zpp-session" not in context.hook.name

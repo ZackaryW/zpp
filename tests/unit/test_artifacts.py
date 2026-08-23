@@ -146,7 +146,6 @@ def test_packaged_companion_inventory_binds_the_vendored_zmem_skills() -> None:
         "zpp-author-trait",
         "zpp-configure-behave",
         "zpp-maintain-openspec",
-        "zpp-workspace-management",
     )
 
 
@@ -283,7 +282,7 @@ def test_packaged_workflow_hook_is_typed_and_resolves_for_its_agent(
         item.content.decode("utf-8") for item in hook.files
     )
 
-    assert hook.name == "zpp-session"
+    assert hook.name == "zpp-traits"
     assert hook.compatible_agents == frozenset({agent})
     assert f'"--agent", "{agent.value}"' in payload or (
         f"--agent {agent.value} ." in payload

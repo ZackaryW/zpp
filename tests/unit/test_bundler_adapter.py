@@ -34,7 +34,7 @@ def _store(
     return RegisteredStore(root.name, root)
 
 
-def test_home_and_process_boundaries_are_openlease_free(tmp_path: Path) -> None:
+def test_home_and_process_boundaries_are_provider_free(tmp_path: Path) -> None:
     home = ZppHome(tmp_path / "home")
     result = SubprocessRunner().run(("git", "--version"), cwd=tmp_path)
 

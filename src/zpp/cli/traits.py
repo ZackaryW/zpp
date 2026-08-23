@@ -5,11 +5,11 @@ from typing import Annotated
 
 import typer
 
-from zpp.cli.shared import emit_json, runtime, user_action
-from zpp.utils.openlease import create_trait_documents
+from zpp.cli.shared import emit_json, user_action
+from zpp.utils.bundler import BundlerDocuments
 
 app = typer.Typer(
-    help="Initialize exact repository trait documents through OpenLease.",
+    help="Initialize exact repository trait attachments through Bundler.",
     no_args_is_help=True,
 )
 
@@ -28,7 +28,8 @@ def initialize(
 ) -> None:
     """Initialize only the requested context or trait-family document."""
     root = target.resolve()
-    documents = create_trait_documents(runtime(ctx).state_root)
+    del ctx
+    documents = BundlerDocuments()
     if document == "context":
         created = user_action(lambda: documents.initialize_context(root))
     else:

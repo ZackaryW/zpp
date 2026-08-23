@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 
 import pytest
-from openlease.utils.processes import ProcessResult
 
 from zpp.core.behavior import BehaviorAdapterRegistry, BehaviorProviderError
 from zpp.utils.behavior_providers import ArgvAdapter, GoTaskAdapter, NxAdapter
+from zpp.utils.processes import ProcessResult
 
 
 class FakeRunner:

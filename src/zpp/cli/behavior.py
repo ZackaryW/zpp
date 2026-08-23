@@ -5,15 +5,14 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from openlease.utils.git_adapter import GitAdapter
 
-from zpp.cli.shared import runtime, user_action
+from zpp.cli.shared import user_action
 from zpp.core.behavior import (
     BehaviorExecutionError,
     BehaviorExecutionReport,
     BehaviorRunInput,
 )
-from zpp.utils.openlease import OpenLeaseBehaviorDocuments, create_zpp_openlease
+from zpp.utils.behavior import BundlerBehaviorDocuments, GitPaths
 
 
 def behave(
@@ -56,12 +55,11 @@ def behave(
     if (base is None) != (head is None):
         raise typer.BadParameter("--base and --head must be supplied together")
 
-    root = user_action(lambda: GitAdapter().inspect(Path.cwd()).root)
+    del ctx
+    root = user_action(lambda: GitPaths().root(Path.cwd()))
     path = root / "zpp.behave.yaml"
     existed = path.is_file()
-    documents = OpenLeaseBehaviorDocuments(
-        create_zpp_openlease(runtime(ctx).state_root)
-    )
+    documents = BundlerBehaviorDocuments()
     if command == "init":
         report = _behavior_action(lambda: documents.initialize(root))
         typer.echo(f"Behavior mapping {'validated' if existed else 'created'}: {path}")

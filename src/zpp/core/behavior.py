@@ -6,9 +6,9 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Annotated, Any, Protocol
 
-from openlease.utils.processes import ProcessResult
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from zpp.utils.processes import ProcessResult
 from zpp.utils.repository_paths import (
     RepositoryPathError,
     glob_full_match,

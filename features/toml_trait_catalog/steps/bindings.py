@@ -51,62 +51,6 @@ def document_bad_facet(context) -> None:
     }
 
 
-@given("repository space and global sources contribute ordered bdd documents")
-def layered_sources(context) -> None:
-    context.decoded = (
-        support.decode(
-            support.document(
-                support.flavor("global one"), support.flavor("global two")
-            ),
-            kind=SourceKind.GLOBAL,
-            identifier="global",
-        ),
-        support.decode(
-            support.document(support.flavor("space one")),
-            kind=SourceKind.SPACE,
-            identifier="space",
-        ),
-        support.decode(
-            support.document(support.flavor("repository one"), activation="manual"),
-            kind=SourceKind.REPOSITORY,
-            identifier="repository",
-        ),
-    )
-
-
-@given("the repository bdd document declares repository-overwrite mode")
-def overwrite_sources(context) -> None:
-    context.decoded = (
-        support.decode(
-            support.document(support.flavor("global one")),
-            kind=SourceKind.GLOBAL,
-            identifier="global",
-        ),
-        support.decode(
-            support.document(support.flavor("space one")),
-            kind=SourceKind.SPACE,
-            identifier="space",
-        ),
-        support.decode(
-            support.document(
-                support.flavor("repository one"),
-                selection="first-win",
-                mode="repository-overwrite",
-            ),
-            kind=SourceKind.REPOSITORY,
-            identifier="repository",
-        ),
-    )
-
-
-@given("a global trait document declares repository-overwrite mode")
-def global_overwrite(context) -> None:
-    context.values = support.document(
-        support.flavor("body"), mode="repository-overwrite"
-    )
-    context.kind = SourceKind.GLOBAL
-
-
 @when("ZPP loads the trait document")
 def load_document(context) -> None:
     context.decoded_document = support.decode(context.values)
@@ -121,11 +65,6 @@ def validate_document(context) -> None:
         context.error = error
     else:
         context.error = None
-
-
-@when("ZPP composes the effective bdd family")
-def compose_family(context) -> None:
-    context.composed = support.compose(*context.decoded)
 
 
 @then("the document basename identifies the bdd family")
@@ -172,41 +111,3 @@ def failure_identifies(context, fragment: str) -> None:
 @then("the failure is a trait validation error rather than a stack trace")
 def failure_is_typed(context) -> None:
     assert type(context.error).__name__ == "TraitValidationError"
-
-
-@then("repository flavors precede space flavors which precede global flavors")
-def layered_order(context) -> None:
-    assert support.bodies(context.composed) == [
-        "repository one",
-        "space one",
-        "global one",
-        "global two",
-    ]
-
-
-@then("the repository document supplies the effective activation policy")
-def repository_activation(context) -> None:
-    assert context.composed.activation is ActivationMode.MANUAL
-
-
-@then("only repository flavors remain eligible for selection")
-def only_repository(context) -> None:
-    assert support.bodies(context.composed) == ["repository one"]
-
-
-@when("ZPP composes that source contribution")
-def compose_contribution(context) -> None:
-    decoded = support.decode(context.values, kind=context.kind)
-    try:
-        support.compose(decoded)
-    except Exception as error:
-        context.error = error
-    else:
-        context.error = None
-
-
-@then("the contribution is rejected as valid only for repository sources")
-def contribution_rejected(context) -> None:
-    assert context.error is not None, "contribution was accepted"
-    assert type(context.error).__name__ == "CompositionError"
-    assert "repository-overwrite" in str(context.error)

@@ -33,11 +33,11 @@ which = "uv"
 body = "Use uv and the repository's established Python test runner."
 ```
 
-`first-win` retains the first match in repository → selected space → global
+`first-win` retains the first match in repository → selected store chain → global
 order. `all` retains every match. `extend` removes a generic match when a
 matching flavor has a strict superset of its facets, while retaining independent
 specializations. A repository document can set
-`mode = "repository-overwrite"` to replace space and global contributions for
+`mode = "repository-overwrite"` to replace store and global contributions for
 that family explicitly.
 
 Activation defaults to `automatic`, which uses normal facet and evidence
@@ -78,39 +78,43 @@ zpp [--path ZPP_HOME] COMMAND
 zpp init [--agent AGENT ...] [--force] [--json]
 zpp open
 zpp reset --yes [--json]
-zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--space SPACE [--authority AUTHORITY]] [--explain]
+zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--explain]
 zpp behave init
 zpp behave COMMAND [--all | --target TARGET ... | --gate GATE | --base REV --head REV]
 zpp trait init context|FAMILY [TARGET]
+zpp lease acquire --owner OWNER --member UUID:CHANGE [--member UUID:CHANGE ...]
+zpp lease status
+zpp lease audit --bundle UUID --path PATH [--path PATH ...]
+zpp lease archive --bundle UUID --owner OWNER --member UUID:CHANGE
+zpp lease complete|abandon --bundle UUID --owner OWNER
 zpp workflow install|update|remove [--agent AGENT ...] [--target PATH | --global]
 ```
 
 The root `--path` option selects ZPP's home. It defaults to `~/.zpp`, and every
-OpenLease-backed command uses only that home's `openlease` child as managed
+Bundler lease command uses only that home's `bundler` child as managed
 state. Merely selecting a home does not create it. `zpp open` creates the
 selected home when absent and opens that exact directory in the native file
-manager without initializing OpenLease or interpreting the other contents.
+manager without initializing Bundler state or interpreting the other contents.
 
 `zpp reset --yes` preflights every supported agent's ZPP-owned user-scope
-`zpp-workflow` skill, every packaged companion skill, and `zpp-session` hook
+`zpp-workflow` skill, every packaged companion skill, and `zpp-traits` hook
 through Agent Router. If that preflight succeeds, reset
 removes those intact packaged assets normally and force-deletes the six
 canonical Agent Router-owned OpenSpec skills for each agent by stable name. A
 modified packaged companion skill remains a conflict. A modified generated
 skill is removed with its ownership state and no retained history; an unmanaged
 same-named skill is preserved as a conflict. Reset never regenerates OpenSpec.
-Only after all removals succeed does it replace the selected home's `openlease`
+Only after all removals succeed does it replace the selected home's `bundler`
 child. It preserves the home itself, repository `.zpp` documents,
 `zpp.behave.yaml`, project-scope projections, plugins, worktrees, and unrelated
-files. A removal failure leaves prior OpenLease state unchanged and a retry
+files. A removal failure leaves prior Bundler state unchanged and a retry
 accepts assets already removed. Reset has no global-trait overwrite mode.
 Successful reset prints one concise summary line by default; `--json` emits the
 complete inspection, removal, and state report.
 
-`resolve --space` adds one explicitly selected OpenLease space;
-`OPENLEASE_SPACE` may supply the same selection. `--authority` narrows that
-selected-space resolution and therefore requires either `--space` or
-`OPENLEASE_SPACE`.
+Resolution is read-only and creates no lease state. If the target is inside a
+registered OpenSpec store, ZPP composes only that store's root-to-target parent
+chain. Sibling stores never contribute.
 
 `--stage` accepts only `clarify`, `shape`, `plan-utilities`,
 `mature-utilities`, `wire`, `form-specs`, or `finalize`. Stage is protected
@@ -126,7 +130,7 @@ agent's effective plugin artifacts.
 `zpp init` requires the local `openspec` executable. For every selected agent it
 freshly generates and validates the six core OpenSpec operation skills before
 projecting anything, then Agent Router installs or safely reconciles those
-skills together with `zpp-workflow`, `zpp-session`, and every packaged companion
+skills together with `zpp-workflow`, `zpp-traits`, and every packaged companion
 skill in user scope. Re-running `init` is the only OpenSpec
 regeneration operation and also reconciles the packaged companion skills.
 Successful initialization prints one concise summary line by default; `--json`
@@ -163,12 +167,10 @@ version-1 document. `zpp behave COMMAND` uses affected selection by default;
 exact targets, a repository-owned gate, complete selection, and a paired revision
 range are explicit mutually exclusive modes. Commands select one configured
 `argv`, `nx`, or `go-task` provider, and ZPP executes only validated shell-free
-arguments. `zpp behave init` and direct execution use invocation-scoped
-OpenLease bindings and require no registered repository or space. Reconciliation
-callbacks remain inactive unless OpenLease explicitly selects one. When selected,
-the callback uses real repository or cohort context to locate the target, then
-reopens that repository's exact `zpp.behave.yaml` through the same direct binding;
-it requires no managed callback configuration or additional temporary space.
+arguments. `zpp behave init` and direct execution use an exact raw Bundler
+repository attachment. ZPP owns YAML validation, target selection, and process
+execution. Mapping presence never triggers execution, and direct behavior
+commands create no lease state.
 
 Native BDD execution does not require `zpp.behave.yaml`. The consolidated
 workflow may run an established repository Behave, Cucumber, or other BDD
@@ -176,9 +178,24 @@ surface directly from repository configuration or an explicit owner choice.
 `zpp.behave.yaml` participates only when the repository explicitly chooses
 `zpp behave` for affected-target or gate coordination.
 
-OpenLease owns direct TOML and YAML binding, provenance, selected-space
-configuration, and bounded writes. Existing repository documents can be read from an
-unregistered repository without creating or selecting a space. Agent Router owns
+Bundler owns bounded raw repository attachments, exact `zpp-traits` store
+namespaces, store topology, and durable atomic leases. ZPP owns TOML and YAML
+decoding, repository-plus-store-chain composition, and behavior execution. A
+store declares its UUID, optional parent, and ZPP namespace in its one
+`openspec/bundler.toml` document:
+
+```toml
+version = 1
+uuid = "8f85ef9f-d18a-4787-903e-1ecb920acb77"
+parent = "52b7223b-3d15-4e8a-98f7-d8ddc90fbf1c"
+
+[extensions.zpp-traits]
+```
+
+The workflow acquires one bundle before governed OpenSpec mutation. A requested
+parent holds its descendant closure; independent roots requested together form
+one atomic crew. Finalization audits changed OpenSpec paths, records every
+archive, and completes the bundle only after all members archive. Agent Router owns
 plugin discovery and every workflow skill and native hook destination mutation.
 The installed native context hook invokes `resolve` automatically: Codex and
 Claude Code use JSON SessionStart hooks, Kimi uses a TOML SessionStart hook, and
@@ -189,7 +206,6 @@ skill contains workflow policy and does not bootstrap trait resolution.
 Packaged defaults are source assets under `zpp/artifacts/traits`; this is not a
 required runtime collection layout. The standard families are `bdd`,
 `bdd-structure`, `bdd-execution`, `tdd`, `build`, `dependencies`, `tooling`, and
-`zero-assumptions`. Lease conflicts remain OpenLease behavior and final
-reconciliation remains workflow-skill behavior rather than globally injected
-traits. ZPP 1.x Markdown traits and its seven stage skills are not migration
-inputs.
+`zero-assumptions`. Lease progression remains workflow-skill behavior rather
+than globally injected traits. ZPP 1.x Markdown traits and its seven stage
+skills are not migration inputs.

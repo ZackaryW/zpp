@@ -40,7 +40,7 @@ def test_reset_summary_counts_removed_and_absent_once() -> None:
     )
 
     assert _reset_summary(report) == (
-        "Reset complete: 1 removed, 2 already absent; OpenLease state replaced."
+        "Reset complete: 1 removed, 2 already absent; Bundler state replaced."
     )
 
 

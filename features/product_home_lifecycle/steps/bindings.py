@@ -71,9 +71,9 @@ def home_opened(context) -> None:
     assert context.env.zpp_home.is_dir()
 
 
-@then("it does not initialize the openlease child")
-def openlease_absent(context) -> None:
-    assert not (context.env.zpp_home / "openlease").exists()
+@then("it does not initialize the bundler child")
+def bundler_absent(context) -> None:
+    assert not (context.env.zpp_home / "bundler").exists()
 
 
 @then("ZPP rejects the command and names the required confirmation")
@@ -157,33 +157,31 @@ def sync_uninitialized(context) -> None:
 
 @given("a disposable Git worktree and an absent ZPP home")
 def worktree_and_absent_home(context) -> None:
-    from features.support.coordination import CoordinationEnvironment
-
-    context.coordination = CoordinationEnvironment()
-    context.worktree = context.coordination.worktree()
-    assert not context.coordination.home.exists()
+    context.worktree = context.env.configure_store()
+    assert not context.env.zpp_home.exists()
 
 
-@when("ZPP establishes the session for that worktree")
-def establish_session_for_worktree(context) -> None:
-    context.session = context.coordination.workspace_json(
-        "session", str(context.worktree)
+@when("ZPP automatically acquires a store change bundle")
+def acquire_store_bundle(context) -> None:
+    context.result = context.env.run(
+        "--path",
+        str(context.env.zpp_home),
+        "lease",
+        "acquire",
+        "--owner",
+        "workflow:home-test",
+        "--member",
+        f"{support.STORE_UUID}:home-change",
     )
+    assert context.result.exit_code == 0, context.result.output
 
 
-@then("the selected home and its openlease child exist")
+@then("the selected home and its bundler child exist")
 def home_and_state_exist(context) -> None:
-    assert context.coordination.home.is_dir()
-    assert (context.coordination.home / "openlease").is_dir()
+    assert context.env.zpp_home.is_dir()
+    assert (context.env.zpp_home / "bundler" / "state.json").is_file()
 
 
-@then("that state records the registered repository worktree authority and session")
-def state_records_topology(context) -> None:
-    state = context.coordination.state()
-    assert [item["identifier"] for item in state["repositories"]] == [
-        context.session["repository"]
-    ]
-    assert [item["relative_path"] for item in state["authorities"]] == ["."]
-    assert [item["identifier"] for item in state["spaces"]] == [
-        context.session["space"]
-    ]
+@then("no legacy OpenLease state is created or changed")
+def legacy_state_absent(context) -> None:
+    assert not (context.env.zpp_home / "openlease").exists()

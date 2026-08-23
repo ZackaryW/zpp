@@ -43,10 +43,10 @@ def test_application_resolves_classified_sources_without_layout_assumptions(
             (_document("global body"),),
         ),
         BoundTraitSource(
-            SourceKind.SPACE,
-            "selected-space",
+            SourceKind.STORE,
+            "selected-store",
             0,
-            (_document("space body"),),
+            (_document("store body"),),
         ),
         BoundTraitSource(
             SourceKind.REPOSITORY,

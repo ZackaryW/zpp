@@ -1,4 +1,0 @@
-interface:
-  display_name: "ZPP Workspace Management"
-  short_description: "Coordinate cross-repository ZPP workspaces"
-  default_prompt: "Use $zpp-workspace-management to inspect and coordinate this cross-repository workspace safely."

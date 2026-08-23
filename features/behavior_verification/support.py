@@ -18,7 +18,6 @@ from tempfile import TemporaryDirectory
 from typer.testing import CliRunner
 
 from zpp.cli import app
-from zpp.utils.openlease import create_zpp_openlease
 
 ECHO_ARGV = json.dumps(sys.executable)
 
@@ -84,5 +83,5 @@ class Repository:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("changed\n", encoding="utf-8")
 
-    def spaces(self):
-        return create_zpp_openlease(self.product_home / "openlease").snapshot().spaces
+    def has_lease_state(self) -> bool:
+        return (self.product_home / "bundler").exists()

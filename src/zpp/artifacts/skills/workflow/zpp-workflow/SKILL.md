@@ -1,6 +1,6 @@
 ---
 name: zpp-workflow
-description: Run the complete ZPP product-change workflow through explicit stages while preserving OpenSpec, workspace coordination, Agent Router, verification, and commit authority boundaries.
+description: Run the complete ZPP product-change workflow through explicit stages while preserving OpenSpec, automatic Bundler leases, Agent Router, verification, and commit authority boundaries.
 ---
 
 # ZPP workflow
@@ -105,12 +105,27 @@ owns each OpenSpec operation:
 - `openspec-archive-change` for archiving a completed change.
 
 These skills are component operation integrations, not ZPP stage authorities or
-one-to-one stage aliases. Before performing a cross-repository topology,
-workspace lifecycle, lock, successor, reconciliation, handoff, recovery,
-abandonment, or cleanup operation, name and follow the installed
-`zpp-workspace-management` companion skill. Keep provider-specific operation
-guidance out of this general workflow. Use Agent Router only through its public
-discovery and projection contracts.
+one-to-one stage aliases. Use Agent Router only through its public discovery and
+projection contracts.
+
+## Hold the governed OpenSpec bundle
+
+Before the first OpenSpec mutation for a change set, run `openspec store list
+--json`, select the exact registered stores that own the changes, and retain one
+durable owner identity for the complete workflow run. Invoke `zpp lease acquire`
+once with that owner and one `--member UUID:CHANGE` argument per exact change.
+Keep the returned bundle UUID as workflow state. Bundler expands a requested
+parent through its registered descendants and treats independent requested
+stores as one atomic multi-root bundle. A conflict blocks mutation.
+
+Read-only exploration and trait resolution never acquire a bundle. After
+acquisition, do not reacquire or replace it while any member remains active.
+Before final archival, invoke `zpp lease audit` with every changed OpenSpec path;
+any violation blocks archival. After each successful member archive, invoke
+`zpp lease archive` with the same owner, bundle, and exact member. Invoke
+`zpp lease complete` only after every member archive is recorded. For recovery,
+inspect `zpp lease status`; release retained work only through `zpp lease
+abandon` with the original durable owner identity and explicit owner approval.
 
 The six OpenSpec operation skills must already be available through the
 initialized ZPP agent integration. During a workflow run, never invoke or
@@ -145,12 +160,11 @@ planning directory as a skill installation or use it to justify skill bootstrap.
    and capability-local.
 6. `form-specs`: reconcile the mature green behavior and current change contract
    into canonical OpenSpec specifications, then checkpoint them.
-7. `finalize`: run the complete verification set, delegate inspection and
-   authorized disposition of every retained cross-repository successor or
-   reconciliation item to `zpp-workspace-management`, archive the OpenSpec change,
-   verify the retained checkpoint series, and checkpoint only remaining
-   finalization-owned work. Finalization remains incomplete for every blocked
-   retained item.
+7. `finalize`: run the complete verification set, audit the governed OpenSpec
+   paths, archive each member, record every archive, complete the automatic
+   bundle, verify the retained checkpoint series, and checkpoint only remaining
+   finalization-owned work. Finalization remains incomplete while its bundle is
+   retained or any member is unarchived.
 
 Create or change Gherkin only from accepted externally observable behavior in
 active capability delta specs. Never translate proposals, designs, tasks, docs,
@@ -290,7 +304,7 @@ authority or any failed verification, zmem validation, commit, or resulting-
 commit inspection leaves a material gate incomplete.
 
 Checkpoint authority never includes amend, merge, rebase, push, callback
-selection, conflict reconciliation, inclusion of unrelated work, or any other
+selection, conflict resolution, inclusion of unrelated work, or any other
 component-owned mutation. At `finalize`, verify that every material completed
 gate has its checkpoint evidence, archive the OpenSpec change, and commit only
 the remaining finalization-owned diff. Do not collapse or replace the preceding
@@ -306,10 +320,9 @@ changed product boundary, a missing or changed utility shape, missing authority,
 a failed gate, or a component-owned conflict that requires the owner.
 
 Apart from the narrow checkpoint commit authority carried by explicit end-to-end
-delegation, automatic progression does not itself run verification, choose
-callbacks, reconcile retained work, stage files, commit, merge, rebase, or grant
-authority. Those actions remain subject to their owning stage and component
-contracts.
+delegation, automatic progression does not itself run verification, stage files,
+commit, merge, rebase, or grant authority. Those actions remain subject to their
+owning stage and component contracts.
 
 Ignore retained ZPP 1.x stage skills. Do not invoke, translate, or treat them as
 migration sources.

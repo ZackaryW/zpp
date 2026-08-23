@@ -49,7 +49,6 @@ def normalize_workflow_stage(value: str | None) -> WorkflowStage | None:
 class SourceKind(StrEnum):
     REPOSITORY = "repository"
     STORE = "store"
-    SPACE = "space"
     GLOBAL = "global"
 
 

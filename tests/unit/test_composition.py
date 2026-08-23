@@ -42,7 +42,7 @@ def test_compose_trait_family_orders_sources_and_uses_repository_policy() -> Non
         [
             _document(SourceKind.GLOBAL, "global", "all", "global"),
             _document(SourceKind.REPOSITORY, "repository", "first-win", "repo"),
-            _document(SourceKind.SPACE, "space", "extend", "space"),
+            _document(SourceKind.STORE, "store", "extend", "store"),
         ],
     )
 
@@ -50,14 +50,14 @@ def test_compose_trait_family_orders_sources_and_uses_repository_policy() -> Non
     assert effective.policy_source.identifier == "repository"
     assert [item.flavor.content.body for item in effective.flavors] == [
         "repo",
-        "space",
+        "store",
         "global",
     ]
 
 
 def test_compose_trait_family_preserves_order_inside_each_category() -> None:
-    first = _document(SourceKind.SPACE, "space-first", "all", "first", order=1)
-    second = _document(SourceKind.SPACE, "space-second", "extend", "second", order=2)
+    first = _document(SourceKind.STORE, "store-first", "all", "first", order=1)
+    second = _document(SourceKind.STORE, "store-second", "extend", "second", order=2)
 
     effective = compose_trait_family("bdd", [second, first])
 
@@ -91,12 +91,12 @@ def test_compose_trait_family_uses_highest_precedence_activation() -> None:
     assert effective.activation is ActivationMode.MANUAL
 
 
-def test_repository_overwrite_excludes_space_and_global_contributions() -> None:
+def test_repository_overwrite_excludes_store_and_global_contributions() -> None:
     effective = compose_trait_family(
         "bdd",
         [
             _document(SourceKind.GLOBAL, "global", "all", "global"),
-            _document(SourceKind.SPACE, "space", "all", "space"),
+            _document(SourceKind.STORE, "store", "all", "store"),
             _document(
                 SourceKind.REPOSITORY,
                 "repository",
@@ -110,7 +110,7 @@ def test_repository_overwrite_excludes_space_and_global_contributions() -> None:
     assert effective.mode is CompositionMode.REPOSITORY_OVERWRITE
     assert [item.flavor.content.body for item in effective.flavors] == ["repo"]
     assert [source.identifier for source in effective.excluded_sources] == [
-        "space",
+        "store",
         "global",
     ]
 
@@ -121,10 +121,10 @@ def test_repository_overwrite_is_rejected_for_non_repository_source() -> None:
             "bdd",
             [
                 _document(
-                    SourceKind.SPACE,
-                    "space",
+                    SourceKind.STORE,
+                    "store",
                     "extend",
-                    "space",
+                    "store",
                     mode="repository-overwrite",
                 )
             ],

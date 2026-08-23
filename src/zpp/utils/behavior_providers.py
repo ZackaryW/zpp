@@ -7,10 +7,10 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal
 
-from openlease.utils.processes import ProcessRunner, SubprocessRunner
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from zpp.core.behavior import BehaviorProviderAdapter, BehaviorProviderError
+from zpp.utils.processes import ProcessRunner, SubprocessRunner
 from zpp.utils.repository_paths import (
     RepositoryPathError,
     resolve_repository_file,

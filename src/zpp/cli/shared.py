@@ -11,7 +11,8 @@ from typing import NoReturn
 import questionary
 import typer
 from agent_router import Agent, AgentEnvironment, AgentRouter, AgentRouterError
-from openlease import OpenLeaseError
+from openspec_bundler import AttachmentError
+from openspec_bundler.leases import LeaseError
 
 from zpp.utils.agent_router import ZppTraitArtifactExtension
 from zpp.utils.agent_selection import AgentSelection, AgentSelectionError
@@ -109,5 +110,11 @@ def render_lifecycle_summary(
 def user_action[T](action: Callable[[], T]) -> T:
     try:
         return action()
-    except (AgentRouterError, OpenLeaseError, OSError, ValueError) as error:
+    except (
+        AgentRouterError,
+        AttachmentError,
+        LeaseError,
+        OSError,
+        ValueError,
+    ) as error:
         raise typer.BadParameter(str(error)) from error

@@ -46,10 +46,6 @@ Feature: Bootstrap repository traits only when explicitly requested
     Then the bounded repository context resolves
     And no session claim permit or lease is created
 
-  Scenario: Do nothing before an invocation targets the repository
-    Given a disposable repository containing trait documents that no command targets
-    Then no attachment is read and no lease state is created
-
   Scenario: Bind the invoking agent router to the repository
     Given a disposable repository
     When the caller builds the codex agent router for that repository

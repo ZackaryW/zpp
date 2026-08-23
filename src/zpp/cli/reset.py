@@ -13,7 +13,7 @@ from zpp.cli.shared import agent_router, emit_json, runtime, user_action
 from zpp.utils.agent_router import remove_workflow_skill
 from zpp.utils.lifecycle import LifecycleEntry
 from zpp.utils.openspec import OPENSPEC_CORE_SKILL_NAMES
-from zpp.utils.product_home import PreparedOpenLeaseState
+from zpp.utils.product_home import PreparedBundlerState
 
 
 class _PreparedState(Protocol):
@@ -47,7 +47,7 @@ def reset(
         typer.Option("--json", help="Emit the complete reset report as JSON."),
     ] = False,
 ) -> None:
-    """Remove ZPP user integrations and replace managed OpenLease state."""
+    """Remove ZPP user integrations and replace managed Bundler state."""
     if not yes:
         raise typer.BadParameter(
             "--yes is required for complete reset",
@@ -57,7 +57,7 @@ def reset(
     report = user_action(
         lambda: _reset_state(
             reset_projections(),
-            prepare=lambda: PreparedOpenLeaseState.prepare(selected),
+            prepare=lambda: PreparedBundlerState.prepare(selected),
         )
     )
     if json_output:
@@ -184,7 +184,7 @@ def _reset_summary(report: _ResetReport) -> str:
     )
     return (
         f"Reset complete: {removed} removed, {absent} already absent; "
-        f"OpenLease state {report.state}."
+        f"Bundler state {report.state}."
     )
 
 

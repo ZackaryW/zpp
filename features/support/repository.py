@@ -1,4 +1,4 @@
-"""Reusable lifecycle for capability roots that exercise ZPP coordination."""
+"""Reusable lifecycle for public resolution scenarios."""
 
 from __future__ import annotations
 
@@ -12,9 +12,7 @@ from typer.testing import CliRunner
 from zpp.cli import app
 
 
-class CoordinationEnvironment:
-    """An isolated ZPP home plus disposable Git worktrees."""
-
+class RepositoryEnvironment:
     def __init__(self) -> None:
         self._temporary = TemporaryDirectory()
         self.base = Path(self._temporary.name)
@@ -39,21 +37,10 @@ class CoordinationEnvironment:
     def git(root: Path, *arguments: str) -> None:
         subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True)
 
-    def run(self, *arguments: str):
-        return self.runner.invoke(app, ["--path", str(self.home), *arguments])
-
-    def workspace(self, *arguments: str):
-        return self.run("workspace", *arguments)
-
-    def workspace_json(self, *arguments: str) -> dict:
-        result = self.workspace(*arguments)
-        assert result.exit_code == 0, result.output
-        return json.loads(result.stdout)
-
     def resolve_json(self, *arguments: str) -> dict:
-        result = self.run("resolve", "--explain", *arguments)
+        result = self.runner.invoke(
+            app,
+            ["--path", str(self.home), "resolve", "--explain", *arguments],
+        )
         assert result.exit_code == 0, result.output
         return json.loads(result.stdout)
-
-    def state(self) -> dict:
-        return self.workspace_json("status")

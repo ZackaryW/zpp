@@ -26,12 +26,14 @@ def test_public_cli_preserves_grouped_shape() -> None:
     behavior = runner.invoke(app, ["behave", "--help"])
     workflow = runner.invoke(app, ["workflow", "--help"])
     trait = runner.invoke(app, ["trait", "--help"])
+    lease = runner.invoke(app, ["lease", "--help"])
 
     assert (
         root.exit_code
         == behavior.exit_code
         == workflow.exit_code
         == trait.exit_code
+        == lease.exit_code
         == 0
     )
     assert all(
@@ -43,6 +45,7 @@ def test_public_cli_preserves_grouped_shape() -> None:
             "resolve",
             "behave",
             "trait",
+            "lease",
             "workflow",
         )
     )
@@ -57,11 +60,22 @@ def test_public_cli_preserves_grouped_shape() -> None:
     assert "install-workflow" not in root.stdout
     assert "init-trait" not in root.stdout
     assert "explain" not in root.stdout
-    assert "space" not in _root_command_names()
+    assert "workspace" not in _root_command_names()
+    assert all(
+        operation in lease.stdout
+        for operation in (
+            "acquire",
+            "status",
+            "audit",
+            "archive",
+            "complete",
+            "abandon",
+        )
+    )
 
 
 def _root_command_names() -> set[str]:
-    """Registered root command names, so `workspace` cannot mask a bare `space`."""
+    """Registered root command names."""
     names = {info.name for info in app.registered_commands if info.name}
     names.update(group.name for group in app.registered_groups if group.name)
     return names
@@ -137,7 +151,7 @@ def test_init_preflights_every_generated_inventory_before_projection(
     monkeypatch.setattr(
         initialization_cli,
         "packaged_workflow_hook",
-        lambda agent: SimpleNamespace(name="zpp-session", agent=agent),
+        lambda agent: SimpleNamespace(name="zpp-traits", agent=agent),
     )
 
     def project(router, skill, scope, project_root):
@@ -162,7 +176,7 @@ def test_init_preflights_every_generated_inventory_before_projection(
     assert len(json.loads(result.stdout)) == 20
     assert events[1:11] == [
         "skill:codex:zpp-workflow",
-        "hook:codex:zpp-session",
+        "hook:codex:zpp-traits",
         "skill:codex:zpp-configure-behave",
         "skill:codex:zpp-author-trait",
         *(f"skill:codex:openspec-{index}" for index in range(6)),
@@ -316,7 +330,7 @@ def test_init_packaged_authoring_failure_precedes_generation(monkeypatch) -> Non
     assert "invalid authoring skill" in result.output
 
 
-def test_open_creates_and_opens_selected_home_without_openlease(
+def test_open_creates_and_opens_selected_home_without_bundler_state(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -332,7 +346,7 @@ def test_open_creates_and_opens_selected_home_without_openlease(
 
     assert result.exit_code == 0
     assert selected.is_dir()
-    assert not (selected / "openlease").exists()
+    assert not (selected / "bundler").exists()
     assert opened == [selected]
     assert str(selected) in result.stdout
 
@@ -377,7 +391,7 @@ def test_confirmed_reset_replaces_only_selected_home_state(
     monkeypatch,
 ) -> None:
     selected = tmp_path / "custom-home"
-    state = selected / "openlease"
+    state = selected / "bundler"
     state.mkdir(parents=True)
     (state / "old.json").write_text("old")
     sibling = selected / "notes.txt"
@@ -387,7 +401,7 @@ def test_confirmed_reset_replaces_only_selected_home_state(
     result = runner.invoke(app, ["--path", str(selected), "reset", "--yes"])
 
     assert result.exit_code == 0, result.output
-    assert list(state.iterdir()) == []
+    assert not (state / "old.json").exists()
     assert sibling.read_text() == "keep"
     assert "replaced" in result.stdout
 
@@ -413,7 +427,7 @@ def test_reset_catalog_preflights_packaged_companion_skills_before_generated(
     monkeypatch.setattr(
         lifecycle_cli,
         "packaged_workflow_hook",
-        lambda agent: SimpleNamespace(name="zpp-session", agent=agent),
+        lambda agent: SimpleNamespace(name="zpp-traits", agent=agent),
     )
     monkeypatch.setattr(
         lifecycle_cli,
@@ -487,7 +501,7 @@ def test_workflow_cli_preserves_explicit_first_seen_agent_order(monkeypatch) -> 
     monkeypatch.setattr(
         zpp.cli.workflow,
         "packaged_workflow_hook",
-        lambda agent: SimpleNamespace(name="zpp-session", agent=agent),
+        lambda agent: SimpleNamespace(name="zpp-traits", agent=agent),
     )
 
     def project(router, skill, scope, project_root, *, replace_project=False):
@@ -542,7 +556,7 @@ def test_workflow_project_update_requests_explicit_skill_replacement(
     monkeypatch.setattr(
         zpp.cli.workflow,
         "packaged_workflow_hook",
-        lambda agent: SimpleNamespace(name="zpp-session"),
+        lambda agent: SimpleNamespace(name="zpp-traits"),
     )
 
     def project(router, skill, scope, project_root, *, replace_project=False):

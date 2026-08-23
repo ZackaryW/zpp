@@ -7,8 +7,8 @@ import typer
 
 from zpp import __version__
 from zpp.cli.behavior import behave
-from zpp.cli.coordination import app as workspace_app
 from zpp.cli.initialization import initialize
+from zpp.cli.lease import app as lease_app
 from zpp.cli.open import open_home
 from zpp.cli.reset import reset
 from zpp.cli.resolution import resolve
@@ -30,7 +30,7 @@ app.command("reset")(reset)
 app.command("resolve")(resolve)
 app.command("behave")(behave)
 app.add_typer(trait_app, name="trait")
-app.add_typer(workspace_app, name="workspace")
+app.add_typer(lease_app, name="lease")
 app.add_typer(workflow_app, name="workflow")
 
 
@@ -51,7 +51,7 @@ def main(
         Path | None,
         typer.Option(
             "--path",
-            help="ZPP home containing managed OpenLease state.",
+            help="ZPP home containing managed Bundler state.",
         ),
     ] = None,
 ) -> None:
