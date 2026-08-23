@@ -6,3 +6,6 @@ def after_scenario(context, scenario):
     home = getattr(context, "home", None)
     if home is not None:
         home.close()
+    tool_environment = getattr(context, "tool_environment", None)
+    if tool_environment is not None:
+        tool_environment.close()

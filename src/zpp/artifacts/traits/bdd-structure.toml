@@ -11,7 +11,7 @@ workspace_contains = ".behaverc"
 [[trait.when]]
 workspace_contains = "features/*/steps/bindings.py"
 [trait.content]
-body = """Prescribe one independently runnable `features/<capability>/` root. It owns `<capability>.feature`, an `environment.py` that delegates shared scenario lifecycle, a `support.py` verification entry point, and thin bindings under `steps/bindings.py`. Keep reusable lifecycle and contract execution under `features/support/`. Preserve capability-local declarations and entry points, and leave Nx, Go Task, argv, or other provider selection to explicit behavior configuration."""
+body = """Use the established Behave layout: feature declarations in `.feature` files, shared Python lifecycle helpers in the repository's support package, environment hooks in `environment.py`, and bindings in the established steps modules. Leave provider selection to explicit behavior configuration."""
 
 [[trait]]
 [trait.facet]
@@ -21,7 +21,7 @@ workspace_contains = "integration_test/*.dart"
 [[trait.when]]
 workspace_contains = "integration_test/**/*.dart"
 [trait.content]
-body = """Use established SDK `test` and `integration_test` layouts with capability-cohesive declarations, local thin public-system fixtures, explicit shared support, and independently runnable capability roots. Do not require Gherkin or copy Python module names."""
+body = """Use the repository's established SDK `test` and `integration_test` directories, fixture helpers, and platform setup. Do not require Gherkin or copy Python module names."""
 
 [[trait]]
 [trait.facet]
@@ -37,4 +37,4 @@ workspace_contains = "cucumber.yml"
 [[trait.when]]
 workspace_contains = "**/steps/*.ts"
 [trait.content]
-body = """Use the established TypeScript runner layout with capability-cohesive declarations, capability-local thin public-system bindings, and explicit reusable support. Keep each capability independently runnable without copying Python module names or selecting a verification provider."""
+body = """Use the established TypeScript runner's feature, step-definition, world, hook, and support-module layout without copying Python module names or selecting a verification provider."""

@@ -41,6 +41,7 @@ class InspectedEntry:
     entry: LifecycleEntry
     status: str
     detail: str | None = None
+    observed: dict[str, object] | None = None
 
     def to_dict(self) -> dict[str, object]:
         record: dict[str, object] = {
@@ -50,6 +51,10 @@ class InspectedEntry:
         }
         if self.detail is not None:
             record["error"] = self.detail
+        if self.observed is not None:
+            for key in ("scope", "destination"):
+                if key in self.observed:
+                    record[key] = self.observed[key]
         return record
 
 
@@ -78,7 +83,10 @@ def inspect_entries(
             inspected.append(InspectedEntry(entry, "uninspectable"))
             continue
         try:
-            inspected.append(InspectedEntry(entry, entry.inspect().status))
+            result = entry.inspect()
+            inspected.append(
+                InspectedEntry(entry, result.status, observed=result.to_dict())
+            )
         except Exception as error:
             inspected.append(InspectedEntry(entry, INSPECTION_FAILED_STATE, str(error)))
     return tuple(inspected)

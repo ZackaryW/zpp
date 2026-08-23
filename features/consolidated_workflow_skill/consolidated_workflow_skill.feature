@@ -1,29 +1,31 @@
 @consolidated-workflow-skill
-Feature: Package one consolidated ZPP workflow authority
-  ZPP packages exactly one workflow skill alongside a standard trait collection
-  whose families, activation, and facets load and decode from the distribution.
-  Workflow conduct obligations are canonical requirements, not scenarios.
+Feature: Load the packaged ZPP workflow family
+  The package exposes one deterministic validated family while lifecycle conduct
+  remains specification authority rather than asserted prose.
 
   Background:
-    Given the packaged workflow assets are loaded
+    Given the packaged workflow family is available
 
-  Scenario: Package one consolidated workflow skill
-    Then the packaged skill is named zpp-workflow
-    And the packaged skill is compatible with every supported agent
-    And the packaged skill carries a SKILL.md document
+  # zpp-spec: {"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Bounded workflow phase skills","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Load entries kernel and stages in lifecycle order"}
+  Scenario: Load entries kernel and stages in lifecycle order
+    When the current workflow family is loaded
+    Then the five entries precede the kernel and seven stages
+    And every packaged workflow member is valid for every supported agent
 
-  Scenario: Keep workflow authority out of the trait collection
-    Then no workflow authority family is packaged
+  # zpp-spec: {"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Complete bounded OpenSpec adapter set","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Cover operational OpenSpec workflows without onboarding"}
+  Scenario: Cover operational OpenSpec workflows without onboarding
+    When the OpenSpec operation coverage is inspected
+    Then the eleven exact adapters are packaged in deterministic order
+    And onboarding and broad operation aliases are absent
+    And repository verification is one separate final family member
 
-  Scenario: Package the reconciled standard behavior collection
-    Then the packaged trait families are exactly the standard collection
+  # zpp-spec: {"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Skill-owned invariant policy","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Load only contextual trait specialization"}
+  Scenario: Load only contextual trait specialization
+    When the packaged trait collection is decoded
+    Then only the five contextual trait families remain
+    And BDD execution retains its five repository-selected modes
 
-  Scenario: Declare BDD execution modes as trait facets
-    When the bdd-execution family is decoded
-    Then its flavors declare the manual disabled complete and targeted modes with a trailing default
-    And every bdd-execution flavor carries a non-empty body
-
-  Scenario: Declare universal activation and tool facets
-    When the zero-assumptions and tooling families are decoded
-    Then zero-assumptions declares always-run activation
-    And tooling declares exactly the rg and jq facets
+  # zpp-spec: {"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Ready installed workflow operation set","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Preserve one deterministic public inventory"}
+  Scenario: Preserve one deterministic public inventory
+    When the current workflow family is loaded
+    Then the workflow family has the exact canonical identity sequence

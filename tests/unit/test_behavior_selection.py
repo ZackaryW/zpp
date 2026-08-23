@@ -26,7 +26,7 @@ def command():
                         "paths": ["features/workflow/**"],
                     },
                 },
-                "gates": {"zpp-workflow": ["workflow", "core"]},
+                "gates": {"zpps-workflow-kernel": ["workflow", "core"]},
             }
         },
     }
@@ -47,7 +47,7 @@ def test_exact_selection_deduplicates_in_declaration_order() -> None:
 
 def test_gate_and_complete_selection_use_declared_order() -> None:
     gate = select_behavior_targets(
-        command(), BehaviorRunInput("bdd", gate="zpp-workflow")
+        command(), BehaviorRunInput("bdd", gate="zpps-workflow-kernel")
     )
     complete = select_behavior_targets(
         command(), BehaviorRunInput("bdd", complete=True)
@@ -65,8 +65,21 @@ def test_rejects_unknown_or_ambiguous_selection() -> None:
     with pytest.raises(BehaviorExecutionError, match="mutually exclusive"):
         select_behavior_targets(
             command(),
-            BehaviorRunInput("bdd", complete=True, gate="zpp-workflow"),
+            BehaviorRunInput("bdd", complete=True, gate="zpps-workflow-kernel"),
         )
+
+
+def test_removed_gate_is_not_translated_and_default_remains_affected() -> None:
+    with pytest.raises(BehaviorExecutionError, match="not declared"):
+        select_behavior_targets(command(), BehaviorRunInput("bdd", gate="zpp-workflow"))
+
+    selected = select_behavior_targets(
+        command(),
+        BehaviorRunInput("bdd"),
+        changed_paths=("features/workflow/example.feature",),
+    )
+
+    assert tuple(target.name for target in selected) == ("workflow",)
 
 
 def test_default_selection_uses_supplied_changed_paths() -> None:

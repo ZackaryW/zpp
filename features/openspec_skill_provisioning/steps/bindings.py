@@ -1,30 +1,24 @@
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import support
 from behave import given, then, when
 
-from zpp.cli import app
-
-
-@given("the packaged companion inventory is loaded")
-def companion_inventory(context) -> None:
-    context.companions = support.companion_names()
-
-
-@given("the grouped workflow lifecycle help is available")
-def workflow_help(context) -> None:
-    from typer.testing import CliRunner
-
-    runner = CliRunner()
-    context.help_outputs = {
-        operation: runner.invoke(app, ["workflow", operation, "--help"])
-        for operation in ("install", "update", "remove")
-    }
+EXACT_FAMILY_STEP = (
+    "all current workflow entries, stages, adapters, and repository verifier "
+    "are present"
+)
 
 
 @given("a disposable user home")
 def disposable_home(context) -> None:
     context.home = support.Home()
+
+
+@given("a disposable uv tool environment")
+def disposable_tool_environment(context) -> None:
+    context.tool_environment = support.ToolEnvironment()
 
 
 @given("the codex agent is initialized")
@@ -33,25 +27,14 @@ def initialized(context) -> None:
     assert result.exit_code == 0, result.output
 
 
-@given("a generated OpenSpec skill has been modified locally")
-def modify_generated(context) -> None:
-    document = context.home.generated_document()
-    context.packaged_text = document.read_text(encoding="utf-8")
-    document.write_text("modified", encoding="utf-8")
-
-
-@given("an unmanaged workflow skill occupies the codex surface")
-def unmanaged_skill(context) -> None:
-    path = context.home.skill_path("zpp-workflow") / "SKILL.md"
-    path.parent.mkdir(parents=True)
-    path.write_text("unmanaged", encoding="utf-8")
-    context.unmanaged = path
+@when("ZPP prepares its packaged workflow family")
+def prepare_family(context) -> None:
+    context.workflow_names = support.workflow_names()
 
 
 @when("a user initializes the codex agent")
 def initialize(context) -> None:
-    context.result = context.home.run("init", "--agent", "codex")
-    assert context.result.exit_code == 0, context.result.output
+    context.records = context.home.run_json("init", "--agent", "codex", "--json")
 
 
 @when("a user synchronizes the codex agent")
@@ -59,91 +42,101 @@ def synchronize(context) -> None:
     context.records = context.home.run_json("sync", "--agent", "codex", "--json")
 
 
-@when("a user synchronizes the codex agent with force")
-def synchronize_forced(context) -> None:
-    context.records = context.home.run_json(
-        "sync", "--agent", "codex", "--force", "--json"
-    )
+@when("a user installs the built ZPP wheel as a tool")
+def install_distribution(context) -> None:
+    context.distribution = context.tool_environment.install()
 
 
-@when("a user confirms a complete reset")
-def confirm_reset(context) -> None:
-    context.result = context.home.run(
-        "--path", str(context.home.product_home), "reset", "--yes"
-    )
-    assert context.result.exit_code == 0, context.result.output
+@when("a user initializes synchronizes and resets the codex integration")
+def lifecycle_without_openspec(context) -> None:
+    openspec_calls: list[tuple[object, ...]] = []
+
+    def reject_openspec(*args, **kwargs):
+        command = args[0] if args else kwargs.get("args", ())
+        if command and str(command[0]).casefold() == "openspec":
+            openspec_calls.append(tuple(command))
+            raise AssertionError("lifecycle invoked OpenSpec")
+        raise AssertionError(f"unexpected subprocess invocation: {command!r}")
+
+    with patch("subprocess.run", side_effect=reject_openspec):
+        context.lifecycle_results = (
+            context.home.run("init", "--agent", "codex"),
+            context.home.run("sync", "--agent", "codex"),
+            context.home.run(
+                "--path", str(context.home.product_home), "reset", "--yes"
+            ),
+        )
+    context.openspec_calls = openspec_calls
 
 
-@then("it contains the vendored zmem authoring and query skills")
-def contains_zmem(context) -> None:
-    assert {"zmem-author-commits", "zmem-query-memory"} <= set(context.companions)
+@then(EXACT_FAMILY_STEP)
+def exact_family_present(context) -> None:
+    assert tuple(context.workflow_names) == support.WORKFLOW_SKILL_NAMES
+    assert set(support.OPENSPEC_ADAPTER_SKILL_NAMES) <= set(context.workflow_names)
+    assert support.REPOSITORY_EVIDENCE_SKILL_NAME in context.workflow_names
 
 
-@then("it contains no workspace-management skill")
-def excludes_workspace_management(context) -> None:
-    assert "zpp-workspace-management" not in context.companions
+@then("onboarding and removed workflow identities are absent")
+def removed_family_absent(context) -> None:
+    names = set(context.workflow_names)
+    assert "zpps-onboard" not in names
+    assert "zpp-workflow" not in names
+    assert not names.intersection(support.OBSOLETE_WORKFLOW_SKILL_NAMES)
 
 
-@then("it contains no withdrawn zmem extension skill")
-def excludes_withdrawn(context) -> None:
-    assert "zmem-design-extensions" not in context.companions
-
-
-@then("no grouped workflow operation exposes an OpenSpec control")
-def no_openspec_control(context) -> None:
-    for operation, result in context.help_outputs.items():
-        assert result.exit_code == 0, operation
-        assert "openspec" not in result.stdout.casefold(), operation
-
-
-@then("one lifecycle result is reported per projected asset")
+@then("one lifecycle result is reported per current packaged asset")
 def one_result_each(context) -> None:
-    records = context.home.run_json("sync", "--agent", "codex", "--json")
-    assert len(records) == support.expected_asset_count(), records
+    assert len(context.records) == support.expected_asset_count(), context.records
 
 
-@then("every packaged companion skill is present on disk")
-def companions_present(context) -> None:
-    for name in support.companion_names():
+@then("every current packaged skill is present on disk")
+def packaged_skills_present(context) -> None:
+    for name in support.packaged_skill_names():
         assert (context.home.skill_path(name) / "SKILL.md").is_file(), name
 
 
-@then("each generated OpenSpec skill records ZPP as its generator")
-def generator_recorded(context) -> None:
-    assert context.home.provenance()["generator"] == "zpp"
+@then("no generated OpenSpec skill or provenance is present")
+def generated_assets_absent(context) -> None:
+    for name in support.OBSOLETE_WORKFLOW_SKILL_NAMES:
+        assert not context.home.skill_path(name).exists(), name
+    assert not tuple(context.home.user_home.rglob(".zpp-openspec.json"))
 
 
-@then("every projected asset reports current")
+@then("every lifecycle command succeeds without an OpenSpec process")
+def lifecycle_succeeds(context) -> None:
+    assert context.openspec_calls == []
+    for result in context.lifecycle_results:
+        assert result.exit_code == 0, result.output
+
+
+@then("every current packaged asset reports current")
 def all_current(context) -> None:
-    decisions = {record["decision"] for record in context.records}
-    assert decisions == {"current"}, context.records
-    assert len(context.records) == support.expected_asset_count()
+    assert len(context.records) == support.expected_asset_count(), context.records
+    assert {record["decision"] for record in context.records} == {"current"}
 
 
-@then("the generated OpenSpec skill content is restored")
-def generated_restored(context) -> None:
-    restored = context.home.generated_document().read_text(encoding="utf-8")
-    assert restored == context.packaged_text
+@then("zpp is the only installed tool command")
+def only_zpp_tool(context) -> None:
+    evidence = context.distribution
+    assert evidence.command_names == ("zpp",), evidence.command_names
+    assert evidence.tool_list.splitlines() == [
+        f"zpp v{evidence.project_version}",
+        "- zpp",
+    ]
 
 
-@then("the generated OpenSpec skill is removed")
-def generated_removed(context) -> None:
-    assert not context.home.skill_path(support.GENERATED_SKILL).exists()
+@then("the distribution module and CLI versions agree")
+def distribution_versions_agree(context) -> None:
+    evidence = context.distribution
+    assert evidence.wheel_version == evidence.project_version
+    assert evidence.module_version == evidence.project_version
+    assert evidence.cli_output == f"ZPP version {evidence.project_version}"
 
 
-@then("managed Bundler state is replaced")
-def state_replaced(context) -> None:
-    assert (context.home.product_home / "bundler").is_dir()
-
-
-@then("ZPP reports the agent as already initialized")
-def already_initialized(context) -> None:
-    assert "already initialized" in context.result.stdout
-
-
-@then("forced synchronization preserves that unmanaged skill")
-def unmanaged_preserved(context) -> None:
-    records = context.home.run_json("sync", "--agent", "codex", "--force", "--json")
-    decisions = {record["asset"]: record["decision"] for record in records}
-    assert decisions["skill"] == "preserve", decisions
-    assert context.unmanaged.read_text(encoding="utf-8") == "unmanaged"
+@then("OpenSpec Bundler is present only as a ZPP dependency")
+def bundler_is_dependency_only(context) -> None:
+    evidence = context.distribution
+    assert "openspec-bundler" in evidence.installed_packages
+    assert "openspec-bundler" not in evidence.command_names
+    assert "openspec-bundler" not in evidence.tool_list.casefold()
+    assert evidence.bundler_console_commands == ()

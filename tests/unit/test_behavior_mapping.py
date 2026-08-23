@@ -51,12 +51,14 @@ def test_parses_mapping_and_preserves_declaration_order() -> None:
 def test_parses_gate_targets_in_target_declaration_order() -> None:
     raw = deepcopy(mapping())
     raw["commands"]["bdd"]["gates"] = {  # type: ignore[index]
-        "zpp-workflow": ["workflow", "core"]
+        "zpps-workflow-kernel": ["workflow", "core"]
     }
 
     parsed = parse_behavior_mapping(raw, registry=registry())
 
-    assert parsed.commands["bdd"].gates == {"zpp-workflow": ("core", "workflow")}
+    assert parsed.commands["bdd"].gates == {
+        "zpps-workflow-kernel": ("core", "workflow")
+    }
 
 
 @pytest.mark.parametrize(

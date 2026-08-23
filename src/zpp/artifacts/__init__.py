@@ -22,6 +22,45 @@ class PackagedTrait:
 WORKFLOW_SKILL_ROLE: Final[str] = "workflow"
 COMPANION_SKILL_ROLE: Final[str] = "companion"
 
+WORKFLOW_ENTRY_SKILL_NAMES: Final[tuple[str, ...]] = (
+    "zpp-auto",
+    "zpp-new-feature",
+    "zpp-fix-bug",
+    "zpp-scaffold",
+    "zpp-legacy-workflow",
+)
+WORKFLOW_KERNEL_SKILL_NAME: Final[str] = "zpps-workflow-kernel"
+WORKFLOW_STAGE_SKILL_NAMES: Final[tuple[str, ...]] = (
+    "zpps-clarify",
+    "zpps-shape-bdd",
+    "zpps-planning-ponytail",
+    "zpps-mature-utilities",
+    "zpps-wire",
+    "zpps-form-specs",
+    "zpps-finalize",
+)
+OPENSPEC_ADAPTER_SKILL_NAMES: Final[tuple[str, ...]] = (
+    "zpps-explore",
+    "zpps-new-change",
+    "zpps-continue-change",
+    "zpps-ff-change",
+    "zpps-propose-change",
+    "zpps-update-change",
+    "zpps-apply-change",
+    "zpps-verify-change",
+    "zpps-sync-specs",
+    "zpps-archive-change",
+    "zpps-bulk-archive-change",
+)
+REPOSITORY_EVIDENCE_SKILL_NAME: Final[str] = "zpps-verify-repository"
+WORKFLOW_SKILL_NAMES: Final[tuple[str, ...]] = (
+    *WORKFLOW_ENTRY_SKILL_NAMES,
+    WORKFLOW_KERNEL_SKILL_NAME,
+    *WORKFLOW_STAGE_SKILL_NAMES,
+    *OPENSPEC_ADAPTER_SKILL_NAMES,
+    REPOSITORY_EVIDENCE_SKILL_NAME,
+)
+
 _SKILL_DOCUMENT = "SKILL.md"
 
 
@@ -54,14 +93,28 @@ def _load_role_skills(role: str) -> tuple[Skill, ...]:
     return tuple(loaded)
 
 
-def packaged_workflow_skill() -> Skill:
-    loaded = _load_role_skills(WORKFLOW_SKILL_ROLE)
-    if len(loaded) != 1:
+def packaged_workflow_skills() -> tuple[Skill, ...]:
+    discovered = _role_skill_names(WORKFLOW_SKILL_ROLE)
+    expected = frozenset(WORKFLOW_SKILL_NAMES)
+    actual = frozenset(discovered)
+    if actual != expected or len(discovered) != len(WORKFLOW_SKILL_NAMES):
+        missing = sorted(expected - actual)
+        unexpected = sorted(actual - expected)
         raise PackagedSkillError(
-            "packaged workflow role must contain exactly one skill, "
-            f"found {len(loaded)}"
+            "packaged workflow family does not match its canonical inventory: "
+            f"missing={missing!r}, unexpected={unexpected!r}"
         )
-    return loaded[0]
+    root = files("zpp.artifacts").joinpath("skills", WORKFLOW_SKILL_ROLE)
+    loaded: list[Skill] = []
+    for name in WORKFLOW_SKILL_NAMES:
+        with as_file(root.joinpath(name)) as path:
+            skill = Skill.from_path(path)
+        if skill.name != name:
+            raise PackagedSkillError(
+                f"packaged workflow member {name!r} declares name {skill.name!r}"
+            )
+        loaded.append(skill)
+    return tuple(loaded)
 
 
 def packaged_companion_skills() -> tuple[Skill, ...]:
@@ -119,12 +172,18 @@ def packaged_trait_source() -> BoundTraitSource:
 
 __all__ = [
     "COMPANION_SKILL_ROLE",
+    "OPENSPEC_ADAPTER_SKILL_NAMES",
+    "REPOSITORY_EVIDENCE_SKILL_NAME",
+    "WORKFLOW_ENTRY_SKILL_NAMES",
+    "WORKFLOW_KERNEL_SKILL_NAME",
+    "WORKFLOW_SKILL_NAMES",
     "WORKFLOW_SKILL_ROLE",
+    "WORKFLOW_STAGE_SKILL_NAMES",
     "PackagedSkillError",
     "PackagedTrait",
     "packaged_companion_skills",
     "packaged_trait_source",
     "packaged_traits",
     "packaged_workflow_hook",
-    "packaged_workflow_skill",
+    "packaged_workflow_skills",
 ]

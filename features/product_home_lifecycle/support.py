@@ -9,22 +9,24 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from agent_router import Agent, Scope, Skill
 from openspec_bundler import InMemoryStoreProvider, RegisteredStore
 from typer.testing import CliRunner
 
-from zpp.artifacts import packaged_companion_skills
+from zpp.artifacts import packaged_companion_skills, packaged_workflow_skills
 from zpp.cli import app
+from zpp.cli.shared import agent_router
 from zpp.utils.bundler import BundlerLeaseService
 
 STORE_UUID = "8f85ef9f-d18a-4787-903e-1ecb920acb77"
 
 CODEX_SKILLS = ".codex/skills"
-WORKFLOW_SKILL = "zpp-workflow"
+WORKFLOW_SKILL = "zpp-auto"
 
 
 def expected_entry_count() -> int:
-    """Hook, workflow skill, every companion skill, and six OpenSpec skills."""
-    return 2 + len(packaged_companion_skills()) + 6
+    """The workflow family, hook, and every current companion skill."""
+    return len(packaged_workflow_skills()) + len(packaged_companion_skills()) + 1
 
 
 class Environment:
@@ -59,6 +61,25 @@ class Environment:
 
     def workflow_skill_document(self) -> Path:
         return self.user_home / CODEX_SKILLS / WORKFLOW_SKILL / "SKILL.md"
+
+    def install_owned_obsolete(self, name: str) -> Path:
+        source = self.root / "obsolete-source" / name
+        source.mkdir(parents=True)
+        (source / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: obsolete test asset\n---\n",
+            encoding="utf-8",
+        )
+        skill = Skill.from_path(source)
+        router = agent_router(Agent.CODEX, self.root)
+        result = router.install_skill(skill, scope=Scope.USER)
+        assert result.status == "installed"
+        return self.user_home / CODEX_SKILLS / name / "SKILL.md"
+
+    def create_unowned_obsolete(self, name: str) -> Path:
+        document = self.user_home / CODEX_SKILLS / name / "SKILL.md"
+        document.parent.mkdir(parents=True)
+        document.write_text("unowned obsolete", encoding="utf-8")
+        return document
 
     def configure_store(self) -> Path:
         worktree = self.root / "worktree"

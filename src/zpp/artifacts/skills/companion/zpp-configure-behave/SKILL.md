@@ -34,8 +34,9 @@ because ZPP or a native test framework is present.
 - Map a shared path to every target it can affect, or leave it conservatively
   unmapped so ZPP broadens uncertain impact to all declared targets. Never gain
   speed by creating a false-negative exclusion.
-- Use `gates` only for stable command-local subsets. Use `zpp-workflow` when the
-  consolidated workflow needs an explicit repository-owned verification set.
+- Use `gates` only for stable command-local subsets. Use
+  `zpps-workflow-kernel` when the current workflow needs an explicit
+  repository-owned verification set. Never translate a removed gate.
   A gate contains target identities, not provider values or command arguments.
 
 Use this shape as a schema example, not as repository evidence:
@@ -55,7 +56,7 @@ commands:
         value: "established-integration-target"
         paths: ["features/**", "tests/integration/**"]
     gates:
-      zpp-workflow: [unit, integration]
+      zpps-workflow-kernel: [unit, integration]
 ```
 
 ## Author and validate

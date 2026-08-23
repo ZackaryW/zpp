@@ -33,7 +33,7 @@ MAPPING = (
     "      core: {value: features/core, paths: [src/core/**]}\n"
     "      workflow: {value: features/workflow, paths: [src/workflow/**]}\n"
     "    gates:\n"
-    "      zpp-workflow: [workflow, core]\n"
+    "      zpps-workflow-kernel: [workflow, core]\n"
 )
 
 

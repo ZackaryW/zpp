@@ -114,7 +114,9 @@ Record each exact archived path with:
 ## Mutation sequence
 
 1. Complete the read-only summary, preservation map, consolidation map, age calculation, and zmem target resolution.
-2. Reconcile canonical specifications through explicit `zpp-workflow` authority and installed OpenSpec operation skills.
+2. Reconcile canonical specifications through explicit current ZPP kernel authority
+   and the exact installed `zpps-update-change`, `zpps-sync-specs`,
+   `zpps-verify-change`, and `zpps-archive-change` adapters required by the action.
 3. Apply authorized zmem effects through `zmem-author-commits` and deep validation.
 4. Run strict OpenSpec validation and inspect the full diff.
 5. Present only removable exact archive paths.

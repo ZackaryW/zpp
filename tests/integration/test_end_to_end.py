@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 from zpp.artifacts import (
     packaged_companion_skills,
     packaged_workflow_hook,
-    packaged_workflow_skill,
+    packaged_workflow_skills,
 )
 from zpp.cli import app
 from zpp.cli.reset import SUPPORTED_AGENTS
@@ -32,7 +32,7 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
     user_home.mkdir()
     project.mkdir()
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: user_home))
-    skill = packaged_workflow_skill()
+    workflow_skills = packaged_workflow_skills()
     companion_skills = packaged_companion_skills()
     routers = {}
     for agent in SUPPORTED_AGENTS:
@@ -41,7 +41,8 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
             home=user_home,
             environment=AgentEnvironment(user_home, project),
         )
-        router.install_skill(skill, scope=Scope.USER)
+        for skill in workflow_skills:
+            router.install_skill(skill, scope=Scope.USER)
         for companion_skill in companion_skills:
             router.install_skill(companion_skill, scope=Scope.USER)
         router.install_hook(packaged_workflow_hook(agent), scope=Scope.USER)
@@ -59,7 +60,10 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
     assert result.exit_code == 0, result.output
     assert not (state / "old.json").exists()
     for agent, router in routers.items():
-        assert router.inspect_skill(skill, scope=Scope.USER).status == "absent"
+        assert all(
+            router.inspect_skill(skill, scope=Scope.USER).status == "absent"
+            for skill in workflow_skills
+        )
         assert all(
             router.inspect_skill(companion_skill, scope=Scope.USER).status == "absent"
             for companion_skill in companion_skills
@@ -73,7 +77,7 @@ def test_confirmed_reset_removes_every_agent_user_projection_through_router(
         )
 
 
-def test_init_regenerates_and_reset_force_removes_openspec_skills(
+def test_lifecycle_projects_only_current_packaged_skills_and_no_openspec_assets(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -89,7 +93,8 @@ def test_init_regenerates_and_reset_force_removes_openspec_skills(
     assert first.exit_code == second.exit_code == 0
     assert synced.exit_code == detailed.exit_code == 0, synced.output
     companion_skills = packaged_companion_skills()
-    expected = 2 + len(companion_skills) + 6
+    workflow_skills = packaged_workflow_skills()
+    expected = len(workflow_skills) + len(companion_skills) + 1
     assert first.stdout == f"Initialized 1 agent: {expected} installed.\n"
     assert "already initialized" in second.stdout
     assert "zpp sync" in second.stdout
@@ -97,14 +102,24 @@ def test_init_regenerates_and_reset_force_removes_openspec_skills(
         f"Synchronized: 0 reprojected, {expected} already current.\n"
     )
     assert len(json.loads(detailed.stdout)) == expected
-    for name in (skill.name for skill in companion_skills):
+    for name in (skill.name for skill in (*workflow_skills, *companion_skills)):
         assert (user_home / ".codex/skills" / name / "SKILL.md").is_file()
-    generated = user_home / ".codex/skills/openspec-apply-change"
-    provenance = generated / ".zpp-openspec.json"
-    assert provenance.is_file()
-    assert json.loads(provenance.read_text())["generator"] == "zpp"
+    for name in (
+        "zpp-workflow",
+        "openspec-apply-change",
+        "openspec-archive-change",
+        "openspec-explore",
+        "openspec-propose",
+        "openspec-sync-specs",
+        "openspec-update-change",
+    ):
+        assert not (user_home / ".codex/skills" / name).exists()
+    assert not tuple(user_home.rglob(".zpp-openspec.json"))
 
-    (generated / "SKILL.md").write_text("modified", encoding="utf-8")
+    unowned = user_home / ".codex/skills/openspec-apply-change/SKILL.md"
+    unowned.parent.mkdir(parents=True)
+    unowned.write_text("unowned obsolete", encoding="utf-8")
+
     zpp_home = tmp_path / "zpp-home"
     reset = runner.invoke(
         app,
@@ -112,7 +127,11 @@ def test_init_regenerates_and_reset_force_removes_openspec_skills(
     )
 
     assert reset.exit_code == 0, reset.output
-    assert not generated.exists()
+    assert all(
+        not (user_home / ".codex/skills" / skill.name).exists()
+        for skill in workflow_skills
+    )
+    assert unowned.read_text(encoding="utf-8") == "unowned obsolete"
     assert not (user_home / ".codex/skills/zpp-configure-behave").exists()
     assert not (user_home / ".codex/skills/zpp-author-trait").exists()
     assert (zpp_home / "bundler").is_dir()
@@ -319,8 +338,11 @@ def test_reconciled_packaged_families_resolve_by_their_current_boundaries(
     )
 
     assert execution.exit_code == common.exit_code == 0
-    assert "--all" in execution.stdout
-    assert "Preserve current specifications" in common.stdout
-    assert "logical leases" not in common.stdout
+    assert "complete BDD selection mode" in execution.stdout
+    assert "--all" not in execution.stdout
+    assert "targeted BDD selection" in common.stdout
+    assert "Use `rg`" in common.stdout
+    assert "Use `jq`" in common.stdout
+    assert "Ponytail" not in common.stdout
     assert removed.exit_code == 2
     assert "unknown trait family" in removed.output

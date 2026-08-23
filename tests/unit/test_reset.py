@@ -239,3 +239,80 @@ def test_forced_removal_failure_is_aggregated_and_preserves_state() -> None:
         "discard",
     ]
     assert "replace" not in events
+
+
+def test_reset_removes_an_owned_obsolete_tombstone_after_preflight() -> None:
+    events: list[str] = []
+    obsolete = projection(
+        "codex",
+        "obsolete-skill:zpp-workflow",
+        "outdated",
+        events,
+    )
+
+    report = _reset_state(
+        (obsolete,),
+        prepare=lambda: events.append("prepare") or Prepared(events),
+    )
+
+    assert events == [
+        "inspect:codex:obsolete-skill:zpp-workflow",
+        "prepare",
+        "remove:codex:obsolete-skill:zpp-workflow",
+        "replace",
+    ]
+    assert report.removals[0]["status"] == "removed"
+
+
+def test_reset_preserves_an_unmanaged_obsolete_identity() -> None:
+    events: list[str] = []
+    obsolete = projection(
+        "codex",
+        "obsolete-skill:openspec-apply-change",
+        "unmanaged",
+        events,
+    )
+
+    report = _reset_state(
+        (obsolete,),
+        prepare=lambda: events.append("prepare") or Prepared(events),
+    )
+
+    assert events == [
+        "inspect:codex:obsolete-skill:openspec-apply-change",
+        "prepare",
+        "replace",
+    ]
+    assert report.removals == (
+        {
+            "status": "unmanaged",
+            "label": "codex:obsolete-skill:openspec-apply-change",
+            "agent": "codex",
+            "asset": "obsolete-skill:openspec-apply-change",
+            "decision": "preserve",
+        },
+    )
+
+
+def test_reset_preserves_an_ownership_unsafe_obsolete_identity() -> None:
+    events: list[str] = []
+    obsolete = projection(
+        "codex",
+        "obsolete-skill:zpp-workflow",
+        "conflict",
+        events,
+        removal_error="mismatched ownership",
+    )
+
+    report = _reset_state(
+        (obsolete,),
+        prepare=lambda: events.append("prepare") or Prepared(events),
+    )
+
+    assert events[-2:] == [
+        "remove:codex:obsolete-skill:zpp-workflow",
+        "replace",
+    ]
+    assert report.removals[0]["status"] == "conflict"
+    assert report.removals[0]["decision"] == "preserve"
+    assert "mismatched ownership" in str(report.removals[0]["error"])

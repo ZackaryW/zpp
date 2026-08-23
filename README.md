@@ -1,8 +1,9 @@
 # ZPP 2.0
 
 ZPP resolves small, repository-oriented behavior traits for coding agents. It
-ships one consolidated workflow skill; workflow stages and authority are not
-traits.
+ships a packaged workflow family with outcome entries, one lifecycle kernel,
+bounded stages and OpenSpec adapters, and a separate repository verifier.
+Workflow invariants and authority are owned by those skills, not by traits.
 
 ## Trait documents
 
@@ -75,7 +76,7 @@ repository-authoring operation rather than a resolution side effect.
 
 ```text
 zpp [--path ZPP_HOME] COMMAND
-zpp init [--agent AGENT ...] [--force] [--json]
+zpp init [--agent AGENT ...] [--json]
 zpp open
 zpp reset --yes [--json]
 zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ...] [--agent AGENT] [--explain]
@@ -97,15 +98,15 @@ selected home when absent and opens that exact directory in the native file
 manager without initializing Bundler state or interpreting the other contents.
 
 `zpp reset --yes` preflights every supported agent's ZPP-owned user-scope
-`zpp-workflow` skill, every packaged companion skill, and `zpp-traits` hook
-through Agent Router. If that preflight succeeds, reset
-removes those intact packaged assets normally and force-deletes the six
-canonical Agent Router-owned OpenSpec skills for each agent by stable name. A
-modified packaged companion skill remains a conflict. A modified generated
-skill is removed with its ownership state and no retained history; an unmanaged
-same-named skill is preserved as a conflict. Reset never regenerates OpenSpec.
-Only after all removals succeed does it replace the selected home's `bundler`
-child. It preserves the home itself, repository `.zpp` documents,
+workflow family, every packaged companion skill, and the `zpp-traits` hook
+through Agent Router. If that preflight succeeds, reset removes those intact
+packaged assets normally. It also inspects seven obsolete workflow identities
+as removal-only tombstones: an Agent Router-owned obsolete projection is
+removed through Agent Router, while an unmanaged or ownership-unsafe collision
+is preserved and reported. Reset performs no OpenSpec detection, process
+invocation, initialization, generation, or repair. Only after lifecycle
+removals succeed does it replace the selected home's `bundler` child. It
+preserves the home itself, repository `.zpp` documents,
 `zpp.behave.yaml`, project-scope projections, plugins, worktrees, and unrelated
 files. A removal failure leaves prior Bundler state unchanged and a retry
 accepts assets already removed. Reset has no global-trait overwrite mode.
@@ -127,26 +128,24 @@ Codex, Claude Code, Pi, and Kimi in that order; cancellation occurs before any
 projection. `resolve` accepts at most one agent because it reads that invoking
 agent's effective plugin artifacts.
 
-`zpp init` requires the local `openspec` executable. For every selected agent it
-freshly generates and validates the six core OpenSpec operation skills before
-projecting anything, then Agent Router installs or safely reconciles those
-skills together with `zpp-workflow`, `zpp-traits`, and every packaged companion
-skill in user scope. Re-running `init` is the only OpenSpec
-regeneration operation and also reconciles the packaged companion skills.
-Successful initialization prints one concise summary line by default; `--json`
-emits every ordered Agent Router lifecycle result. `--force` reprojects every
-selected owned integration, including safely replacing diverged skills with
-matching Agent Router ownership, while unmanaged destinations remain conflicts.
-The grouped `workflow` commands continue to manage only the consolidated
-workflow skill and native hook; they expose no authoring-skill or OpenSpec
-option.
+`zpp init` validates the complete packaged workflow family before projection,
+then Agent Router installs that family together with `zpp-traits` and every
+packaged companion skill in user scope. Initialization is independent of the
+local OpenSpec executable and never generates or installs upstream OpenSpec
+skills. Re-running `init` reports an already initialized agent and directs the
+caller to `zpp sync`, which reconciles the same shared inventory. Successful
+initialization prints one concise summary line by default; `--json` emits every
+ordered Agent Router lifecycle result. The grouped `workflow` commands manage
+the complete workflow family and native hook at project or user scope; they
+expose no authoring-skill or OpenSpec option.
 
 Packaged skills live under `zpp/artifacts/skills/{role}/{skill}`. The `workflow`
-role holds exactly one skill; every skill in the `companion` role is discovered
-by directory scan, in deterministic name order, and is projected and removed as
-part of the installation. A directory is a skill only when it contains
-`SKILL.md`. Adding a companion skill requires no code change; an unusable role
-fails loading rather than yielding a partial inventory.
+role must match the canonical family inventory and loads in entry, kernel,
+stage, adapter, and repository-verifier order. Every skill in the `companion`
+role is discovered by directory scan in deterministic name order. All are
+projected and removed through the shared lifecycle inventory. A directory is a
+skill only when it contains `SKILL.md`; a missing, invalid, or unexpected
+workflow member fails family loading rather than yielding a partial inventory.
 
 `zpp-configure-behave` is a manual authoring skill for repository-backed
 verification providers, stable segmented targets, conservative path rules,
@@ -172,9 +171,10 @@ repository attachment. ZPP owns YAML validation, target selection, and process
 execution. Mapping presence never triggers execution, and direct behavior
 commands create no lease state.
 
-Native BDD execution does not require `zpp.behave.yaml`. The consolidated
-workflow may run an established repository Behave, Cucumber, or other BDD
-surface directly from repository configuration or an explicit owner choice.
+Native BDD execution does not require `zpp.behave.yaml`.
+`zpps-verify-repository` may run an established repository Behave, Cucumber, or
+other BDD surface directly from repository configuration or an explicit owner
+choice.
 `zpp.behave.yaml` participates only when the repository explicitly chooses
 `zpp behave` for affected-target or gate coordination.
 
@@ -192,20 +192,25 @@ parent = "52b7223b-3d15-4e8a-98f7-d8ddc90fbf1c"
 [extensions.zpp-traits]
 ```
 
-The workflow acquires one bundle before governed OpenSpec mutation. A requested
-parent holds its descendant closure; independent roots requested together form
-one atomic crew. Finalization audits changed OpenSpec paths, records every
-archive, and completes the bundle only after all members archive. Agent Router owns
-plugin discovery and every workflow skill and native hook destination mutation.
+The workflow kernel acquires one bundle before governed OpenSpec mutation. A
+requested parent holds its descendant closure; independent roots requested
+together form one atomic crew. Finalization audits changed OpenSpec paths,
+records every archive, and completes the bundle only after all members archive.
+Agent Router owns plugin discovery and every workflow skill and native hook
+destination mutation.
 The installed native context hook invokes `resolve` automatically: Codex and
 Claude Code use JSON SessionStart hooks, Kimi uses a TOML SessionStart hook, and
 Pi uses a TypeScript `before_agent_start` extension. There is no invocation
-command, resolver skill, or UserPromptSubmit resolution hook. The consolidated
-skill contains workflow policy and does not bootstrap trait resolution.
+command, resolver skill, or UserPromptSubmit resolution hook. The workflow
+family contains invariant workflow policy and does not bootstrap trait
+resolution.
 
 Packaged defaults are source assets under `zpp/artifacts/traits`; this is not a
 required runtime collection layout. The standard families are `bdd`,
-`bdd-structure`, `bdd-execution`, `tdd`, `build`, `dependencies`, `tooling`, and
-`zero-assumptions`. Lease progression remains workflow-skill behavior rather
-than globally injected traits. ZPP 1.x Markdown traits and its seven stage
-skills are not migration inputs.
+`bdd-structure`, `bdd-execution`, `tdd`, and `tooling`. They carry only
+repository-selected language, framework, structure, mode, and tool
+specialization. Ponytail dependency selection, build completeness,
+zero-assumption reconciliation, BDD binding, and RED/GREEN invariants belong to
+their owning workflow skills. Lease progression remains kernel behavior rather
+than globally injected trait policy. ZPP 1.x Markdown traits and stage skills
+are not migration inputs.

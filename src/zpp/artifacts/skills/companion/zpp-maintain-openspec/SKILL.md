@@ -16,7 +16,11 @@ Read [references/maintenance-contract.md](references/maintenance-contract.md) co
 3. Use `zmem-query-memory` to retrieve valid decisions and lessons, then verify them against current specifications and repository evidence.
 4. Do not infer workflow-stage, commit, or deletion authority from this skill, repository detection, archive age, a recommendation, or automatic progression.
 
-If canonical specifications must change, require an explicit `zpp-workflow` invocation at `clarify` or existing end-to-end workflow authority. This companion skill never advances a stage itself.
+If canonical specifications must change, require an explicitly invoked current
+complete playbook (`zpp-new-feature`, `zpp-fix-bug`, `zpp-scaffold`, or
+`zpp-legacy-workflow`, whether selected directly or routed by `zpp-auto`) at
+`clarify`, or existing owner-authorized end-to-end playbook execution. This
+companion skill never advances a stage itself.
 
 ## Decide in this order
 
@@ -62,12 +66,13 @@ consolidation or removal; similar names and prose never establish coverage.
 
 Use only the already installed skill that owns each OpenSpec operation:
 
-- `openspec-explore` for exploration;
-- `openspec-propose` for creating a maintenance change;
-- `openspec-update-change` for revising planning artifacts;
-- `openspec-apply-change` for implementation tasks;
-- `openspec-sync-specs` for synchronizing accepted deltas;
-- `openspec-archive-change` for archiving a completed maintenance change.
+- `zpps-explore` for read-only exploration;
+- `zpps-propose-change` for creating a maintenance change;
+- `zpps-update-change` for revising planning artifacts;
+- `zpps-apply-change` for implementation tasks;
+- `zpps-sync-specs` for synchronizing accepted deltas;
+- `zpps-verify-change` for the semantic audit; and
+- `zpps-archive-change` for archiving one completed maintenance change.
 
 Never invoke or authorize `openspec init`, generate or vendor an OpenSpec skill tree, install or project an operation skill, repair one, or create a substitute operation owner anywhere. If a required skill is absent or unusable, block the operation and direct the owner to root `zpp init` when no integration exists or root `zpp sync` when one exists. Never run either user-scope lifecycle command on the owner's behalf.
 

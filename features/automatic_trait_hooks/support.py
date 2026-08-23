@@ -7,11 +7,11 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from agent_router import Agent
+from agent_router import Agent, AgentEnvironment, AgentRouter, Scope, Skill
 from openspec_bundler import InMemoryStoreProvider
 from typer.testing import CliRunner
 
-from zpp.artifacts import packaged_workflow_hook
+from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skills
 from zpp.cli import app
 from zpp.utils.bundler import BundlerDocuments
 
@@ -37,6 +37,17 @@ def resolves_current_repository(payload: str, name: str) -> bool:
     return f"--agent {name} ." in payload or f'"--agent", "{name}"' in payload
 
 
+def packaged_integration_inventory(agent: Agent) -> tuple[tuple[str, str], ...]:
+    return (
+        *(("skill", skill.name) for skill in packaged_workflow_skills()),
+        ("hook", packaged_workflow_hook(agent).name),
+    )
+
+
+def lifecycle_inventory(records: list[dict]) -> tuple[tuple[str, str], ...]:
+    return tuple((record["kind"], record["name"]) for record in records)
+
+
 class Project:
     """A disposable project root for scoped workflow projection."""
 
@@ -52,6 +63,30 @@ class Project:
         result = self.runner.invoke(app, list(arguments))
         assert result.exit_code == 0, result.output
         return json.loads(result.stdout)
+
+    def install_owned_obsolete(self, name: str) -> Path:
+        source = self.root / "obsolete-source" / name
+        source.mkdir(parents=True)
+        (source / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: obsolete test asset\n---\nold\n",
+            encoding="utf-8",
+        )
+        router = AgentRouter(
+            Agent.CODEX,
+            home=self.root / "user-home",
+            environment=AgentEnvironment(self.root / "user-home", self.root),
+        )
+        result = router.install_skill(
+            Skill.from_path(source), scope=Scope.PROJECT, project_root=self.root
+        )
+        assert result.status == "installed"
+        return result.destination / name / "SKILL.md"
+
+    def create_unmanaged_current(self, name: str) -> Path:
+        document = self.root / ".agents" / "skills" / name / "SKILL.md"
+        document.parent.mkdir(parents=True)
+        document.write_text("unmanaged current collision", encoding="utf-8")
+        return document
 
 
 class HookRepository:

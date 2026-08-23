@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import json
-from contextlib import contextmanager
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from agent_router import Agent
+from agent_router import Agent, Scope
 from typer.testing import CliRunner
 
 import zpp.cli.shared
@@ -19,6 +18,7 @@ open_cli = import_module("zpp.cli.open")
 reset_cli = import_module("zpp.cli.reset")
 initialization_cli = import_module("zpp.cli.initialization")
 lifecycle_cli = import_module("zpp.cli.lifecycle")
+sync_cli = import_module("zpp.cli.sync")
 
 
 def test_public_cli_preserves_grouped_shape() -> None:
@@ -89,81 +89,32 @@ def test_workflow_lifecycle_exposes_no_openspec_control() -> None:
         assert "openspec" not in result.stdout.casefold()
 
 
-def test_init_preflights_every_generated_inventory_before_projection(
+def test_init_projects_complete_packaged_family_without_generated_inventory(
     monkeypatch,
 ) -> None:
-    events: list[str] = []
-
-    class Result:
-        def __init__(self, name: str) -> None:
-            self.name = name
-
-        def to_dict(self):
-            return {"name": self.name, "status": "installed"}
-
-    @contextmanager
-    def generated(agents, *, cwd):
-        selected = tuple(agents)
-        events.append("generated:" + ",".join(agent.value for agent in selected))
-        yield tuple(
-            (
-                agent,
-                tuple(SimpleNamespace(name=f"openspec-{index}") for index in range(6)),
-            )
-            for agent in selected
-        )
-        events.append("generation-cleanup")
-
-    monkeypatch.setattr(
-        initialization_cli,
-        "generated_openspec_skill_sets",
-        generated,
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "agent_router",
-        lambda agent, root: agent,
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "installed_agents",
-        lambda inspected: frozenset(),
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "packaged_entries",
-        lambda agents, target=None: (),
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "packaged_workflow_skill",
-        lambda: SimpleNamespace(name="zpp-workflow"),
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "packaged_companion_skills",
-        lambda: (
-            SimpleNamespace(name="zpp-configure-behave"),
-            SimpleNamespace(name="zpp-author-trait"),
-        ),
-        raising=False,
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "packaged_workflow_hook",
-        lambda agent: SimpleNamespace(name="zpp-traits", agent=agent),
+    calls = []
+    inspections = tuple(
+        SimpleNamespace(agent=agent, classification="absent")
+        for agent in (Agent.CODEX, Agent.PI)
     )
 
-    def project(router, skill, scope, project_root):
-        events.append(f"skill:{router.value}:{skill.name}")
-        return Result(skill.name)
+    def inspect(agents, *, target, scope, project_root, include_companions):
+        calls.append(("inspect", agents, scope, project_root, include_companions))
+        return inspections
 
-    def project_hook(router, hook, scope, project_root):
-        events.append(f"hook:{router.value}:{hook.name}")
-        return Result(hook.name)
+    def reconcile(selected, *, absent):
+        calls.append(("reconcile", selected, absent))
+        return [
+            {
+                "agent": item.agent.value,
+                "asset": "skill:zpp-auto",
+                "status": "installed",
+            }
+            for item in selected
+        ]
 
-    monkeypatch.setattr(initialization_cli, "project_workflow_skill", project)
-    monkeypatch.setattr(initialization_cli, "project_workflow_hook", project_hook)
+    monkeypatch.setattr(initialization_cli, "inspect_installations", inspect)
+    monkeypatch.setattr(initialization_cli, "reconcile_installations", reconcile)
 
     result = runner.invoke(
         app,
@@ -171,16 +122,14 @@ def test_init_preflights_every_generated_inventory_before_projection(
     )
 
     assert result.exit_code == 0, result.output
-    assert events[0] == "generated:codex,pi"
-    assert events[-1] == "generation-cleanup"
-    assert len(json.loads(result.stdout)) == 20
-    assert events[1:11] == [
-        "skill:codex:zpp-workflow",
-        "hook:codex:zpp-traits",
-        "skill:codex:zpp-configure-behave",
-        "skill:codex:zpp-author-trait",
-        *(f"skill:codex:openspec-{index}" for index in range(6)),
-    ]
+    assert len(json.loads(result.stdout)) == 2
+    assert calls[0][1:] == (
+        (Agent.CODEX, Agent.PI),
+        Scope.USER,
+        None,
+        True,
+    )
+    assert calls[1] == ("reconcile", inspections, "install")
 
 
 def test_lifecycle_summary_aggregates_stable_human_statuses() -> None:
@@ -198,21 +147,44 @@ def test_lifecycle_summary_aggregates_stable_human_statuses() -> None:
     assert summary == "Initialized 2 agents: 1 installed, 1 updated, 2 unchanged."
 
 
+def test_sync_summary_names_partial_migration_and_failed_retirement() -> None:
+    summary = sync_cli._sync_summary(
+        (
+            {
+                "agent": "codex",
+                "asset": "obsolete-skill:zpp-workflow",
+                "status": "retirement-failed",
+                "decision": "preserve",
+            },
+            {
+                "agent": "codex",
+                "asset": "migration",
+                "status": "partial",
+                "decision": "migrate",
+                "current": ["skill:zpp-auto"],
+                "surviving_obsolete": ["obsolete-skill:zpp-workflow"],
+                "failures": ["obsolete-skill:zpp-workflow"],
+            },
+        )
+    )
+
+    assert "codex migration partial" in summary
+    assert "surviving obsolete: obsolete-skill:zpp-workflow" in summary
+    assert "retirement failed: obsolete-skill:zpp-workflow" in summary
+
+
 def test_init_rejects_an_installed_agent_and_directs_it_to_sync(monkeypatch) -> None:
     monkeypatch.setattr(
         initialization_cli,
-        "packaged_entries",
-        lambda agents, target=None: (),
+        "inspect_installations",
+        lambda *args, **kwargs: (
+            SimpleNamespace(agent=Agent.CODEX, classification="current"),
+        ),
     )
     monkeypatch.setattr(
         initialization_cli,
-        "installed_agents",
-        lambda inspected: frozenset({"codex"}),
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "_initialize_selected",
-        lambda agents, root: pytest.fail(f"initialized {agents}"),
+        "reconcile_installations",
+        lambda *args, **kwargs: pytest.fail("reconciled current integration"),
     )
 
     result = runner.invoke(app, ["init", "--agent", "codex", "--json"])
@@ -226,19 +198,17 @@ def test_init_rejects_an_installed_agent_and_directs_it_to_sync(monkeypatch) -> 
 def test_init_initializes_absent_agents_alongside_a_rejected_one(monkeypatch) -> None:
     monkeypatch.setattr(
         initialization_cli,
-        "packaged_entries",
-        lambda agents, target=None: (),
+        "inspect_installations",
+        lambda *args, **kwargs: (
+            SimpleNamespace(agent=Agent.CODEX, classification="current"),
+            SimpleNamespace(agent=Agent.PI, classification="absent"),
+        ),
     )
     monkeypatch.setattr(
         initialization_cli,
-        "installed_agents",
-        lambda inspected: frozenset({"codex"}),
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "_initialize_selected",
-        lambda agents, root: [
-            {"agent": item.value, "status": "installed"} for item in agents
+        "reconcile_installations",
+        lambda selected, absent: [
+            {"agent": item.agent.value, "status": "installed"} for item in selected
         ],
     )
 
@@ -260,74 +230,29 @@ def test_init_exposes_no_force_option() -> None:
     assert runner.invoke(app, ["init", "--force"]).exit_code != 0
 
 
-def test_init_generation_failure_precedes_every_projection(monkeypatch) -> None:
-    monkeypatch.setattr(
-        initialization_cli,
-        "packaged_entries",
-        lambda agents, target=None: (),
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "installed_agents",
-        lambda inspected: frozenset(),
-    )
+def test_init_has_no_openspec_generation_surface(monkeypatch) -> None:
+    assert not hasattr(initialization_cli, "generated_openspec_skill_sets")
 
-    @contextmanager
-    def fail_generation(agents, *, cwd):
-        del agents, cwd
-        raise ValueError("generation failed")
-        yield ()
+
+def test_init_invalid_packaged_family_precedes_projection(monkeypatch) -> None:
+    def fail_inspection(*args, **kwargs):
+        raise ValueError("invalid workflow family")
 
     monkeypatch.setattr(
         initialization_cli,
-        "generated_openspec_skill_sets",
-        fail_generation,
+        "inspect_installations",
+        fail_inspection,
     )
     monkeypatch.setattr(
         initialization_cli,
-        "agent_router",
-        lambda agent, root: pytest.fail(f"projected {agent} in {root}"),
+        "reconcile_installations",
+        lambda *args, **kwargs: pytest.fail("projected invalid family"),
     )
 
     result = runner.invoke(app, ["init", "--agent", "codex"])
 
     assert result.exit_code == 2
-    assert "generation failed" in result.output
-
-
-def test_init_packaged_authoring_failure_precedes_generation(monkeypatch) -> None:
-    monkeypatch.setattr(
-        initialization_cli,
-        "packaged_entries",
-        lambda agents, target=None: (),
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "installed_agents",
-        lambda inspected: frozenset(),
-    )
-
-    def fail_packaged():
-        raise ValueError("invalid authoring skill")
-
-    monkeypatch.setattr(
-        initialization_cli,
-        "packaged_companion_skills",
-        fail_packaged,
-        raising=False,
-    )
-    monkeypatch.setattr(
-        initialization_cli,
-        "generated_openspec_skill_sets",
-        lambda *args, **kwargs: pytest.fail(
-            f"generated after invalid package: {args} {kwargs}"
-        ),
-    )
-
-    result = runner.invoke(app, ["init", "--agent", "codex"])
-
-    assert result.exit_code == 2
-    assert "invalid authoring skill" in result.output
+    assert "invalid workflow family" in result.output
 
 
 def test_open_creates_and_opens_selected_home_without_bundler_state(
@@ -414,15 +339,17 @@ def test_reset_help_omits_obsolete_global_trait_overwrite_option() -> None:
     assert "overwrite-global-traits" not in result.stdout
 
 
-def test_reset_catalog_preflights_packaged_companion_skills_before_generated(
+def test_reset_catalog_contains_current_inventory_before_obsolete_tombstones(
     monkeypatch,
 ) -> None:
-    monkeypatch.setattr(reset_cli, "agent_router", lambda agent, target: agent)
     monkeypatch.setattr(lifecycle_cli, "agent_router", lambda agent, target: agent)
     monkeypatch.setattr(
         lifecycle_cli,
-        "packaged_workflow_skill",
-        lambda: SimpleNamespace(name="zpp-workflow"),
+        "packaged_workflow_skills",
+        lambda: (
+            SimpleNamespace(name="zpp-auto"),
+            SimpleNamespace(name="zpps-workflow-kernel"),
+        ),
     )
     monkeypatch.setattr(
         lifecycle_cli,
@@ -441,17 +368,22 @@ def test_reset_catalog_preflights_packaged_companion_skills_before_generated(
     projections = reset_cli.reset_projections()
 
     for position, agent in enumerate(reset_cli.SUPPORTED_AGENTS):
-        selected = projections[position * 10 : (position + 1) * 10]
-        assert [item.agent for item in selected] == [agent.value] * 10
+        per_agent = 2 + 1 + 2 + len(lifecycle_cli.OBSOLETE_WORKFLOW_SKILL_NAMES)
+        selected = projections[position * per_agent : (position + 1) * per_agent]
+        assert [item.agent for item in selected] == [agent.value] * per_agent
         assert [item.kind for item in selected] == [
+            "skill:zpp-auto",
+            "skill:zpps-workflow-kernel",
             "hook",
-            "skill",
             "skill:zpp-configure-behave",
             "skill:zpp-author-trait",
-            *(f"skill:{name}" for name in reset_cli.OPENSPEC_CORE_SKILL_NAMES),
+            *(
+                f"obsolete-skill:{name}"
+                for name in lifecycle_cli.OBSOLETE_WORKFLOW_SKILL_NAMES
+            ),
         ]
-        assert all(item.inspect is not None for item in selected[:4])
-        assert all(item.inspect is None for item in selected[4:])
+        assert all(item.inspect is not None for item in selected)
+        assert all(item.project is None for item in selected[5:])
 
 
 def test_prompt_uses_exact_agent_router_agent_order(monkeypatch) -> None:
@@ -487,33 +419,29 @@ def test_prompt_uses_exact_agent_router_agent_order(monkeypatch) -> None:
 
 def test_workflow_cli_preserves_explicit_first_seen_agent_order(monkeypatch) -> None:
     calls = []
-
-    class Result:
-        def to_dict(self):
-            return {"status": "installed"}
-
-    monkeypatch.setattr(zpp.cli.workflow, "agent_router", lambda agent, target: agent)
-    monkeypatch.setattr(
-        zpp.cli.workflow,
-        "packaged_workflow_skill",
-        lambda: SimpleNamespace(name="zpp-workflow"),
-    )
-    monkeypatch.setattr(
-        zpp.cli.workflow,
-        "packaged_workflow_hook",
-        lambda agent: SimpleNamespace(name="zpp-traits", agent=agent),
+    inspections = (
+        SimpleNamespace(agent=Agent.CODEX, classification="absent"),
+        SimpleNamespace(agent=Agent.PI, classification="absent"),
     )
 
-    def project(router, skill, scope, project_root, *, replace_project=False):
-        calls.append(("skill", router, replace_project))
-        return Result()
+    def inspect(agents, **kwargs):
+        calls.append(("inspect", agents, kwargs))
+        return inspections
 
-    def project_hook(router, hook, scope, project_root):
-        calls.append(("hook", router, False))
-        return Result()
+    def reconcile(selected, **kwargs):
+        calls.append(("reconcile", selected, kwargs))
+        return [
+            {
+                "agent": item.agent.value,
+                "asset": "skill:zpp-auto",
+                "status": "installed",
+            }
+            for item in selected
+        ]
 
-    monkeypatch.setattr(zpp.cli.workflow, "project_workflow_skill", project)
-    monkeypatch.setattr(zpp.cli.workflow, "project_workflow_hook", project_hook)
+    monkeypatch.setattr(zpp.cli.workflow, "inspect_installations", inspect)
+    monkeypatch.setattr(zpp.cli.workflow, "preflight_first_install", lambda items: None)
+    monkeypatch.setattr(zpp.cli.workflow, "reconcile_installations", reconcile)
 
     result = runner.invoke(
         app,
@@ -530,45 +458,26 @@ def test_workflow_cli_preserves_explicit_first_seen_agent_order(monkeypatch) -> 
     )
 
     assert result.exit_code == 0
-    assert calls == [
-        ("skill", Agent.CODEX, False),
-        ("hook", Agent.CODEX, False),
-        ("skill", Agent.PI, False),
-        ("hook", Agent.PI, False),
-    ]
+    assert calls[0][1] == (Agent.CODEX, Agent.PI)
+    assert calls[1][1] == inspections
 
 
 def test_workflow_project_update_requests_explicit_skill_replacement(
     monkeypatch,
 ) -> None:
     calls = []
+    inspection = SimpleNamespace(agent=Agent.CODEX, classification="current")
 
-    class Result:
-        def to_dict(self):
-            return {"status": "updated"}
+    def inspect(agents, **kwargs):
+        calls.append(("inspect", agents, kwargs))
+        return (inspection,)
 
-    monkeypatch.setattr(zpp.cli.workflow, "agent_router", lambda agent, target: agent)
-    monkeypatch.setattr(
-        zpp.cli.workflow,
-        "packaged_workflow_skill",
-        lambda: SimpleNamespace(name="zpp-workflow"),
-    )
-    monkeypatch.setattr(
-        zpp.cli.workflow,
-        "packaged_workflow_hook",
-        lambda agent: SimpleNamespace(name="zpp-traits"),
-    )
+    def reconcile(selected, **kwargs):
+        calls.append(("reconcile", selected, kwargs))
+        return []
 
-    def project(router, skill, scope, project_root, *, replace_project=False):
-        calls.append(("skill", replace_project))
-        return Result()
-
-    def project_hook(router, hook, scope, project_root):
-        calls.append(("hook", False))
-        return Result()
-
-    monkeypatch.setattr(zpp.cli.workflow, "project_workflow_skill", project)
-    monkeypatch.setattr(zpp.cli.workflow, "project_workflow_hook", project_hook)
+    monkeypatch.setattr(zpp.cli.workflow, "inspect_installations", inspect)
+    monkeypatch.setattr(zpp.cli.workflow, "reconcile_installations", reconcile)
 
     result = runner.invoke(
         app,
@@ -576,7 +485,13 @@ def test_workflow_project_update_requests_explicit_skill_replacement(
     )
 
     assert result.exit_code == 0
-    assert calls == [("skill", True), ("hook", False)]
+    assert calls[0][2]["scope"] is Scope.PROJECT
+    assert calls[0][2]["project_root"] == Path.cwd().resolve()
+    assert calls[1] == (
+        "reconcile",
+        (inspection,),
+        {"force": True, "absent": "install", "explicit_update": True},
+    )
 
 
 def test_agent_router_uses_real_home_and_selected_project(

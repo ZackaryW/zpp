@@ -38,9 +38,10 @@ Feature: Run repository-owned verification through zpp behave
     When the caller runs the declared bdd command for one target twice
     Then the provider receives that target once
 
+  # zpp-spec: {"root":"repo:openspec","capability":"behavior-verification","requirement":"Repository-owned gate target sets","feature":"features/behavior_verification/behavior_verification.feature","scenario":"Apply a declared workflow gate"}
   Scenario: Apply a declared workflow gate
     Given a committed repository with a declared behavior mapping
-    When the caller runs the declared bdd command for the zpp-workflow gate
+    When the caller runs the declared bdd command for the workflow kernel gate
     Then the provider receives the gate's declared target set
 
   Scenario: Reject ambiguous selection

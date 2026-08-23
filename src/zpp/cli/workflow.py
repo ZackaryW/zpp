@@ -6,7 +6,12 @@ from typing import Annotated, Literal
 import typer
 from agent_router import Agent, Scope
 
-from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skill
+from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skills
+from zpp.cli.lifecycle import (
+    inspect_installations,
+    preflight_first_install,
+    reconcile_installations,
+)
 from zpp.cli.shared import (
     abort_cancelled,
     agent_router,
@@ -16,15 +21,13 @@ from zpp.cli.shared import (
     user_action,
 )
 from zpp.utils.agent_router import (
-    project_workflow_hook,
-    project_workflow_skill,
     remove_workflow_hook,
     remove_workflow_skill,
 )
 from zpp.utils.agent_selection import AgentSelectionError, select_many_agents
 
 app = typer.Typer(
-    help="Manage the consolidated workflow skill and hook through Agent Router.",
+    help="Manage the packaged workflow family and hook through Agent Router.",
     no_args_is_help=True,
 )
 
@@ -55,43 +58,77 @@ def _manage(
     project = target.resolve()
     scope = Scope.USER if global_ else Scope.PROJECT
     project_root = None if global_ else project
-    skill = packaged_workflow_skill()
-    results = []
-    for agent in selection.agents:
-        router = agent_router(agent, project)
-        hook = packaged_workflow_hook(agent)
-        if operation == "remove":
+    skills = packaged_workflow_skills()
+    results: list[dict[str, object]] = []
+    if operation in {"install", "update"}:
+        inspections = user_action(
+            lambda: inspect_installations(
+                selection.agents,
+                target=project,
+                scope=scope,
+                project_root=project_root,
+                include_companions=False,
+                explicit_project_update=(
+                    operation == "update" and scope is Scope.PROJECT
+                ),
+            )
+        )
+        if operation == "install":
+            conflict = preflight_first_install(inspections)
+            if conflict is not None:
+                raise typer.BadParameter(
+                    "workflow install blocked: "
+                    f"agent={conflict['agent']} scope={conflict['scope']} "
+                    f"project_root={conflict['project_root']} "
+                    f"destination={conflict['destination']} "
+                    f"asset={conflict['asset']} status={conflict['status']}: "
+                    f"{conflict['reason']}"
+                )
+        results = user_action(
+            lambda: reconcile_installations(
+                inspections,
+                force=operation == "update",
+                absent="install",
+                explicit_update=(operation == "update" and scope is Scope.PROJECT),
+            )
+        )
+    else:
+        for agent in selection.agents:
+            router = agent_router(agent, project)
+            hook = packaged_workflow_hook(agent)
             hook_result = user_action(
                 lambda selected_router=router, selected_hook=hook: remove_workflow_hook(
                     selected_router, selected_hook.name, scope, project_root
                 )
             )
-            skill_result = user_action(
-                lambda selected_router=router: remove_workflow_skill(
-                    selected_router, skill.name, scope, project_root
-                )
-            )
-        else:
-            skill_result = user_action(
-                lambda selected_router=router: project_workflow_skill(
-                    selected_router,
-                    skill,
-                    scope,
-                    project_root,
-                    replace_project=(operation == "update" and scope is Scope.PROJECT),
-                )
-            )
-            hook_result = user_action(
-                lambda selected_router=router, selected_hook=hook: (
-                    project_workflow_hook(
-                        selected_router, selected_hook, scope, project_root
+            skill_results = [
+                user_action(
+                    lambda selected_router=router, selected_skill=skill: (
+                        remove_workflow_skill(
+                            selected_router,
+                            selected_skill.name,
+                            scope,
+                            project_root,
+                        )
                     )
                 )
-            )
-        for result in (skill_result, hook_result):
-            item = result.to_dict()
-            item["request"] = operation
-            results.append(item)
+                for skill in reversed(skills)
+            ]
+            skill_results.reverse()
+            for result in (*skill_results, hook_result):
+                results.append(result.to_dict())
+    for item in results:
+        asset = str(item.get("asset", ""))
+        if asset == "hook":
+            item.setdefault("kind", "hook")
+            item.setdefault("name", "zpp-traits")
+        elif asset.startswith("skill:"):
+            item.setdefault("kind", "skill")
+            item.setdefault("name", asset.removeprefix("skill:"))
+        elif asset.startswith("obsolete-skill:"):
+            item.setdefault("kind", "skill")
+            item.setdefault("name", asset.removeprefix("obsolete-skill:"))
+        item["request"] = operation
     emit_json(results)
 
 
@@ -118,7 +155,7 @@ def install(
         typer.Option("--global", help="Install in the user scope."),
     ] = False,
 ) -> None:
-    """Install the consolidated workflow skill and native trait hook."""
+    """Install the packaged workflow family and native trait hook."""
     _manage("install", *_options(agent, target, global_))
 
 
@@ -137,7 +174,7 @@ def update(
         typer.Option("--global", help="Update in the user scope."),
     ] = False,
 ) -> None:
-    """Update an Agent Router-owned workflow installation."""
+    """Update an Agent Router-owned workflow-family installation."""
     _manage("update", *_options(agent, target, global_))
 
 
@@ -156,5 +193,5 @@ def remove(
         typer.Option("--global", help="Remove from the user scope."),
     ] = False,
 ) -> None:
-    """Remove an intact Agent Router-owned workflow installation."""
+    """Remove an intact Agent Router-owned workflow-family installation."""
     _manage("remove", *_options(agent, target, global_))

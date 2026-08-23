@@ -11,7 +11,7 @@ from zpp.cli.shared import emit_json, runtime, user_action
 from zpp.utils.bundler import BundlerLeaseService
 
 app = typer.Typer(
-    help="Operate the Bundler lease lifecycle used by zpp-workflow.",
+    help="Operate the Bundler lease lifecycle governed by zpps-workflow-kernel.",
     no_args_is_help=True,
 )
 

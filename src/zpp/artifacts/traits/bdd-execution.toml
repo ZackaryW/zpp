@@ -5,26 +5,26 @@ selection = "first-win"
 [trait.facet]
 bdd_mode = "manual"
 [trait.content]
-body = """Pause before selecting or invoking a BDD command. This mode does not convert a failed or insufficient command or an unsatisfied shaped BDD obligation into success and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
+body = """Use manual BDD selection and request the repository-specific command and target choice from the owner."""
 
 [[trait]]
 [trait.facet]
 bdd_mode = "disabled"
 [trait.content]
-body = """Omit BDD only when another established relevant verification surface exists and no accepted shaped BDD obligation remains unsatisfied; record that alternate evidence. This mode does not convert a failed or insufficient command into success and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
+body = """Use the repository's disabled BDD mode and identify its established alternate verification surface."""
 
 [[trait]]
 [trait.facet]
 bdd_mode = "complete"
 [trait.content]
-body = """Run the complete established native BDD suite. When the repository explicitly selects optional `zpp behave` coordination, request every declared target with `--all`. This trait never supplies executable command text, repository gate bindings, or target identities, cannot bypass failed or insufficient verification, and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
+body = """Prefer the repository's complete BDD selection mode across its established native capability surfaces."""
 
 [[trait]]
 [trait.facet]
 bdd_mode = "targeted"
 [trait.content]
-body = """Run the relevant established native BDD feature surface directly. When the repository explicitly selects optional `zpp behave` coordination, request its declared workflow gate with `--gate zpp-workflow` and otherwise use deterministic affected selection. This trait never supplies executable command text, repository gate bindings, or target identities, cannot bypass failed or insufficient verification, and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
+body = """Prefer the repository's targeted BDD selection mode for the relevant established native capability surfaces."""
 
 [[trait]]
 [trait.content]
-body = """Use targeted BDD verification by default and run the relevant established native feature surface directly. When the repository explicitly selects optional `zpp behave` coordination, request its declared workflow gate with `--gate zpp-workflow` and otherwise use deterministic affected selection. This global or inherited trait never supplies executable command text, repository gate bindings, or target identities. It cannot convert failed or insufficient verification or an unsatisfied shaped BDD obligation into success and grants no callback, staging, commit, merge, rebase, or reconciliation authority."""
+body = """Prefer targeted BDD selection when the repository has not selected another execution mode."""

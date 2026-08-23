@@ -28,6 +28,16 @@ def preinstalled(context) -> None:
     )
 
 
+@given("only an owned obsolete workflow skill is installed into that project")
+def old_only_project(context) -> None:
+    context.obsolete = context.project.install_owned_obsolete("zpp-workflow")
+
+
+@given("an unmanaged current workflow destination exists in that project")
+def unmanaged_current_project(context) -> None:
+    context.conflict = context.project.create_unmanaged_current("zpp-auto")
+
+
 @when("the packaged native hook is inspected")
 def inspect_hook(context) -> None:
     context.payload = support.hook_payload(context.hook)
@@ -35,9 +45,27 @@ def inspect_hook(context) -> None:
 
 @when("a user installs the codex workflow integration into that project")
 def install_integration(context) -> None:
+    context.result = context.project.runner.invoke(
+        support.app,
+        [
+            "workflow",
+            "install",
+            "--agent",
+            "codex",
+            "--target",
+            str(context.project.root),
+        ],
+        terminal_width=300,
+    )
+    if context.result.exit_code == 0:
+        context.records = support.json.loads(context.result.stdout)
+
+
+@when("a user updates the codex workflow integration in that project")
+def update_integration(context) -> None:
     context.records = context.project.run_json(
         "workflow",
-        "install",
+        "update",
         "--agent",
         "codex",
         "--target",
@@ -79,15 +107,82 @@ def hook_has_no_guard(context) -> None:
     assert "UserPromptSubmit" not in context.payload
 
 
-@then("Agent Router projects exactly the workflow skill and the native hook")
-def projected_pair(context) -> None:
-    assert len(context.records) == 2, context.records
+@then(
+    "Agent Router projects the complete packaged workflow family and zpp-traits "
+    "in deterministic order"
+)
+def projected_family(context) -> None:
+    assert context.result.exit_code == 0, context.result.output
+    assert support.lifecycle_inventory(
+        context.records
+    ) == support.packaged_integration_inventory(Agent.CODEX)
     assert {record["request"] for record in context.records} == {"install"}
 
 
-@then("Agent Router removes exactly the workflow skill and the native hook")
-def removed_pair(context) -> None:
-    assert len(context.records) == 2, context.records
+@then("the complete current workflow integration replaces the obsolete project skill")
+def project_migrated(context) -> None:
+    current = [
+        record
+        for record in context.records
+        if not record["asset"].startswith("obsolete-skill:")
+        and record["asset"] != "migration"
+    ]
+    assert len(current) == len(support.packaged_integration_inventory(Agent.CODEX)), (
+        context.records
+    )
+    obsolete = [
+        record
+        for record in context.records
+        if record["asset"] == "obsolete-skill:zpp-workflow"
+    ]
+    assert len(obsolete) == 1
+    assert obsolete[0]["status"] == "removed"
+    migration = [record for record in context.records if record["asset"] == "migration"]
+    assert len(migration) == 1, context.records
+    assert migration[0]["status"] == "complete"
+    assert migration[0]["origin"] == "old-only"
+    assert migration[0]["current"] == [
+        f"{kind}:{name}" if kind == "skill" else "hook"
+        for kind, name in support.packaged_integration_inventory(Agent.CODEX)
+    ]
+    assert migration[0]["surviving_obsolete"] == []
+    assert not context.obsolete.exists()
+
+
+@then(
+    "installation reports the exact conflict without projecting another family member"
+)
+def install_conflict_safe(context) -> None:
+    compact_output = "".join(context.result.output.replace("│", "").split())
+    assert context.result.exit_code != 0, context.result.output
+    selected_root = context.project.root.resolve()
+    expected = (
+        "agent=codex",
+        "scope=project",
+        f"project_root={selected_root}",
+        f"destination={selected_root / '.agents' / 'skills'}",
+        "asset=skill:zpp-auto",
+    )
+    missing = [item for item in expected if item not in compact_output]
+    assert not missing, (missing, compact_output)
+    assert context.conflict.read_text(encoding="utf-8") == "unmanaged current collision"
+    for kind, name in support.packaged_integration_inventory(Agent.CODEX):
+        if name == "zpp-auto":
+            continue
+        if kind == "skill":
+            assert not (context.project.root / ".agents" / "skills" / name).exists(), (
+                name
+            )
+
+
+@then(
+    "Agent Router removes the complete packaged workflow family and zpp-traits "
+    "in deterministic order"
+)
+def removed_family(context) -> None:
+    assert support.lifecycle_inventory(
+        context.records
+    ) == support.packaged_integration_inventory(Agent.CODEX)
     assert {record["request"] for record in context.records} == {"remove"}
 
 

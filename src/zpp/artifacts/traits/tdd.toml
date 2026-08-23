@@ -11,7 +11,7 @@ workspace_contains = "setup.py"
 [[trait.when]]
 workspace_contains = "setup.cfg"
 [trait.content]
-body = """Prove a relevant RED, implement the smallest coherent slice, then run focused and complete GREEN verification."""
+body = """Use the repository's established Python test runner, fixture conventions, and focused-test selectors."""
 
 [[trait]]
 [trait.facet]
@@ -22,7 +22,7 @@ workspace_contains = "manage.py"
 [[trait.when]]
 workspace_contains = "**/settings.py"
 [trait.content]
-body = """Keep framework setup in test support, exercise public behavior, and avoid production database coupling."""
+body = """Use the repository's established Django test setup and database-isolation conventions."""
 
 [[trait]]
 [trait.facet]
@@ -30,7 +30,7 @@ language = "flutter"
 [[trait.when]]
 workspace_contains = "pubspec.yaml"
 [trait.content]
-body = """Use SDK test surfaces, isolate platform boundaries, and verify focused tests before the complete suite."""
+body = """Use the repository's established Flutter SDK test surfaces and platform-test fixtures."""
 
 [[trait]]
 [trait.facet]
@@ -40,4 +40,4 @@ workspace_contains = "tsconfig.json"
 [[trait.when]]
 workspace_contains = "**/tsconfig.json"
 [trait.content]
-body = """Use the repository's package manager and runner, prove the failure, implement, then run focused and complete checks."""
+body = """Use the repository's established TypeScript package manager, test runner, and focused-test selectors."""

@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from agent_router import Agent
+from agent_router import Agent, Scope
 
-from zpp.cli.lifecycle import generated_entries, packaged_entries
+from zpp.cli.lifecycle import inspect_installations, reconcile_installations
 from zpp.cli.shared import (
     abort_cancelled,
     emit_json,
@@ -16,13 +16,6 @@ from zpp.cli.shared import (
     user_action,
 )
 from zpp.utils.agent_selection import AgentSelectionError, select_many_agents
-from zpp.utils.lifecycle import (
-    SelectedProjection,
-    inspect_entries,
-    installed_agents,
-    select_projections,
-)
-from zpp.utils.openspec import generated_openspec_skill_sets
 
 
 def sync(
@@ -72,52 +65,14 @@ def _synchronize(
     *,
     force: bool,
 ) -> list[dict[str, object]]:
-    packaged = packaged_entries(agents, target=root)
-    inspected = inspect_entries(packaged)
-    installed = installed_agents(inspected)
-
-    records: list[dict[str, object]] = [
-        {
-            "agent": agent.value,
-            "asset": "-",
-            "status": "uninitialized",
-            "decision": "skip",
-        }
-        for agent in agents
-        if agent.value not in installed
-    ]
-    if not installed:
-        return records
-
-    ready = tuple(agent for agent in agents if agent.value in installed)
-    scoped = tuple(item for item in inspected if item.entry.agent in installed)
-    records.extend(_apply(select_projections(scoped, force=force)))
-
-    with generated_openspec_skill_sets(ready, cwd=root) as generated:
-        entries = generated_entries(generated, target=root)
-        selected = select_projections(inspect_entries(entries), force=force)
-        records.extend(_apply(selected))
-    return records
-
-
-def _apply(
-    selected: Sequence[SelectedProjection],
-) -> list[dict[str, object]]:
-    records: list[dict[str, object]] = []
-    for item in selected:
-        record = item.to_dict()
-        operation = {
-            "project": item.entry.project,
-            "reproject": item.entry.reproject,
-        }.get(item.decision)
-        if operation is not None:
-            try:
-                record["status"] = operation().status
-            except Exception as error:
-                record["status"] = "projection-failed"
-                record["error"] = str(error)
-        records.append(record)
-    return records
+    inspections = inspect_installations(
+        agents,
+        target=root,
+        scope=Scope.USER,
+        project_root=None,
+        include_companions=True,
+    )
+    return reconcile_installations(inspections, force=force, absent="skip")
 
 
 def _sync_summary(records: Sequence[dict[str, object]]) -> str:
@@ -131,6 +86,7 @@ def _sync_summary(records: Sequence[dict[str, object]]) -> str:
     failed = sum(
         str(record.get("status", "")) == "projection-failed" for record in records
     )
+    migrations = [record for record in records if record.get("asset") == "migration"]
     parts = [f"{projected} reprojected", f"{current} already current"]
     if repaired:
         parts.append(f"{repaired} repaired")
@@ -142,6 +98,16 @@ def _sync_summary(records: Sequence[dict[str, object]]) -> str:
         parts.append(f"{uninitialized} uninitialized")
     if failed:
         parts.append(f"{failed} failed")
+    for migration in migrations:
+        status = migration["status"]
+        surviving = ", ".join(migration.get("surviving_obsolete", [])) or "none"
+        failures = ", ".join(migration.get("failures", []))
+        detail = (
+            f"{migration['agent']} migration {status}; surviving obsolete: {surviving}"
+        )
+        if failures:
+            detail += f"; retirement failed: {failures}"
+        parts.append(detail)
     return "Synchronized: " + ", ".join(parts) + "."
 
 

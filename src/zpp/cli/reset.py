@@ -6,13 +6,10 @@ from pathlib import Path
 from typing import Annotated, Protocol
 
 import typer
-from agent_router import Scope
 
-from zpp.cli.lifecycle import SUPPORTED_AGENTS, packaged_entries
-from zpp.cli.shared import agent_router, emit_json, runtime, user_action
-from zpp.utils.agent_router import remove_workflow_skill
+from zpp.cli.lifecycle import SUPPORTED_AGENTS, obsolete_entries, packaged_entries
+from zpp.cli.shared import emit_json, runtime, user_action
 from zpp.utils.lifecycle import LifecycleEntry
-from zpp.utils.openspec import OPENSPEC_CORE_SKILL_NAMES
 from zpp.utils.product_home import PreparedBundlerState
 
 
@@ -70,36 +67,15 @@ def reset_projections() -> tuple[LifecycleEntry, ...]:
     """Derive reset targets from the shared lifecycle inventory.
 
     Packaged entries come from the inventory that initialization and
-    synchronization also use. The canonical OpenSpec skills are appended per
-    agent as removal-only entries, because they are generated rather than
-    packaged and reset deletes them by stable name under Agent Router's
-    forced-owned deletion contract.
+    synchronization also use. Obsolete identities are appended as inert,
+    removal-only tombstones and are removed only through Agent Router when its
+    ownership evidence makes that safe.
     """
     target = Path.cwd().resolve()
     projections: list[LifecycleEntry] = []
     for agent in SUPPORTED_AGENTS:
         projections.extend(packaged_entries((agent,), target=target))
-        router = agent_router(agent, target)
-        projections.extend(
-            LifecycleEntry(
-                agent=agent.value,
-                kind=f"skill:{name}",
-                inspect=None,
-                project=None,
-                remove=(
-                    lambda selected_router=router, selected_name=name: (
-                        remove_workflow_skill(
-                            selected_router,
-                            selected_name,
-                            Scope.USER,
-                            None,
-                            force=True,
-                        )
-                    )
-                ),
-            )
-            for name in OPENSPEC_CORE_SKILL_NAMES
-        )
+        projections.extend(obsolete_entries((agent,), target=target))
     return tuple(projections)
 
 
@@ -124,6 +100,8 @@ def _reset_state(
             )
         inspected.append((projection, record))
         inspections_by_projection[id(projection)] = record
+        if projection.kind.startswith("obsolete-skill:"):
+            continue
         if record["status"] not in {"absent", "current"}:
             conflicts.append(record)
 
@@ -134,8 +112,12 @@ def _reset_state(
     removals: list[dict[str, object]] = []
     failures: list[dict[str, object]] = []
     for projection in projections:
+        obsolete = projection.kind.startswith("obsolete-skill:")
         inspection = inspections_by_projection.get(id(projection))
         if inspection is not None and inspection["status"] == "absent":
+            continue
+        if obsolete and inspection is not None and inspection["status"] == "unmanaged":
+            removals.append({**inspection, "decision": "preserve"})
             continue
         try:
             result = projection.remove()
@@ -145,8 +127,11 @@ def _reset_state(
                 projection,
                 {"status": "removal-failed", "error": str(error)},
             )
+            if obsolete:
+                record["status"] = "conflict"
+                record["decision"] = "preserve"
         removals.append(record)
-        if record["status"] not in {"absent", "removed"}:
+        if record["status"] not in {"absent", "removed"} and not obsolete:
             failures.append(record)
 
     if failures:
@@ -182,10 +167,14 @@ def _reset_summary(report: _ResetReport) -> str:
         record.get("status") == "absent"
         for record in (*report.inspections, *report.removals)
     )
-    return (
+    summary = (
         f"Reset complete: {removed} removed, {absent} already absent; "
         f"Bundler state {report.state}."
     )
+    preserved = sum(record.get("decision") == "preserve" for record in report.removals)
+    if preserved:
+        summary = summary.removesuffix(".") + f"; {preserved} obsolete preserved."
+    return summary
 
 
 def _summarize(records: Sequence[Mapping[str, object]]) -> str:

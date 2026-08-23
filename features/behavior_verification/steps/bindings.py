@@ -48,9 +48,9 @@ def run_repeated_target(context) -> None:
     )
 
 
-@when("the caller runs the declared bdd command for the zpp-workflow gate")
+@when("the caller runs the declared bdd command for the workflow kernel gate")
 def run_gate(context) -> None:
-    context.result = context.repository.behave("bdd", "--gate", "zpp-workflow")
+    context.result = context.repository.behave("bdd", "--gate", "zpps-workflow-kernel")
 
 
 @when("the caller combines complete and explicit target selection")
