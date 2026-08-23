@@ -9,7 +9,7 @@ Define the packaged manual guidance and safety gates for auditing legacy OpenSpe
 ### Requirement: Packaged manual OpenSpec maintenance guidance
 ZPP SHALL package `zpp-maintain-openspec` as a companion skill that guides an agent to audit legacy archived changes, consolidate overlapping canonical specifications, and remove only eligible authorized archive paths. The skill SHALL run only for an explicit request, SHALL introduce no ZPP command or automatic hook, and SHALL NOT infer workflow-stage, commit, or deletion authority from repository detection, archive age, a recommendation, or automatic workflow progression.
 
-The skill SHALL treat canonical OpenSpec specifications and accepted owner input as current authority and archived changes as provenance evidence rather than current authority. Any canonical specification edit SHALL remain governed by an explicitly invoked `zpp-workflow` change and its installed OpenSpec operation skills.
+The skill SHALL treat canonical OpenSpec specifications and accepted owner input as current authority and archived changes as provenance evidence rather than current authority. Any canonical specification edit SHALL remain governed by an explicitly invoked current complete playbook (`zpp-new-feature`, `zpp-fix-bug`, `zpp-scaffold`, or `zpp-legacy-workflow`, whether selected directly or routed by `zpp-auto`) at `clarify`, or by existing owner-authorized end-to-end playbook execution, together with the exact installed ZPP-owned `zpps-*` adapter for each OpenSpec operation. The companion skill SHALL NOT select or advance that playbook sequence itself.
 
 #### Scenario: Leave maintenance dormant without a request
 - **WHEN** an installed agent starts a session, detects an OpenSpec directory, or runs an unrelated workflow change
@@ -17,7 +17,7 @@ The skill SHALL treat canonical OpenSpec specifications and accepted owner input
 
 #### Scenario: Preserve operation ownership
 - **WHEN** a requested maintenance outcome requires canonical edits, synchronization, archival, or commits
-- **THEN** the skill directs each operation through its exact installed workflow, OpenSpec, or zmem owner without creating or initializing a repository-local substitute
+- **THEN** the skill directs each operation through its exact current playbook, ZPP-owned adapter, or zmem owner without creating or initializing a repository-local substitute
 
 ### Requirement: Evidence-backed archive audit
 Before recommending mutation, the maintenance skill SHALL inspect active changes, canonical specifications, archived deltas and tasks, relevant Git provenance, and valid zmem evidence. It SHALL classify each accepted archive item by preservation authority: current behavior, constraints, scenarios, serialization, and owner boundaries SHALL have an unambiguous canonical OpenSpec destination; historical rationale and superseded decisions SHALL have traceable zmem representation. The appropriate one of those preservation sources SHALL be sufficient, and the audit SHALL NOT require every planning sentence to be duplicated across both stores or treat a stale task checkbox as an independent blocker when current repository evidence proves the represented outcome.
@@ -94,12 +94,12 @@ When current canonical authority or an explicit owner decision proves a valid zm
 - **THEN** the skill does not cancel it and instead retains it or proposes deliberate decay with the unresolved difference exposed
 
 ### Requirement: No repository-local OpenSpec skill bootstrap
-During maintenance, the skill SHALL use only already installed `openspec-explore`, `openspec-propose`, `openspec-update-change`, `openspec-apply-change`, `openspec-sync-specs`, and `openspec-archive-change` operation skills when their owned operations are needed. It SHALL never invoke or authorize `openspec init`, generate or vendor an OpenSpec skill tree, install or project an operation skill, repair one, or create a substitute operation owner in the target repository or another location.
+During maintenance, the skill SHALL use only the already installed ZPP-owned `zpps-explore`, `zpps-propose-change`, `zpps-update-change`, `zpps-apply-change`, `zpps-sync-specs`, `zpps-verify-change`, and `zpps-archive-change` adapters when their bounded operations are needed. It SHALL never invoke a generated `openspec-*` operation skill as authority, invoke or authorize `openspec init`, generate or vendor an OpenSpec skill tree, install or project an operation skill, repair one, or create a substitute operation owner in the target repository or another location.
 
-When a required operation skill is absent, unreadable, invalid, stale, or requests local initialization, the skill SHALL block that operation and direct the owner to root `zpp init` when no ZPP integration exists or root `zpp sync` when one already exists. It SHALL never run those user-scope lifecycle commands on the owner's behalf.
+When a required ZPP-owned adapter is absent, unreadable, invalid, stale, or requests local initialization, the skill SHALL block that operation and direct the owner to root `zpp init` when no ZPP integration exists or root `zpp sync` when one already exists. It SHALL never run those user-scope lifecycle commands on the owner's behalf.
 
 #### Scenario: Block maintenance when an operation owner is missing
-- **WHEN** an eligible maintenance step requires an unavailable or unusable OpenSpec operation skill
+- **WHEN** an eligible maintenance step requires an unavailable or unusable ZPP-owned OpenSpec adapter
 - **THEN** the skill leaves the step blocked, names the exact missing skill, and performs no local OpenSpec skill bootstrap or substitute operation
 
 ### Requirement: BDD-target scenario reconciliation

@@ -37,9 +37,9 @@ Each command MAY declare a `gates` mapping from stable, non-empty gate identitie
 - **WHEN** a command declares a gate whose non-empty target list refers only to targets declared by that command
 - **THEN** ZPP accepts the gate as repository-owned selection policy without copying provider values
 
-#### Scenario: Execute a configured gate
-- **WHEN** a caller supplies `--gate` with a valid gate identity declared by the selected command
-- **THEN** ZPP submits exactly that gate's targets once each in target declaration order
+#### Scenario: Conformance trace for configured gate execution
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"behavior-verification","requirement":"Repository-owned gate target sets","feature":"features/behavior_verification/behavior_verification.feature","scenario":"Apply a declared workflow gate"}`
+- **THEN** executable acceptance authority is `features/behavior_verification/behavior_verification.feature::Apply a declared workflow gate`
 
 #### Scenario: Reject an invalid gate binding
 - **WHEN** a gate is empty, repeats a target, or refers to a target not declared by its command

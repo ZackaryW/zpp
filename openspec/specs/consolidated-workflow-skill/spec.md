@@ -2,61 +2,171 @@
 
 ## Purpose
 
-Define the single ZPP workflow authority and its boundary with contextual traits and component-owned operations.
+Define the packaged ZPP workflow entry family, its single lifecycle kernel, bounded stage and OpenSpec adapter skills, contextual trait consumption, and single executable acceptance authority.
+
 ## Requirements
-### Requirement: One distributed ZPP workflow skill
-ZPP SHALL distribute one consolidated workflow skill instead of the seven former `zpp-flow-*` stage skills. The consolidated skill SHALL cover product clarification, feature shaping, utility planning and maturation, feature wiring and verification, specification formation and finalization, and logical checkpoint handling through one workflow entry point. ZPP SHALL NOT distribute a `workflow` trait family or use trait content as a second workflow definition.
 
-#### Scenario: Install the workflow integration
-- **WHEN** ZPP installs its workflow integration for a supported agent
-- **THEN** Agent Router projects one consolidated ZPP workflow skill and no ZPP 1.x stage skill is required
+### Requirement: Outcome workflow entry family
+ZPP SHALL distribute `zpp-auto`, `zpp-new-feature`, `zpp-fix-bug`, `zpp-scaffold`, and `zpp-legacy-workflow` as complete user-invokable Markdown playbooks. Each playbook SHALL state its complete ordered sequence and branch conditions by interleaving workflow-specific custom instruction blocks with explicit configured uses of exact `zpps-*` components. A playbook SHALL NOT defer its sequence or next-component selection to `zpps-workflow-kernel`, a shared hidden stage list, or an implicit convention. `zpp-legacy-workflow` SHALL preserve the generic product-workflow outcome of the former `zpp-workflow` identity while using the current bounded components and kernel guards. ZPP SHALL remove the `zpp-workflow` skill identity without an alias.
 
-#### Scenario: Inspect packaged workflow assets
-- **WHEN** a user inspects the distributed skill and standard trait collection
-- **THEN** workflow stages, transitions, gates, and authority exist only in the skill and no `workflow.toml` trait document exists
+`zpp-auto` SHALL contain the complete ordered non-mutating triage procedure. It SHALL invoke exactly one matching specialized playbook for an unambiguous request and SHALL invoke `zpp-legacy-workflow` at `clarify` for mixed, unsupported, or unresolved intent. It SHALL pass the original request, accepted classification evidence, and only owner-supplied authority, transfer control exactly once, and not return to triage after invocation. Merely reporting the selected playbook and stopping SHALL NOT satisfy the route. A playbook SHALL preserve only authority explicitly supplied by the owner and SHALL NOT grant mutation or checkpoint-commit authority by selecting a route.
+
+#### Scenario: Route a clear defect correction
+- **WHEN** `zpp-auto` receives an unambiguous request to correct a defect
+- **THEN** it invokes `zpp-fix-bug` exactly once with the original request and supplied authority rather than merely naming the route or mutating governed state itself
+
+#### Scenario: Route unresolved intent to the legacy workflow
+- **WHEN** `zpp-auto` cannot select exactly one specialized outcome
+- **THEN** it delegates to `zpp-legacy-workflow` at `clarify` rather than inventing a workflow kind
+
+#### Scenario: Reject the removed generic identity
+- **WHEN** a projected integration is inspected after migration
+- **THEN** no `zpp-workflow` skill or alias is present
+
+### Requirement: Bounded workflow phase skills
+ZPP SHALL package one substantive skill for each bounded stage: `clarify` as `zpps-clarify`, `shape` as `zpps-shape-bdd`, `plan-utilities` as `zpps-planning-ponytail`, `mature-utilities` as `zpps-mature-utilities`, `wire` as `zpps-wire`, `form-specs` as `zpps-form-specs`, and `finalize` as `zpps-finalize`. Each skill SHALL contain its complete trigger, required inputs, input-resolution rules, ordered procedure, stopping boundary, result fields, and failure behavior rather than acting as a thin kernel delegate or conceptual reference.
+
+A stage, adapter, or evidence skill SHALL accept explicit operation configuration from a playbook or a direct partial invocation. It SHALL NOT reject work solely because no playbook or kernel delegated it. Read-only work MAY run directly through a registered store or repo-local OpenSpec root. Before governed mutation the component SHALL resolve an exact store UUID through the public registered-store list and an exact change member, present or request the current kernel guard, and acquire a Bundler lease containing only that store/change member. Without the UUID it SHALL return `store-registration-required` and remain blocked. Filesystem, repository, canonical, and archive paths SHALL NOT be lease members; the component SHALL return every exact changed path for kernel post-result audit together with its bounded status, unresolved questions, and observed evidence. A mutating phase SHALL mark only supplied OpenSpec tasks whose behavior its successful stage work and evidence fully satisfy and SHALL NOT check off a partial, unrelated, or merely attempted task. No component SHALL select workflow continuation, expand authority, authorize a checkpoint, or declare lifecycle completion. `zpps-explore` SHALL remain read-only even when invoked directly and SHALL hand an explicit planning-mutation request to the corresponding planning operation rather than silently creating or revising artifacts.
+
+#### Scenario: Delegate Ponytail planning
+- **WHEN** a playbook configures `zpps-planning-ponytail` with accepted behavior and repository evidence for `plan-utilities`
+- **THEN** that substantive skill executes its complete bounded planning procedure and returns a utility-plan outcome without implementation or stage progression
+
+#### Scenario: Invoke a phase directly
+- **WHEN** a caller invokes a phase skill directly with the explicit inputs needed for its bounded operation and no prior kernel delegation
+- **THEN** the phase executes read-only work directly or obtains only the required mutation guard and does not reject the invocation merely because it came from outside a playbook
+
+#### Scenario: Explore without mutation
+- **WHEN** a user or stage invokes `zpps-explore`
+- **THEN** it may inspect stores, changes, specifications, repository evidence, traits, and memory but creates or changes no planning or product artifact
+
+#### Scenario: Reject phase self-progression
+- **WHEN** a phase skill finishes its bounded output
+- **THEN** it returns evidence to its caller and does not select the next stage or claim completion
+
+#### Scenario: Conformance trace for packaged stage order
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Bounded workflow phase skills","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Load entries kernel and stages in lifecycle order"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Load entries kernel and stages in lifecycle order`
+
+### Requirement: Skill-owned invariant policy
+Invariant workflow behavior SHALL reside in the kernel or its owning phase, adapter, and evidence skills rather than in packaged traits. `zpps-planning-ponytail` SHALL own the ordered Ponytail ladder; `zpps-clarify` and the kernel SHALL own zero-assumption reconciliation; `zpps-shape-bdd` SHALL own public-system binding invariants; `zpps-mature-utilities` SHALL own shared RED, minimum-slice, and GREEN behavior; `zpps-verify-change` SHALL own semantic change verification; and `zpps-verify-repository` SHALL own executable verification truthfulness and complete build-gate obligations.
+
+The packaged standard trait collection SHALL remove `dependencies`, `build`, and `zero-assumptions`. It SHALL retain `bdd`, `bdd-execution`, and `tdd` only for contextual language, framework, or repository-selected mode specialization, and SHALL retain `bdd-structure` and `tooling` as contextual families. A retained trait SHALL NOT repeat, replace, or waive its skill-owned invariant.
+
+#### Scenario: Apply Ponytail without a dependency trait
+- **WHEN** utility planning is applicable in a repository with no injected dependency trait
+- **THEN** `zpps-planning-ponytail` applies the complete ordered ladder before approving new code or a third-party package
+
+#### Scenario: Consume contextual BDD specialization
+- **WHEN** a retained BDD trait selects established Python structure
+- **THEN** `zpps-shape-bdd` applies that layout advice under its invariant scenario-binding and public-system contract
+
+#### Scenario: Conformance trace for contextual trait inventory
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Skill-owned invariant policy","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Load only contextual trait specialization"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Load only contextual trait specialization`
+
+### Requirement: Complete bounded OpenSpec adapter set
+ZPP SHALL package `zpps-explore`, `zpps-new-change`, `zpps-continue-change`, `zpps-ff-change`, `zpps-propose-change`, `zpps-update-change`, `zpps-apply-change`, `zpps-verify-change`, `zpps-sync-specs`, `zpps-archive-change`, and `zpps-bulk-archive-change` as its complete substantive OpenSpec adapter set. Every adapter SHALL preserve its upstream operation's complete input and change selection, registered-store resolution with sticky store identity, repo-local fallback, structured status and instruction discovery, current context/rule and dependency consumption, ordered work, prompts, stopping boundary, output summary, and failure behavior. It SHALL contain that procedure in its own skill body rather than forwarding the operation to the kernel or depending on an upstream generated skill.
+
+The adapters SHALL preserve their distinct procedures: explore is read-only investigation; new scaffolds and stops before artifact creation; continue creates exactly one ready artifact; fast-forward always scaffolds a new change and creates its transitive apply-required planning set, returning a name collision for the caller to select continue separately rather than converting to existing-change continuation; propose reconciles material ambiguity and creates that complete planning set without implementation, stopping there when invoked standalone while an owner-authorized active playbook may consume its result and follow its declared branch; update changes existing planning artifacts only; apply implements and records pending tasks until done or blocked; verify returns a non-mutating completeness, correctness, and coherence report and returns `repository-evidence-required` when native evidence is missing or stale without invoking the repository verifier; sync performs selected-path, rules-aware, semantic, idempotent canonical merging and validation; single archive assesses one change and performs any selected sync synchronously before moving it; and bulk archive requires explicit selection, resolves exact-capability conflicts from implementation evidence, prefetches rule snapshots before mutation, synchronously syncs and verifies included deltas, and reports per-change and per-delta outcomes. Archive adapters MAY call `zpps-sync-specs` only for that explicit synchronous sub-operation.
+
+Repo-local roots SHALL remain valid for adapter read-only discovery and verification and for resolving an existing `repo:` trace locator. Every mutating adapter SHALL require an exact registered store UUID/change member, return `store-registration-required` before mutation when it cannot resolve that UUID, and return every exact changed path for kernel post-result audit. Bundler membership SHALL contain no changed path.
+
+ZPP SHALL explicitly exclude `openspec-onboard` and SHALL package no `zpps-onboard` because onboarding is an instructional walkthrough rather than an operational primitive. `zpps-verify-repository` SHALL be packaged separately as an executable-evidence component and SHALL NOT be classified as an OpenSpec adapter. ZPP SHALL contain no broad `zpps-plan-change`, `zpps-verify`, or `zpps-archive` compatibility identity.
+
+#### Scenario: Conformance trace for OpenSpec adapter coverage
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Complete bounded OpenSpec adapter set","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Cover operational OpenSpec workflows without onboarding"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Cover operational OpenSpec workflows without onboarding`
+
+#### Scenario: Preserve an adapter stopping boundary
+- **WHEN** `zpps-continue-change` creates the next eligible artifact for a resolved change
+- **THEN** it returns updated status without creating later artifacts or selecting workflow continuation
+
+#### Scenario: Invoke an adapter directly
+- **WHEN** a caller directly invokes a mutating adapter with explicit operation configuration but no prior kernel delegation
+- **THEN** the adapter obtains only the guard and exact lease required for that selected operation, executes its own complete procedure, and returns without selecting another workflow operation
+
+#### Scenario: Preserve synchronous archive synchronization
+- **WHEN** a selected single or bulk archive procedure requires specification synchronization
+- **THEN** the archive adapter invokes `zpps-sync-specs` synchronously, verifies the selected deltas, and does not move the change while synchronization is incomplete or failed
+
+### Requirement: Single executable acceptance authority
+For each accepted obligation, ZPP SHALL distinguish normative specification ownership from executable acceptance-example ownership. A testable public-system obligation SHALL have its concrete acceptance examples only in the independently runnable `features/<capability>/` root. `zpps-shape-bdd` SHALL transfer a provisional concrete OpenSpec example into that feature root, bind every resulting feature scenario to the exact OpenSpec store, capability, and requirement identity, and replace the concrete OpenSpec example within the same completed stage outcome with a trace-only conformance scenario that does not restate the executable behavior.
+
+The binding identity SHALL be the exact ordered tuple `root`, `capability`, `requirement`, `feature`, and `scenario`, encoded on both sides as compact JSON with those keys in that order. Creating or changing a binding during shaping SHALL use `store:<uuid>` with the exact UUID discovered through the public registered-store list because that action is governed mutation. An existing binding MAY retain `repo:<git-root-relative-path-to-openspec-root>` for a repo-local OpenSpec root and SHALL remain resolvable during read-only discovery, formation audit, and verification without authorizing mutation or automatic locator migration. ZPP SHALL NOT generate a store UUID, derive one from a name, or replace an existing repo-local locator with a fabricated UUID. `capability` SHALL be the capability directory identity, `requirement` SHALL be the exact requirement heading, `feature` SHALL be the Git-root-relative feature path, and `scenario` SHALL be the exact Gherkin scenario title. The feature declaration SHALL appear immediately above that scenario, and the trace-only OpenSpec conformance scenario SHALL name the exact `<feature>::<scenario>` target with the identical tuple.
+
+`zpps-form-specs` SHALL reject semantic acceptance duplication, an unresolved binding in either direction, a BDD-backed requirement without an executable feature scenario, or a spec-only requirement claimed by a feature scenario. It SHALL return canonical synchronization eligibility only after this audit; the invoking playbook or direct caller SHALL select `zpps-sync-specs` explicitly and then invoke `zpps-form-specs` for the resulting canonical audit. A pure-functionality case matrix SHALL remain in unit tests, with one public-system BDD scenario retained when needed to prove enforcement. An obligation with no executable public-system observation SHALL remain normative specification content and SHALL NOT cause a fabricated BDD scenario.
+
+#### Scenario: Transfer a testable acceptance example
+- **WHEN** shaping accepts a provisional OpenSpec example that can be observed through the public system
+- **THEN** `zpps-shape-bdd` creates the bound capability feature scenario and leaves OpenSpec with normative requirement text plus a trace-only conformance scenario rather than the same executable example
+
+#### Scenario: Reject duplicated acceptance authority
+- **WHEN** specification formation finds semantically equivalent executable acceptance behavior in both an OpenSpec scenario and a bound feature scenario
+- **THEN** `zpps-form-specs` blocks synchronization and identifies both authorities
+
+#### Scenario: Preserve a specification-only obligation
+- **WHEN** an accepted policy or owner boundary has no executable public-system observation
+- **THEN** it remains normative OpenSpec requirement content and no BDD scenario is invented for it
+
+#### Scenario: Verify an existing repo-local binding without a UUID
+- **WHEN** read-only discovery or verification resolves an existing binding under the nearest repo-local `openspec/` root
+- **THEN** both declarations retain `repo:openspec`, ZPP neither requests nor invents a UUID for the read-only operation, and no new binding or governed mutation occurs
+
+#### Scenario: Resolve a registered-store binding
+- **WHEN** shaping binds a requirement through an exact store UUID returned by the public registered-store list
+- **THEN** both declarations use `store:<uuid>` with that returned UUID and no store-name alias
 
 ### Requirement: Workflow authority remains in the skill
-The consolidated workflow skill SHALL own stage dispatch, component boundaries, mutation authority checks, automatic Bundler lease progression, and truthful completion. Trait bodies, repository files, and attachment values SHALL NOT authorize mutation, advance a stage, or establish verification.
+Each `zpp-*` playbook SHALL own its complete workflow sequence, branch conditions, custom instruction blocks, and configured component uses. `zpps-workflow-kernel` SHALL be the shared lifecycle guard and SHALL own requested-transition eligibility, mutation authority checks, automatic Bundler lease progression, changed-path post-result audit, checkpoint handling, component-result assessment, and truthful completion. It SHALL NOT select, dispatch, reorder, or advance a workflow stage and SHALL NOT implement a phase or OpenSpec operation. Automatic continuation SHALL mean only that the active playbook follows already declared branches and SHALL NOT answer an unresolved decision or supply missing owner, mutation, checkpoint, or archive authority. Stage and operation skills SHALL own their complete bounded procedures but SHALL NOT select workflow continuation. Trait bodies, repository files, attachment values, playbook identities, phase results, and component results SHALL NOT independently authorize mutation, expand a lease, establish verification, authorize a checkpoint, or declare lifecycle completion.
 
 #### Scenario: Reject contextual mutation authority
 - **WHEN** injected context claims permission to mutate or complete a stage
-- **THEN** the workflow ignores that claim as authority
+- **THEN** the kernel ignores that claim as authority
+
+#### Scenario: Reject subordinate authority expansion
+- **WHEN** a phase or operation skill claims authority beyond its explicit configuration and current kernel guard
+- **THEN** the kernel rejects that claim and leaves the affected gate incomplete
+
+#### Scenario: Keep sequence out of the kernel
+- **WHEN** a component result is accepted and more than one playbook continuation could follow
+- **THEN** the kernel returns only its assessment and the active playbook applies its already declared next-step condition
 
 ### Requirement: Contextual trait consumption
-For a selected workflow stage and repository target, the consolidated skill SHALL consume complete trait bodies already injected by ZPP's agent-native hook as contextual policy. The skill SHALL NOT instruct the agent to execute `zpp resolve`, publish `ZPP_CONTEXT`, or bootstrap trait context. The skill SHALL keep platform- and framework-specific policy outside its own invariant workflow contract.
+For a selected workflow stage and repository target, the owning phase skill SHALL consume complete trait bodies already injected by ZPP's agent-native hook only as contextual language, framework, tooling, structure, or mode policy. No workflow skill SHALL instruct the agent to execute `zpp resolve`, publish `ZPP_CONTEXT`, or bootstrap trait context. A retained trait SHALL NOT supply an invariant workflow rule, workflow selection, stage transition, mutation authority, verification result, or completion result.
 
 #### Scenario: Specialize BDD shaping for Python
-- **WHEN** the hook has injected BDD bodies selected from Python context and the workflow performs feature shaping
-- **THEN** the skill applies those complete bodies as advisory context while retaining the same workflow authority boundary
+- **WHEN** the hook has injected retained BDD bodies selected from Python context and the workflow performs feature shaping
+- **THEN** `zpps-shape-bdd` applies their contextual runner and layout guidance while retaining its skill-owned behavior contract
 
 #### Scenario: Inspect workflow bootstrap instructions
-- **WHEN** a user inspects the consolidated workflow skill
+- **WHEN** a user inspects the packaged workflow family
 - **THEN** it contains no instruction to run trait resolution or manage stored trait context
 
 ### Requirement: Complete standard behavior reauthoring
-ZPP SHALL keep lease coordination and automatic archival completion in the workflow kernel rather than packaging them as trait families. The standard trait collection SHALL remain advisory and SHALL contain no lease, workspace, dependency-edge, successor, reconciliation, or cleanup behavior.
+ZPP SHALL keep lease coordination, automatic archival completion, zero-assumption reconciliation, Ponytail planning, behavior-binding invariants, shared RED/GREEN rules, verification truthfulness, and complete build gates in their owning workflow skills rather than packaging them as trait families. The standard trait collection SHALL remain advisory and SHALL contain no lifecycle authority, dependency-selection ladder, general build-gate checklist, or always-run owner-decision policy.
 
 #### Scenario: Package the reconciled standard collection
 - **WHEN** the standard trait collection is inspected
-- **THEN** it contains no coordination or workspace-lifecycle trait family
+- **THEN** each retained family provides only contextual specialization and no removed invariant or coordination family remains
 
 ### Requirement: Explicit stage actions
-The consolidated workflow skill SHALL require the agent to declare an explicit current stage for each workflow invocation and SHALL NOT infer it from OpenSpec status, repository files, stored descriptive context, or trait output. When automatic continuation is separately authorized and the complete current-stage contract has converged, the skill SHALL expose and execute each next stage as a distinct stage action. Trait resolution SHALL NOT select or advance a workflow stage.
+Each `zpp-*` playbook SHALL declare every stage or component use as an explicit ordered Markdown action with its input configuration, eligibility condition, accepted result, and next-step branch. It SHALL NOT infer an undeclared later stage from OpenSpec status, repository files, stored descriptive context, trait output, or a skill identity. A playbook MAY declare `clarify` when no later stage was explicitly selected. When automatic continuation is authorized and the current component result has converged, the playbook SHALL apply its own declared condition and explicitly request the next kernel assessment. That authorization SHALL NOT answer unresolved decisions or provide missing owner, mutation, checkpoint-commit, or archive authority. Triage components, traits, the kernel, phase skills, and operation skills SHALL NOT select or advance the playbook sequence.
 
-#### Scenario: Reject an unnamed stage
-- **WHEN** a workflow invocation does not identify the requested stage
-- **THEN** the skill requests that stage rather than inferring one from current artifacts
+#### Scenario: Default an entry to clarification
+- **WHEN** a workflow invocation identifies no later requested stage
+- **THEN** the selected playbook declares `clarify` rather than inferring progress from current artifacts
 
 #### Scenario: Continue through visible stage actions
 - **WHEN** an authorized end-to-end workflow completes or truthfully skips one conditional stage and continues
-- **THEN** the skill declares the next stage explicitly without delegating stage choice to the trait hook
+- **THEN** the active playbook follows its declared branch and requests the next named action explicitly
 
 ### Requirement: Complete agreement reconciliation before convergence
-During clarification, the consolidated workflow skill SHALL classify each newer owner prompt as an explicit confirmation, correction, recommendation, exploration, or deferral and SHALL reconcile it against canonical specifications, the complete older accepted owner input for the current change, the proposal, every capability delta, downstream checkpoints, and current repository evidence before changing normative behavior. A newer statement SHALL NOT silently replace or contradict an older accepted statement merely because it is newer. Assistant recommendations, inferred preferences, default choices, and automatic end-to-end delegation SHALL NOT count as owner confirmation.
+During clarification, `zpps-clarify` SHALL classify each newer owner prompt as an explicit confirmation, correction, recommendation, exploration, or deferral and SHALL reconcile it against canonical specifications, the complete older accepted owner input for the current change, the proposal, every capability delta, downstream checkpoints, and current repository evidence before changing normative behavior. A newer statement SHALL NOT silently replace or contradict an older accepted statement merely because it is newer. Assistant recommendations, inferred preferences, default choices, and automatic end-to-end delegation SHALL NOT count as owner confirmation.
 
-For every outcome-changing decision that remains unresolved after that reconciliation, the skill SHALL ask the owner one to three focused questions at a time. Each question SHALL identify the exact missing decision and its meaningful consequences; when bounded alternatives exist, it SHALL present concrete mutually exclusive choices, and otherwise it SHALL ask one precise open question. The skill SHALL use the active agent's structured user-question mechanism when available and SHALL ask the same focused question directly when it is unavailable. It SHALL wait for an explicit owner answer and SHALL NOT treat a vague request such as “can you clarify?”, an unanswered recommendation, or a presumed default as resolution.
+For every outcome-changing decision that remains unresolved after that reconciliation, `zpps-clarify` SHALL ask the owner one to three focused questions at a time. Each question SHALL identify the exact missing decision and its meaningful consequences; when bounded alternatives exist, it SHALL present concrete mutually exclusive choices, and otherwise it SHALL ask one precise open question. `zpps-clarify` SHALL use the active agent's structured user-question mechanism when available and SHALL ask the same focused question directly when it is unavailable. It SHALL wait for an explicit owner answer and SHALL NOT treat a vague request such as “can you clarify?”, an unanswered recommendation, or a presumed default as resolution.
 
-When an apparent agreement conflicts with older accepted input or leaves a product behavior, constraint, serialization, or owner boundary unsettled, the skill SHALL record the contradiction under `Unresolved — Do Not Assume`, remove the unconfirmed outcome from normative deltas, ask the focused owner question needed to resolve it, and keep clarification open. The unresolved record SHALL NOT substitute for asking. After each explicit owner answer, the skill SHALL reconcile the complete agreement again and SHALL repeat the question loop until no outcome-changing owner decision remains. If downstream feature, utility, wiring, or specification gates were formed from an unconfirmed outcome, the skill SHALL invalidate them and require replacement gates after explicit owner confirmation.
+When an apparent agreement conflicts with older accepted input or leaves a product behavior, constraint, serialization, or owner boundary unsettled, `zpps-clarify` SHALL record the contradiction under `Unresolved — Do Not Assume`, remove the unconfirmed outcome from normative deltas, ask the focused owner question needed to resolve it, and keep clarification open. The unresolved record SHALL NOT substitute for asking. After each explicit owner answer, `zpps-clarify` SHALL reconcile the complete agreement again and SHALL repeat the question loop until no outcome-changing owner decision remains. If downstream feature, utility, wiring, or specification gates were formed from an unconfirmed outcome, `zpps-clarify` SHALL invalidate them and require replacement gates after explicit owner confirmation.
 
 #### Scenario: Keep a recommendation unresolved
 - **WHEN** the owner describes one design as a recommendation without explicitly confirming its complete public contract
@@ -91,50 +201,54 @@ When an apparent agreement conflicts with older accepted input or leaves a produ
 - **THEN** the skill preserves that established outcome and does not ask the owner to decide it again
 
 ### Requirement: Agent-declared stage outcomes
-For `shape`, `plan-utilities`, `mature-utilities`, `wire`, and `form-specs`, the acting agent SHALL declare either `completed` or `skipped: not applicable`. The consolidated workflow skill SHALL accept a skip only after independently observing the stage-specific evidence that no owned output is required. A selected trait, derived context value, repository declaration, or failed command SHALL NOT establish a skip. `clarify` and `finalize` SHALL remain mandatory and SHALL NOT accept a not-applicable outcome.
+For `shape`, `plan-utilities`, `mature-utilities`, `wire`, and `form-specs`, the bounded stage skill SHALL declare either `completed` or `skipped: not applicable`. `zpps-workflow-kernel` SHALL accept a skip only after independently observing the stage-specific evidence that no owned output is required. A selected trait, derived context value, repository declaration, or failed command SHALL NOT establish a skip. `clarify` and `finalize` SHALL remain mandatory and SHALL NOT accept a not-applicable outcome.
 
 #### Scenario: Skip feature shaping without public behavior
 - **WHEN** the agent declares shape not applicable and the accepted change has no public or integration behavior requiring an executable feature contract
-- **THEN** the skill records `skipped: not applicable` and hands off to utility planning without creating a feature
+- **THEN** `zpps-shape-bdd` returns `skipped: not applicable` without creating a feature, the kernel assesses that result, and the playbook retains continuation selection
 
 #### Scenario: Run a stage when evidence is uncertain
 - **WHEN** an agent proposes a conditional-stage skip but the stage-specific evidence does not prove that no owned output is required
-- **THEN** the skill runs the stage normally instead of accepting the skip
+- **THEN** the kernel rejects the skip and the active playbook invokes its already declared stage action rather than treating the skip as progress
 
 #### Scenario: Reject a failed-stage skip
 - **WHEN** a stage command or verification fails
-- **THEN** the skill diagnoses or reports the failed gate and does not relabel it as not applicable
+- **THEN** the stage skill reports the failed gate and the kernel does not relabel it as not applicable
 
 #### Scenario: Require mandatory boundary stages
 - **WHEN** the workflow begins clarification or reaches finalization
-- **THEN** the skill performs that stage and rejects a not-applicable declaration
+- **THEN** the kernel requires that stage and rejects a not-applicable declaration
 
 ### Requirement: Explicit component delegation
-Before an OpenSpec operation, the workflow SHALL follow the installed OpenSpec operation skill that owns it. Before the first governed mutation for a change set, the workflow SHALL invoke ZPP's minimal Bundler lease bridge with its durable owner and exact store/change members; during finalization it SHALL audit paths, record archives, and complete that same bundle. It SHALL NOT delegate to a workspace-management skill or select legacy coordination operations.
+A playbook SHALL invoke the exact configured ZPP phase or operation skill that owns each declared component use. A direct partial invocation MAY select the same component by supplying its required operation configuration. Before the first governed mutation for a change set, the playbook or directly invoked component SHALL resolve exact registered store UUID/change members through the public store list and request ZPP's minimal Bundler lease bridge through the kernel with its durable owner and only those exact members. If no exact UUID resolves, the component SHALL return `store-registration-required` and remain blocked. Repo-local roots remain valid for read-only work and existing `repo:` locator resolution but do not satisfy mutation acquisition. During finalization the kernel SHALL post-audit every exact changed path returned by the components, record archives, and complete that same bundle; changed paths SHALL NOT be bundle members. The component SHALL return its observed output and SHALL NOT select workflow continuation, advance the playbook sequence, expand the bundle, or claim lifecycle completion.
 
 #### Scenario: Acquire before governed mutation
-- **WHEN** an eligible stage is about to perform the first governed OpenSpec mutation
-- **THEN** the workflow acquires the exact Bundler bundle before that mutation
+- **WHEN** an eligible phase is about to perform the first governed OpenSpec mutation
+- **THEN** the caller obtains the kernel's guard and exact Bundler bundle before that component mutates
 
 #### Scenario: Complete after every member archives
-- **WHEN** finalization has archived every declared change member and the path audit passes
-- **THEN** the workflow records every archive and completes the bundle
+- **WHEN** `zpps-archive-change` or an authorized `zpps-bulk-archive-change` operation has returned every declared member archive and the path audit passes
+- **THEN** the kernel records every archive and completes the bundle
+
+#### Scenario: Reject operation continuation
+- **WHEN** a bounded operation returns successful evidence
+- **THEN** the kernel may assess that evidence but does not choose a continuation, and the operation itself does not continue to another stage
 
 ### Requirement: Automatic Bundler workflow boundary
-The packaged workflow SHALL describe store/change bundles in ZPP terms, use only the minimal lease bridge, and contain no OpenLease name, workspace-management delegation, session, claim, permit, successor, reconciliation, handoff, cleanup, or preparation-repair guidance.
+The packaged workflow family SHALL describe store/change bundles in ZPP terms, use only the minimal lease bridge through `zpps-workflow-kernel`, and contain no OpenLease name, workspace-management delegation, session, claim, permit, successor, reconciliation, handoff, cleanup, or preparation-repair guidance.
 
 #### Scenario: Inspect workflow coordination guidance
-- **WHEN** the packaged workflow skill is inspected
+- **WHEN** the packaged workflow family is inspected
 - **THEN** it names automatic Bundler-backed bundle progression and no removed workspace concept
 
 ### Requirement: BDD-target canonical specification formation
-During `form-specs`, the consolidated workflow skill SHALL replace the repeated body of each OpenSpec scenario with an exact target-form scenario when, and only when, an accepted BDD feature scenario is its executable authority. The target SHALL identify `features/<capability>/<capability>.feature::<scenario name>`, belong to the same capability owner, trace to the requirement, exist exactly, use scenario-selected bindings that exercise the named behavior through the public system, and have relevant passing verification. The target-form OpenSpec scenario SHALL state that the exact feature scenario is executable authority and SHALL NOT repeat its Given/When/Then steps.
+During `form-specs`, `zpps-form-specs` SHALL replace the repeated body of each OpenSpec scenario with a trace-only conformance scenario when, and only when, an accepted BDD feature scenario is its executable authority. The trace SHALL repeat the exact five-field binding declaration, identify `<git-root-relative-feature-path>::<exact-scenario-name>`, belong to the same capability owner, resolve to the requirement in both directions, use scenario-selected bindings that exercise the named behavior through the public system, and have relevant passing verification. The trace-only OpenSpec scenario SHALL state that the exact feature scenario is executable authority and SHALL NOT repeat its Given/When/Then behavior.
 
-Every scenario without qualifying BDD coverage SHALL remain a complete OpenSpec WHEN/THEN scenario. A stale, missing, cross-capability, recorder-only, capability-wide, wording-only, or unverified target SHALL block specification formation rather than justify scenario removal.
+Every scenario without qualifying BDD coverage SHALL remain a complete OpenSpec WHEN/THEN scenario. A stale, missing, cross-capability, mismatched-tuple, recorder-only, capability-wide, wording-only, or unverified target SHALL block specification formation rather than justify scenario removal.
 
 #### Scenario: Replace duplicated behavior with an exact BDD target
-- **WHEN** an OpenSpec scenario has verified same-capability coverage at `features/<capability>/<capability>.feature::<scenario name>`
-- **THEN** canonical formation retains one target-form OpenSpec scenario naming that exact feature and removes the duplicated executable steps
+- **WHEN** an OpenSpec scenario has a verified same-capability five-field binding to an exact feature scenario
+- **THEN** canonical formation retains one trace-only OpenSpec scenario naming that exact target and removes the duplicated executable steps
 
 #### Scenario: Preserve a non-BDD specification scenario
 - **WHEN** an accepted OpenSpec scenario has no qualifying executable BDD target
@@ -145,47 +259,34 @@ Every scenario without qualifying BDD coverage SHALL remain a complete OpenSpec 
 - **THEN** canonical formation keeps the specification scenario and leaves `form-specs` incomplete
 
 ### Requirement: Consume only ZPP-provisioned OpenSpec operation skills
-The consolidated workflow skill SHALL consume the exact installed
-`openspec-explore`, `openspec-propose`, `openspec-update-change`,
-`openspec-apply-change`, `openspec-sync-specs`, and `openspec-archive-change`
-operation skills supplied by the initialized ZPP agent integration. During a
-workflow run it SHALL NOT invoke or authorize `openspec init`, generate or vendor
-an OpenSpec skill tree, install or project an OpenSpec operation skill, repair an
-operation skill, or create a substitute operation owner in the target repository
-or any other location.
+The workflow family SHALL consume the exact installed ZPP-owned phase and operation skills required by the current stage and SHALL use the installed OpenSpec executable only through its public store, status, artifact-instruction, validation, synchronization, and archive interfaces. It SHALL NOT invoke a generated `openspec-*` skill as workflow authority, invoke or authorize `openspec init`, generate or vendor an OpenSpec skill tree, repair an operation skill, or create a substitute operation owner in the target repository or any other location.
 
-When an operation required by the current stage is absent, unreadable, invalid,
-stale, or requires local initialization, the workflow SHALL leave the stage
-blocked, identify the exact operation skill, and direct the owner to root
-`zpp init` for an uninitialized agent integration or root `zpp sync` for an
-existing integration. The workflow SHALL NOT invoke either lifecycle command on
-the owner's behalf.
+When a required packaged ZPP skill is absent, unreadable, invalid, or stale, the invoking playbook or direct caller SHALL leave the selected operation blocked, identify that integration boundary, and direct the owner to root `zpp init` for an uninitialized ZPP integration or root `zpp sync` for an existing integration. When the `openspec` executable or a required public interface is absent, failed, or unsupported, the invoked adapter SHALL block before governed mutation and report that runtime dependency directly; ZPP lifecycle commands SHALL NOT be presented as an OpenSpec installer or repair path. Neither the kernel nor an adapter SHALL invoke a lifecycle command on the owner's behalf. Ordinary repo-local planning state under `openspec/` SHALL remain allowed and SHALL NOT be treated as skill installation.
 
-This prohibition SHALL NOT prevent an installed operation skill from creating,
-updating, validating, synchronizing, or archiving ordinary repo-local OpenSpec
-planning artifacts under `openspec/`. Planning state SHALL NOT be treated as an
-operation-skill installation.
-
-#### Scenario: Use an installed operation owner
-- **WHEN** an eligible workflow stage requires an OpenSpec operation and its exact ZPP-provisioned skill is available
-- **THEN** the workflow follows that installed skill without invoking OpenSpec initialization or changing any skill installation
+#### Scenario: Use a ZPP-owned planning operation
+- **WHEN** an eligible stage requires planning mutation and the exact new, continue, fast-forward, propose, or update adapter plus the required public OpenSpec interfaces are available
+- **THEN** the playbook invokes that exact substantive adapter under the kernel guard without invoking a generated OpenSpec skill or changing skill installation
 
 #### Scenario: Block a missing operation owner
-- **WHEN** the exact OpenSpec operation skill required by the current stage is absent or invalid
-- **THEN** the workflow leaves the stage blocked, identifies the skill, and directs the owner to the appropriate ZPP initialization or synchronization command without invoking it
+- **WHEN** the required ZPP phase or operation skill is absent or invalid
+- **THEN** the caller leaves the operation blocked and directs the owner to the appropriate ZPP initialization or synchronization command without invoking it
+
+#### Scenario: Block a missing OpenSpec runtime
+- **WHEN** the delegated adapter cannot invoke its required public OpenSpec interface
+- **THEN** it blocks before governed mutation and reports the runtime dependency without directing ZPP lifecycle to install or repair OpenSpec
 
 #### Scenario: Reject a local initialization prerequisite
-- **WHEN** an operation path proposes `openspec init`, a generated local skill tree, or project-scope operation-skill projection as a prerequisite
-- **THEN** the workflow rejects that path and does not create, copy, install, project, or repair an OpenSpec operation skill anywhere
+- **WHEN** an operation path proposes `openspec init`, a generated local skill tree, or project-scope skill projection as a prerequisite
+- **THEN** the workflow rejects that path and creates, copies, installs, projects, or repairs no OpenSpec operation skill
 
 #### Scenario: Preserve repository planning operations
-- **WHEN** an installed OpenSpec operation skill creates or updates proposal, change, specification, task, validation, synchronization, or archive state under the repository's `openspec/` directory
+- **WHEN** a ZPP-owned skill creates, updates, validates, synchronizes, or archives ordinary state under the repository's `openspec/` directory
 - **THEN** the workflow treats that state as allowed product planning rather than prohibited skill bootstrap
 
 ### Requirement: Evidence-based stage eligibility assessment
-Before executing any workflow stage, the consolidated workflow skill SHALL present an explicit eligibility assessment for the current accepted contract revision. The assessment SHALL identify the explicitly requested stage, the current evidence-backed outcome of every predecessor stage, any missing, stale, failed, or superseded checkpoint, and the output the requested stage owns for the accepted change. A stage name supplied by an owner or proposed by an agent SHALL be dispatch input only and SHALL NOT satisfy the stage's eligibility, any predecessor gate, verification, or mutation authority.
+Before a playbook or direct caller invokes any workflow stage, `zpps-workflow-kernel` SHALL present an explicit eligibility assessment for the current accepted contract revision. The assessment SHALL identify the explicitly requested stage, the current evidence-backed outcome of every predecessor stage, any missing, stale, failed, or superseded checkpoint, and the output the requested stage owns for the accepted change. A stage name supplied by an owner or proposed by an agent SHALL be requested-assessment input only and SHALL NOT satisfy the stage's eligibility, any predecessor gate, verification, or mutation authority.
 
-The skill SHALL block a requested stage when any required predecessor outcome is absent, stale, failed, or derived from a superseded contract. It MAY identify the earliest unsatisfied predecessor but SHALL NOT execute it without a new explicit stage invocation unless separate end-to-end progression authority is already in force. A changed contract SHALL return to clarification and invalidate every downstream assessment derived from the older contract revision.
+The kernel SHALL block a requested stage when any required predecessor outcome is absent, stale, failed, or derived from a superseded contract. It MAY identify the earliest unsatisfied predecessor but SHALL NOT execute it or choose it as the next action. Under separately authorized end-to-end continuation, only the active playbook MAY follow its already declared branch and request a new assessment for that predecessor. A changed contract SHALL return to clarification and invalidate every downstream assessment derived from the older contract revision.
 
 #### Scenario: Reject a named stage with an unsatisfied predecessor
 - **WHEN** an owner or agent names a later workflow stage but a required predecessor has no current evidence-backed outcome
@@ -200,7 +301,7 @@ The skill SHALL block a requested stage when any required predecessor outcome is
 - **THEN** the workflow reports that predecessor but does not execute it until the owner explicitly invokes the stage
 
 ### Requirement: Effect-based conditional-stage applicability
-Before assessing `shape`, `plan-utilities`, `mature-utilities`, or `wire`, the consolidated workflow skill SHALL classify the complete accepted change by its effects: externally observable public or integration behavior, pure executable utility behavior, executable artifact processing or update behavior, spec-governed prose, and ungoverned artifact text. It SHALL decide each conditional stage from the output that stage owns for those effects and SHALL NOT infer test obligations from a filename, artifact category, selected trait, or generic workflow convention.
+When a playbook requests assessment of `shape`, `plan-utilities`, `mature-utilities`, or `wire`, `zpps-workflow-kernel` SHALL classify the complete accepted change by its effects: externally observable public or integration behavior, pure executable utility behavior, executable artifact processing or update behavior, spec-governed prose, and ungoverned artifact text. It SHALL use that classification only to accept or reject the requested stage's eligibility or not-applicable result from the output that stage owns. It SHALL NOT select a stage or infer test obligations from a filename, artifact category, selected trait, or generic workflow convention.
 
 A change limited to spec-governed skill prose, environment guidance, or equivalent declarative instructions SHALL require no Gherkin, BDD execution, utility plan, unit TDD, or product wiring. Such a change SHALL still complete `form-specs` when an accepted delta requires canonical reconciliation. A change to executable loading, parsing, validation, conversion, projection, or update mechanics SHALL remain eligible for behavior or unit verification at its actual executable boundary and SHALL NOT be skipped merely because it operates on a skill or environment artifact.
 
@@ -218,7 +319,7 @@ A change limited to spec-governed skill prose, environment guidance, or equivale
 
 ### Requirement: Verified incremental checkpoint commits
 Before declaring any workflow stage `completed` when that stage owns a non-empty
-coherent diff, the consolidated workflow skill SHALL invoke the exact installed
+coherent diff, `zpps-workflow-kernel` SHALL invoke the exact installed
 `zmem-author-commits` skill and complete its authorized commit workflow. The
 acting agent SHALL identify the accepted contract revision, the stage-owned
 diff, applicable stage verification and its observed result, checkpoint commit
@@ -236,7 +337,7 @@ whether durable memory warrants an annotation; a checkpoint SHALL NOT require a
 meaningless annotation.
 
 Explicit end-to-end workflow delegation SHALL grant checkpoint commit authority
-for the new commits produced by the automatically progressed stage series. A
+for the new commits produced by the playbook's automatically continued stage series. A
 standalone stage action SHALL require separately granted commit authority. This
 authority SHALL NOT include amend, merge, rebase, push, conflict reconciliation,
 callback selection, or inclusion of unrelated work. Missing commit authority or
@@ -286,65 +387,59 @@ SHALL NOT collapse or replace the preceding checkpoint series.
 - **THEN** the workflow verifies every material checkpoint, archives the change, and commits only remaining finalization-owned work without collapsing the earlier commits
 
 ### Requirement: No legacy workflow compatibility
-The consolidated skill SHALL NOT require, invoke, translate, or preserve the ZPP 1.x stage skills. Existing ZPP 1.x assets SHALL remain outside the ZPP 2.0 workflow contract.
+`zpp-legacy-workflow` SHALL be the renamed generic ZPP 2 complete playbook and SHALL contain its ordered generic procedure using current subordinate skills and kernel guards. Its legacy name SHALL NOT authorize, translate, require, or preserve any ZPP 1.x `zpp-flow-*` stage skill, former gate, or migration behavior.
+
+#### Scenario: Invoke the renamed generic workflow
+- **WHEN** a user invokes `zpp-legacy-workflow`
+- **THEN** it starts or resumes its declared generic sequence and requests kernel assessment only for the selected actions that require lifecycle control
 
 #### Scenario: Encounter an old stage skill
 - **WHEN** a machine retains a ZPP 1.x `zpp-flow-*` skill
-- **THEN** ZPP 2.0 does not treat it as a workflow stage or migration source
+- **THEN** the current workflow family does not treat it as a workflow stage or migration source
 
 ### Requirement: Explicit behavior verification consumption
-When an accepted shaped BDD obligation requires repository integration verification, the consolidated workflow skill SHALL apply the complete resolved `bdd-execution` body as advisory selection policy and invoke an established native repository BDD command identified from repository configuration or an explicit owner choice. The absence of `zpp.behave.yaml` SHALL NOT block native BDD execution. The trait SHALL NOT supply a command, target, gate binding, process argument, callback selection, workflow completion, or stage-skip authority.
+When an accepted shaped BDD obligation requires repository integration verification, `zpps-verify-repository` SHALL apply the resolved `bdd-execution` body only as advisory mode selection and SHALL invoke an established native repository BDD command identified from repository configuration or an explicit owner choice. The skill-owned verification contract SHALL decide truthfulness, required evidence, and failure handling. The absence of `zpp.behave.yaml` SHALL NOT block native BDD execution, and a trait SHALL NOT supply command text, target identity, gate binding, process arguments, callback selection, completion, or stage-skip authority.
 
-A repository MAY use `zpp.behave.yaml` as optional affected-verification coordination. When the workflow explicitly selects a declared `zpp behave` command, that mapping SHALL remain complete authority for its command, targets, gates, and arguments. For complete mode, the workflow SHALL run the complete native BDD suite or request the selected `zpp behave` command with `--all`. For targeted mode or the default targeted body, it SHALL run the relevant native feature surface directly, or request `--gate zpp-workflow` when an explicitly selected `zpp behave` command declares that gate, or otherwise use that command's deterministic affected selection. For manual mode, it SHALL pause for an explicit verification choice. For disabled mode, it SHALL omit BDD execution only when independently observed alternate relevant verification exists and no accepted shaped BDD obligation remains unsatisfied. A failed or insufficient native or coordinated BDD command SHALL NOT be converted into completion or a not-applicable stage outcome.
+`zpps-verify-change` SHALL compare implementation and supplied executable evidence with the resolved proposal, design, requirements, tasks, and OpenSpec-to-BDD bindings for completeness, correctness, coherence, duplicate authority, and orphaned authority. When required repository evidence is absent, stale, failed, or insufficient, it SHALL return `repository-evidence-required` identifying the exact native surface and SHALL NOT invoke `zpps-verify-repository`. The caller MAY select that separate evidence component and later supply its result. `zpps-verify-repository` SHALL NOT decide specification satisfaction, edit artifacts or product code, advance a stage, authorize a commit, archive a change, or declare lifecycle completion.
+
+A repository MAY use `zpp.behave.yaml` as optional affected-verification coordination. When the workflow explicitly selects a declared `zpp behave` command, that mapping SHALL remain complete authority for its command, targets, gates, and arguments. Complete mode SHALL run the complete native BDD suite or selected command with `--all`. Targeted mode SHALL run the relevant native feature surface directly, request `--gate zpps-workflow-kernel` when that explicitly selected command declares the current gate, or otherwise use deterministic affected selection. Manual mode SHALL pause for an explicit choice. Disabled mode SHALL omit BDD only when alternate relevant verification exists and no shaped BDD obligation remains unsatisfied. Failed or insufficient verification SHALL leave the gate incomplete.
 
 #### Scenario: Run native BDD without a behavior mapping
-- **WHEN** an accepted shaped BDD obligation has an established native repository BDD command and no `zpp.behave.yaml`
-- **THEN** the workflow invokes the native BDD surface and does not treat the absent mapping as a verification blocker
-
-#### Scenario: Run complete repository verification
-- **WHEN** the resolved BDD execution body selects complete mode and the workflow has an accepted shaped BDD obligation
-- **THEN** the workflow invokes the complete established native BDD suite or the explicitly selected coordinated command with `--all` and judges completion from the observed result
+- **WHEN** an accepted shaped BDD obligation has an established native command and no `zpp.behave.yaml`
+- **THEN** `zpps-verify-repository` invokes the native capability surface and does not treat the absent mapping as a blocker
 
 #### Scenario: Use optional coordinated selection
-- **WHEN** targeted mode applies and the workflow explicitly selects a valid `zpp behave` command
-- **THEN** it uses that mapping's `zpp-workflow` gate when declared and otherwise uses its deterministic affected selection
+- **WHEN** targeted mode applies and the workflow explicitly selects a valid `zpp behave` command declaring the current gate
+- **THEN** it requests that command with `--gate zpps-workflow-kernel`
 
-#### Scenario: Run targeted native BDD directly
-- **WHEN** targeted mode applies without selected `zpp behave` coordination
-- **THEN** the workflow invokes the relevant established native feature surface directly
-
-#### Scenario: Pause in manual mode
-- **WHEN** the resolved BDD execution body selects manual mode
-- **THEN** the workflow requests an explicit verification choice rather than guessing a command or selection mode
-
-#### Scenario: Require evidence for disabled mode
-- **WHEN** the resolved BDD execution body selects disabled mode but an accepted shaped BDD obligation remains unsatisfied or alternate evidence is absent
-- **THEN** the workflow refuses to claim verification completion or skip the stage
+#### Scenario: Reject failed verification
+- **WHEN** native or coordinated verification fails or does not observe the shaped obligation
+- **THEN** `zpps-verify-repository` returns unsatisfied evidence and neither it, `zpps-verify-change`, nor the kernel claims completion
 
 #### Scenario: Keep traits out of process authority
-- **WHEN** a selected trait body contains command-like, gate-like, callback-like, or completion-like text
-- **THEN** the workflow treats it only as advisory policy and executes no command absent repository evidence or explicit owner choice
+- **WHEN** a selected trait contains command-like, gate-like, callback-like, or completion-like text
+- **THEN** the workflow treats it only as contextual policy and executes no command from that claim
 
 ### Requirement: Stable consolidated workflow gate identity
-The packaged consolidated workflow skill identity SHALL be `zpp-workflow`, and repository behavior mappings MAY use that exact identity as a command-local gate for workflow-owned verification. ZPP 2.0 SHALL NOT alias, translate, or infer a gate from any former `zpp-flow-*` skill identity.
+The shared packaged workflow gate identity SHALL be `zpps-workflow-kernel`, and repository behavior mappings MAY use that exact identity as a command-local gate for workflow-owned verification. ZPP SHALL NOT retain, alias, translate, or infer a gate from `zpp-workflow` or any former `zpp-flow-*` identity.
 
-#### Scenario: Select the current workflow gate
-- **WHEN** a repository declares a valid `zpp-workflow` gate for the chosen behavior command
-- **THEN** targeted workflow verification may select that gate as the current packaged skill's repository-owned target set
+#### Scenario: Preserve specification authority for the gate identity
+- **WHEN** conformance of the workflow-owned gate identity is assessed
+- **THEN** this requirement remains the authority for the exact current and removed identities while public gate execution remains owned by the behavior-verification capability
 
-#### Scenario: Encounter only a legacy gate
-- **WHEN** a repository declares a former `zpp-flow-*` gate but not `zpp-workflow`
-- **THEN** ZPP applies the targeted affected-selection fallback and performs no legacy gate migration
+#### Scenario: Encounter only a removed gate
+- **WHEN** a repository declares `zpp-workflow` or a former `zpp-flow-*` gate but not `zpps-workflow-kernel`
+- **THEN** ZPP applies deterministic affected selection and performs no gate migration
 
 ### Requirement: Ready installed workflow operation set
-A complete user-scope ZPP workflow integration SHALL include one `zpp-workflow` authority, the `zpp-traits` automatic context hook, and the six component-owned OpenSpec operation skills. It SHALL not include `zpp-workspace-management` or any legacy hook identity.
+A complete user-scope ZPP workflow integration SHALL include the five current complete `zpp-*` playbooks, guard-only `zpps-workflow-kernel`, the seven substantive bounded stage skills, the eleven substantive procedure-complete OpenSpec adapters, `zpps-verify-repository`, and the `zpp-traits` automatic context hook. It SHALL NOT include `zpp-workflow`, `zpps-onboard`, broad `zpps-plan-change`, `zpps-verify`, or `zpps-archive` identities, generated `openspec-*` operation skills, `zpp-workspace-management`, or a ZPP 1.x stage or hook identity.
 
-#### Scenario: Inspect the installed operation set
-- **WHEN** a complete workflow integration is inspected
-- **THEN** the workflow, `zpp-traits` hook, and six OpenSpec skills are present without a workspace companion
+#### Scenario: Conformance trace for the canonical workflow identity sequence
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Ready installed workflow operation set","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Preserve one deterministic public inventory"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Preserve one deterministic public inventory`
 
 ### Requirement: Behavior-only feature shaping
-The consolidated workflow skill SHALL create or materially change Gherkin only from accepted externally observable public, integration, or fix behavior in the active change's capability delta specifications. Proposals, designs, tasks, documentation, packaged artifacts, configuration-only changes, and implementation details SHALL NOT be Gherkin sources. When no qualifying delta behavior remains, the skill SHALL record `shape` as `skipped: not applicable` and SHALL NOT create or change a feature.
+`zpps-shape-bdd` SHALL create or materially change Gherkin only from accepted externally observable public, integration, or fix behavior in the active change's capability delta specifications. Proposals, designs, tasks, documentation, packaged artifacts, configuration-only changes, and implementation details SHALL NOT be Gherkin sources. When no qualifying delta behavior remains, the stage skill SHALL return `skipped: not applicable` and SHALL NOT create or change a feature.
 
 When qualifying behavior exists, every created or materially changed scenario SHALL trace to at least one such delta obligation, and every such obligation SHALL have scenario coverage or a concrete non-BDD classification. Obligations MAY split or combine without copied wording. An untraced scenario, uncovered obligation, or unresolved classification SHALL block shape completion.
 
@@ -361,7 +456,7 @@ When qualifying behavior exists, every created or materially changed scenario SH
 - **THEN** the workflow keeps shape incomplete instead of inventing or silently omitting behavior
 
 ### Requirement: Behavior-only TDD shaping
-The consolidated workflow skill SHALL create or change TDD tests only for executable behavior. Artifact loading, unloading, parsing, validation, and conversion into runtime classes or models SHALL be eligible TDD subjects. Tests whose only purpose is to pin prose or assert arbitrary artifact wording SHALL NOT be created. When no executable utility behavior remains, the skill SHALL record `mature-utilities` as `skipped: not applicable` and SHALL NOT create or change a unit test.
+`zpps-mature-utilities` SHALL create or change TDD tests only for executable behavior. Artifact loading, unloading, parsing, validation, and conversion into runtime classes or models SHALL be eligible TDD subjects. Tests whose only purpose is to pin prose or assert arbitrary artifact wording SHALL NOT be created. When no executable utility behavior remains, the stage skill SHALL return `skipped: not applicable` and SHALL NOT create or change a unit test.
 
 #### Scenario: Skip artifact-wording TDD
 - **WHEN** an active change changes artifact prose or wording but introduces no executable utility behavior
@@ -372,18 +467,18 @@ The consolidated workflow skill SHALL create or change TDD tests only for execut
 - **THEN** the workflow uses TDD to prove that executable behavior without pinning unrelated artifact wording
 
 ### Requirement: Bounded artifact-only maintenance route
-The consolidated workflow skill SHALL classify a requested outcome before requiring a workflow stage and MAY route a change limited to ungoverned non-runtime artifacts directly to its owning artifact guidance without creating an OpenSpec change, Gherkin, a utility plan, TDD, or workflow-stage outcomes. Ungoverned artifacts SHALL be limited to repository README and reference documentation, repository-local ZPP traits and context, and commit metadata.
+`zpp-auto` SHALL classify a requested outcome before requiring a workflow stage and MAY route a change limited to ungoverned non-runtime artifacts directly to its owning artifact guidance without creating an OpenSpec change, Gherkin, a utility plan, TDD, or workflow-stage outcomes. Ungoverned artifacts SHALL be limited to repository README and reference documentation, repository-local ZPP traits and context, and commit metadata.
 
-The route SHALL NOT apply to a spec-governed packaged artifact. The packaged workflow skill document, a packaged trait document, and a canonical OpenSpec specification SHALL be spec-governed, because a canonical requirement describes their content as observable behavior. A change to a spec-governed artifact SHALL use the product workflow and SHALL reconcile canonical specifications before finalization, whether or not it changes executable behavior.
+The route SHALL NOT apply to a spec-governed packaged artifact. Any packaged workflow skill document, a packaged trait document, and a canonical OpenSpec specification SHALL be spec-governed because a canonical requirement describes their content as observable behavior. A change to a spec-governed artifact SHALL use the product workflow and SHALL reconcile canonical specifications before finalization, whether or not it changes executable behavior.
 
-Classification SHALL follow effect rather than filename. Artifact loading, parsing, validation, class conversion, and any artifact-backed change to executable or public behavior SHALL use the product workflow. For a mixed change, the skill SHALL apply the workflow to its behavioral portion while keeping supporting ungoverned artifact text out of BDD and TDD obligations.
+Classification SHALL follow effect rather than filename. Artifact loading, parsing, validation, class conversion, and any artifact-backed change to executable or public behavior SHALL use the product workflow. For a mixed change, `zpp-auto` SHALL route the behavioral portion to the product workflow while keeping supporting ungoverned artifact text out of BDD and TDD obligations.
 
 #### Scenario: Route ungoverned artifact maintenance directly
 - **WHEN** a requested change is limited to repository README or reference documentation, repository-local ZPP traits or context, or commit metadata
 - **THEN** the skill edits through the owning artifact guidance and creates no OpenSpec change, feature, utility plan, unit test, or stage outcome
 
-#### Scenario: Refuse the route for the packaged workflow skill
-- **WHEN** a requested change alters the packaged workflow skill document or a packaged trait document and changes no executable behavior
+#### Scenario: Refuse the route for a packaged workflow skill
+- **WHEN** a requested change alters any packaged workflow skill document or a packaged trait document and changes no executable behavior
 - **THEN** the skill treats it as a spec-governed product change and does not accept artifact-only maintenance as its route
 
 #### Scenario: Reconcile canonical specifications for a spec-governed artifact
@@ -395,9 +490,9 @@ Classification SHALL follow effect rather than filename. Artifact loading, parsi
 - **THEN** the workflow governs the behavioral portion and the supporting ungoverned text creates no BDD or TDD obligation
 
 ### Requirement: Monorepo behavior ownership
-In a monorepo, the consolidated workflow skill SHALL shape and bind Gherkin only at an established public application or composition owner and only through that owner's real composed entry point. A reusable implementation subpackage SHALL own focused fail-first unit TDD rather than a feature-level acceptance contract. Public BDD MAY compose those subpackages but SHALL NOT replace their unit tests.
+In a monorepo, `zpps-shape-bdd` SHALL shape and bind Gherkin only at an established public application or composition owner and only through that owner's real composed entry point. A reusable implementation subpackage SHALL own focused fail-first unit TDD rather than a feature-level acceptance contract. Public BDD MAY compose those subpackages but SHALL NOT replace their unit tests.
 
-The skill SHALL determine package topology and dependency direction by direct inspection and SHALL NOT encode repository structure as behavior tests. When the owning application or composition boundary for accepted behavior is unresolved, the skill SHALL expose that ownership question to its owner rather than selecting a boundary.
+`zpps-shape-bdd` SHALL determine package topology and dependency direction by direct inspection and SHALL NOT encode repository structure as behavior tests. When the owning application or composition boundary for accepted behavior is unresolved, it SHALL expose that ownership question to its owner rather than selecting a boundary.
 
 #### Scenario: Shape behavior at the composition owner
 - **WHEN** accepted behavior in a monorepo belongs to an established public application or composition owner
@@ -416,11 +511,11 @@ The skill SHALL determine package topology and dependency direction by direct in
 - **THEN** the workflow exposes the ownership question to its owner rather than selecting a boundary
 
 ### Requirement: Scenarios bind to executable public-system verification
-Every scenario the consolidated workflow skill creates or retains SHALL bind to executable verification that exercises the described behavior through the public system. A step implementation that records its own phrase, asserts only that it executed, or observes no system state SHALL NOT satisfy that binding obligation. Verification SHALL be selected by the scenario it serves, and a capability-wide assertion block that runs identically after every scenario in its root SHALL NOT establish scenario coverage.
+Every scenario `zpps-shape-bdd` creates or retains SHALL bind to executable verification that exercises the described behavior through the public system. A step implementation that records its own phrase, asserts only that it executed, or observes no system state SHALL NOT satisfy that binding obligation. Verification SHALL be selected by the scenario it serves, and a capability-wide assertion block that runs identically after every scenario in its root SHALL NOT establish scenario coverage.
 
-An obligation that can be expressed only as prose SHALL be recorded as a canonical specification requirement and SHALL NOT be represented as a scenario. Verification SHALL NOT assert the literal wording of an artifact whose content a canonical requirement already governs. When accepted behavior has no executable public-system observation, the skill SHALL record that obligation as non-BDD with a concrete reason rather than creating an unbound scenario.
+An obligation that can be expressed only as prose SHALL be recorded as a canonical specification requirement and SHALL NOT be represented by an executable feature scenario. Verification SHALL NOT assert the literal wording of an artifact whose content a canonical requirement already governs. When accepted behavior has no executable public-system observation, `zpps-shape-bdd` SHALL record that obligation as non-BDD with a concrete reason rather than creating an unbound scenario.
 
-The packaged BDD guidance SHALL state this binding obligation so that repositories consuming ZPP receive it as contextual policy. The guidance SHALL NOT supply a command, target, or completion authority.
+`zpps-shape-bdd` SHALL state this binding obligation as its invariant contract. Retained BDD traits SHALL remain contextual and SHALL NOT repeat, replace, waive, or supply a command, target, or completion authority for that contract.
 
 #### Scenario: Reject a recording-only binding
 - **WHEN** a scenario's steps record their own phrases or assert only that they executed
@@ -438,6 +533,6 @@ The packaged BDD guidance SHALL state this binding obligation so that repositori
 - **WHEN** proposed verification would assert the literal wording of an artifact already governed by a canonical requirement
 - **THEN** the workflow relies on the canonical requirement and does not create that assertion
 
-#### Scenario: Receive the binding obligation as packaged guidance
-- **WHEN** a repository resolves ZPP's packaged BDD guidance
-- **THEN** that guidance states the scenario binding obligation without supplying a command, target, or completion authority
+#### Scenario: Receive the binding obligation from the shaping skill
+- **WHEN** a playbook configures `zpps-shape-bdd` with a qualifying public-system obligation under the current kernel guard
+- **THEN** the shaping skill applies its scenario binding obligation without accepting command, target, or completion authority from a trait

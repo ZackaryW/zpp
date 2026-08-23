@@ -32,11 +32,25 @@ A hook SHALL make resolver failure visible according to the native agent hook co
 - **THEN** the failure remains observable and no body from that invocation or an earlier invocation is injected as successful context
 
 ### Requirement: Agent Router-owned hook lifecycle
-Root initialization and grouped workflow lifecycle operations SHALL project and remove the selected agent's packaged `zpp-traits` hook through Agent Router together with the consolidated workflow skill. Install and update SHALL use Agent Router's hook installation contract, removal SHALL use its hook uninstallation contract, and ZPP SHALL NOT write hook destinations directly. Confirmed reset SHALL inspect and remove only the new hook identity and SHALL NOT search for, adopt, or remove the former `zpp-session` identity as a compatibility operation.
+Root initialization and grouped workflow lifecycle operations SHALL project and remove the selected agent's complete deterministic packaged workflow skill family and packaged `zpp-traits` hook through Agent Router. Install and update SHALL use Agent Router's skill and hook installation contracts, removal SHALL use its skill and hook uninstallation contracts, and ZPP SHALL NOT write either native destination directly. Confirmed reset SHALL inspect and remove only the new hook identity and SHALL NOT search for, adopt, or remove the former `zpp-session` identity as a compatibility operation.
 
-#### Scenario: Install a complete workflow integration
-- **WHEN** a user installs the ZPP workflow integration for a supported agent and scope
-- **THEN** Agent Router projects both the consolidated skill and that agent's `zpp-traits` hook
+Grouped `zpp workflow update` SHALL invoke shared current-plus-obsolete reconciliation in exactly the selected user or project scope. Project-scope update SHALL carry the exact project root through inspection, projection, verification, and owned-obsolete retirement without changing user scope. Grouped `zpp workflow install` SHALL preflight every current and obsolete destination in the selected scope, refuse any existing, unmanaged, or conflicting identity before projecting anything, preserve every existing destination, report the exact conflict, and direct an owned installation to update.
+
+#### Scenario: Conformance trace for complete workflow-family installation
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"automatic-trait-hooks","requirement":"Agent Router-owned hook lifecycle","feature":"features/automatic_trait_hooks/automatic_trait_hooks.feature","scenario":"Install the complete workflow family and trait hook together"}`
+- **THEN** executable acceptance authority is `features/automatic_trait_hooks/automatic_trait_hooks.feature::Install the complete workflow family and trait hook together`
+
+#### Scenario: Conformance trace for complete workflow-family removal
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"automatic-trait-hooks","requirement":"Agent Router-owned hook lifecycle","feature":"features/automatic_trait_hooks/automatic_trait_hooks.feature","scenario":"Remove the complete workflow family and trait hook together"}`
+- **THEN** executable acceptance authority is `features/automatic_trait_hooks/automatic_trait_hooks.feature::Remove the complete workflow family and trait hook together`
+
+#### Scenario: Conformance trace for project-scope legacy migration
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"automatic-trait-hooks","requirement":"Agent Router-owned hook lifecycle","feature":"features/automatic_trait_hooks/automatic_trait_hooks.feature","scenario":"Update an owned old-only project workflow in place"}`
+- **THEN** executable acceptance authority is `features/automatic_trait_hooks/automatic_trait_hooks.feature::Update an owned old-only project workflow in place`
+
+#### Scenario: Conformance trace for conflict-safe workflow installation
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"automatic-trait-hooks","requirement":"Agent Router-owned hook lifecycle","feature":"features/automatic_trait_hooks/automatic_trait_hooks.feature","scenario":"Refuse a conflicting workflow installation before mutation"}`
+- **THEN** executable acceptance authority is `features/automatic_trait_hooks/automatic_trait_hooks.feature::Refuse a conflicting workflow installation before mutation`
 
 #### Scenario: Preserve hooks on reset conflict
 - **WHEN** any selected `zpp-traits` hook is modified, unmanaged, ambiguous, conflicting, or cannot be inspected
