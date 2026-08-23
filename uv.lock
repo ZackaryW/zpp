@@ -106,18 +106,7 @@ wheels = [
 [[package]]
 name = "openspec-bundler"
 version = "0.1.0"
-source = { directory = "../openspec-bundler" }
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "behave", specifier = ">=1.3.3" },
-    { name = "build", specifier = ">=1.3.0" },
-    { name = "mypy", specifier = ">=1.17.1" },
-    { name = "pytest", specifier = ">=8.4.1" },
-    { name = "ruff", specifier = ">=0.12.9" },
-]
+source = { git = "https://github.com/ZackaryW/openspec-bundler.git?rev=63cb9851931b9d242abf8abf75565c34cc2b3779#63cb9851931b9d242abf8abf75565c34cc2b3779" }
 
 [[package]]
 name = "packaging"
@@ -487,7 +476,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "agent-router", git = "https://github.com/ZackaryW/agent-router.git?rev=9c7984f25c1809a4a9245a746d0c741e3e3eb180" },
-    { name = "openspec-bundler", directory = "../openspec-bundler" },
+    { name = "openspec-bundler", git = "https://github.com/ZackaryW/openspec-bundler.git?rev=63cb9851931b9d242abf8abf75565c34cc2b3779" },
     { name = "pydantic", specifier = ">=2.13,<3" },
     { name = "pyyaml", specifier = ">=6,<7" },
     { name = "questionary", specifier = ">=2.1,<3" },
