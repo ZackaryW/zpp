@@ -11,13 +11,31 @@ Feature: Integrate OpenSpec Bundler without an OpenLease compatibility surface
     And the sibling input and lease state are absent
 
   @lease @workflow
+  # zpp-spec: {"root":"repo:openspec","capability":"openspec-bundler-integration","requirement":"Automatically hold atomic store bundles through archival completion","feature":"features/openspec_bundler_integration/openspec_bundler_integration.feature","scenario":"Acquire automatically before governed OpenSpec mutation"}
   Scenario: Acquire automatically before governed OpenSpec mutation
     Given an automatic workflow with exact store and change members
     When the workflow begins governed mutation through the minimal lease bridge
     Then one Bundler bundle holds the declared roots and descendant closure before mutation
     And no session claim permit or dependency edge is created
 
+  # zpp-spec: {"root":"repo:openspec","capability":"openspec-bundler-integration","requirement":"Automatically hold atomic store bundles through archival completion","feature":"features/openspec_bundler_integration/openspec_bundler_integration.feature","scenario":"Bootstrap runtime coordination without internal prompts"}
+  @lease @runtime @bootstrap
+  Scenario: Bootstrap runtime coordination without internal prompts
+    Given a fresh ZPP home and an unprepared registered OpenSpec store
+    When the runtime coordinates the exact store and change without internal identifiers
+    Then the store and selected ZPP home gain stable coordination identities
+    And one exact Bundler bundle is acquired under the managed owner
+
+  # zpp-spec: {"root":"repo:openspec","capability":"openspec-bundler-integration","requirement":"Automatically hold atomic store bundles through archival completion","feature":"features/openspec_bundler_integration/openspec_bundler_integration.feature","scenario":"Honor strict coordination overrides without bypassing the lease"}
+  @lease @runtime @override
+  Scenario: Honor strict coordination overrides without bypassing the lease
+    Given a prepared store and a strict workflow owner override
+    When the runtime coordinates the exact store and change without internal identifiers
+    Then the exact bundle uses the overridden owner
+    And coordination remains leased rather than bypassed
+
   @lease @archive
+  # zpp-spec: {"root":"repo:openspec","capability":"openspec-bundler-integration","requirement":"Automatically hold atomic store bundles through archival completion","feature":"features/openspec_bundler_integration/openspec_bundler_integration.feature","scenario":"Retain an automatic bundle until every change archives"}
   Scenario: Retain an automatic bundle until every change archives
     Given an automatic workflow bundle with two store and change members
     When the workflow records only one member archive

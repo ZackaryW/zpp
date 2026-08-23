@@ -1,17 +1,22 @@
 from __future__ import annotations
 
 import json
+import sys
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import UUID
 
 import pytest
 from agent_router import Agent, Scope
+from openspec_bundler import InMemoryStoreProvider, RegisteredStore
 from typer.testing import CliRunner
 
 import zpp.cli.shared
 import zpp.cli.workflow
 from zpp.cli import app
+from zpp.utils.bundler import BundlerLeaseService
+from zpp.utils.product_home import WorkflowIdentityRepository, ZppHome
 
 runner = CliRunner()
 open_cli = import_module("zpp.cli.open")
@@ -46,6 +51,7 @@ def test_public_cli_preserves_grouped_shape() -> None:
             "behave",
             "trait",
             "lease",
+            "bypass",
             "workflow",
         )
     )
@@ -72,6 +78,181 @@ def test_public_cli_preserves_grouped_shape() -> None:
             "abandon",
         )
     )
+
+
+def test_managed_owner_drives_archive_and_completion_when_omitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    store_uuid = UUID("4c6d971e-fd43-4015-926a-7284f0e061a0")
+    store = tmp_path / "store"
+    manifest = store / "openspec" / "bundler.toml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(f'version = 1\nuuid = "{store_uuid}"\n', encoding="utf-8")
+    home = ZppHome(tmp_path / "home")
+    owner = WorkflowIdentityRepository(home).resolve()
+    service = BundlerLeaseService(
+        home, InMemoryStoreProvider((RegisteredStore("store", store),))
+    )
+    acquired = service.acquire(owner, ((store_uuid, "managed-change"),))
+    lease_cli = import_module("zpp.cli.lease")
+    monkeypatch.setattr(lease_cli, "_service", lambda ctx: service)
+
+    archived = runner.invoke(
+        app,
+        [
+            "--path",
+            str(home.path),
+            "lease",
+            "archive",
+            "--bundle",
+            str(acquired.bundle.bundle_uuid),
+            "--member",
+            f"{store_uuid}:managed-change",
+        ],
+    )
+    completed = runner.invoke(
+        app,
+        [
+            "--path",
+            str(home.path),
+            "lease",
+            "complete",
+            "--bundle",
+            str(acquired.bundle.bundle_uuid),
+        ],
+    )
+
+    assert archived.exit_code == 0, archived.output
+    assert completed.exit_code == 0, completed.output
+    assert service.status() == ()
+
+
+def test_managed_owner_rejects_an_explicitly_owned_bundle(
+    tmp_path: Path, monkeypatch
+) -> None:
+    store_uuid = UUID("4c6d971e-fd43-4015-926a-7284f0e061a0")
+    store = tmp_path / "store"
+    manifest = store / "openspec" / "bundler.toml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(f'version = 1\nuuid = "{store_uuid}"\n', encoding="utf-8")
+    home = ZppHome(tmp_path / "home")
+    WorkflowIdentityRepository(home).resolve()
+    service = BundlerLeaseService(
+        home, InMemoryStoreProvider((RegisteredStore("store", store),))
+    )
+    acquired = service.acquire("workflow:other", ((store_uuid, "owned-change"),))
+    lease_cli = import_module("zpp.cli.lease")
+    monkeypatch.setattr(lease_cli, "_service", lambda ctx: service)
+
+    result = runner.invoke(
+        app,
+        [
+            "--path",
+            str(home.path),
+            "lease",
+            "archive",
+            "--bundle",
+            str(acquired.bundle.bundle_uuid),
+            "--member",
+            f"{store_uuid}:owned-change",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert service.status() == (acquired.bundle,)
+
+
+def test_bypass_warns_and_propagates_child_exit_code() -> None:
+    result = runner.invoke(
+        app,
+        [
+            "bypass",
+            "--reason",
+            "owner approved test",
+            "--acknowledge",
+            "--",
+            sys.executable,
+            "-c",
+            "import sys; sys.exit(7)",
+        ],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 7
+    assert "WARNING" in result.stderr
+    assert "owner approved test" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "lease_arguments, operation",
+    [
+        (
+            [
+                "acquire",
+                "--member",
+                "4c6d971e-fd43-4015-926a-7284f0e061a0:change",
+            ],
+            "acquire",
+        ),
+        (
+            [
+                "archive",
+                "--bundle",
+                "ee26f09b-3bf1-4de8-820c-6b098353258c",
+                "--member",
+                "4c6d971e-fd43-4015-926a-7284f0e061a0:change",
+            ],
+            "archive",
+        ),
+        (
+            [
+                "complete",
+                "--bundle",
+                "ee26f09b-3bf1-4de8-820c-6b098353258c",
+            ],
+            "complete",
+        ),
+        (
+            [
+                "abandon",
+                "--bundle",
+                "ee26f09b-3bf1-4de8-820c-6b098353258c",
+            ],
+            "abandon",
+        ),
+    ],
+)
+def test_bypass_reports_every_mutating_lease_entry_without_state(
+    tmp_path: Path, lease_arguments: list[str], operation: str
+) -> None:
+    home = tmp_path / "home"
+    child = [
+        sys.executable,
+        "-c",
+        "from zpp.cli import app; app()",
+        "--path",
+        str(home),
+        "lease",
+        *lease_arguments,
+    ]
+
+    result = runner.invoke(
+        app,
+        [
+            "bypass",
+            "--reason",
+            "owner approved operation",
+            "--acknowledge",
+            "--",
+            *child,
+        ],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.stdout)["operation"] == operation
+    assert json.loads(result.stdout)["coordination"] == "bypassed"
+    assert not home.exists()
 
 
 def _root_command_names() -> set[str]:

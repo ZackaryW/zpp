@@ -7,14 +7,14 @@ description: Shape accepted public behavior into independently runnable capabili
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots and capability owner, resolved
-OpenSpec root or exact registered-store UUID, provisional examples, and current
-binding evidence. Because shaping mutates governed artifacts, also require a current
-kernel assessment whose action is `shape-bdd` and whose Bundler membership covers
-every target. If it is absent or stale, return `kernel-assessment-required` with the
-exact roots and members; do not reject merely because the caller is not a playbook.
-If only a repo-local OpenSpec root is available, it may be inspected and used as the
-`repo:<path>` trace locator, but return `store-registration-required` before any
-governed edit until the guard names an exact registered store UUID and change member.
+OpenSpec root, change name, provisional examples, and current binding evidence.
+Because shaping mutates governed artifacts, also require a current kernel assessment
+whose action is `shape-bdd`. Pass the exact roots and change names; the kernel invokes
+ZPP runtime coordination and returns structured leased or explicitly authorized
+bypass evidence. Do not resolve registration, manifest UUIDs, owner identity,
+environment overrides, or bundle commands here. If the assessment is absent or
+stale, return `kernel-assessment-required`; block on any runtime-reported coordination
+conflict. Do not reject merely because the caller is not a playbook.
 
 Classify each accepted obligation by public observability. Put public-system behavior
 in one independently runnable `features/<capability>/` root with a capability-local
@@ -45,8 +45,8 @@ text and scope are each fully satisfied by this shaping result. Never mark a par
 adjacent, inferred, or unrelated task complete; omit task mutation when no matching
 task record was supplied.
 
-Return `completed` or `blocked`, with `kernel-assessment-required`,
-`durable-owner-required`, or `store-registration-required` when that is the blocking
-reason, plus classifications, exact bindings, changed paths, and RED evidence. Never
+Return `completed` or `blocked`, with `kernel-assessment-required` or
+`coordination-conflict` when that is the blocking reason, plus classifications, exact
+bindings, changed paths, and RED evidence. Never
 invoke another `zpps-*` skill, implement product behavior, select workflow
 continuation, expand the lease, checkpoint, or claim lifecycle completion.

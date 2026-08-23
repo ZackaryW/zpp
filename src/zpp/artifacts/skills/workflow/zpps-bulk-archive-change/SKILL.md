@@ -17,15 +17,14 @@ root for read-only discovery and as a valid `repo:` trace locator. Never combine
 results from an unscoped repository root with a selected store or invent a store UUID.
 
 Read-only selection and validation may precede admission. Before the first canonical
-write or change move, require an exact registered store UUID for every confirmed
-change. A repo-local root without that resolved UUID remains readable but cannot
-acquire the current Bundler lease; return `store-registration-required` with `blocked`
-for the whole batch before mutation. Then require an eligible
-`zpps-workflow-kernel` assessment with bulk archive authority and an active Bundler
-lease containing every exact confirmed store UUID/change member. Canonical and archive
-paths are post-result audit evidence, not lease members. A direct request may obtain
-this bounded guard. Block the whole batch before mutation if authority or exact member
-coverage is missing or stale; never silently remove a member merely to fit the lease.
+write or change move, require an eligible `zpps-workflow-kernel` assessment with bulk
+archive authority. Pass every resolved root and confirmed change name; the kernel
+invokes ZPP runtime coordination and returns structured leased or explicitly
+authorized bypass evidence for the complete batch. Do not resolve registration,
+manifest UUIDs, owner identity, environment overrides, or bundle commands here.
+Canonical and archive paths are post-result audit evidence. A direct request may
+obtain this bounded guard. Block the whole batch on missing archive authority or any
+runtime-reported coordination conflict; never silently remove a target.
 
 Verify that the installed CLI supports public list, structured status, archive/spec
 instructions where available, and spec validation. Never run `openspec init`, load or
@@ -167,7 +166,7 @@ Return the root/store, selected and confirmed members, schema/status table, conf
 decisions and evidence, included/excluded deltas, every exact per-change canonical and
 archive path changed for kernel post-result audit, sync/validation results, warnings,
 failures, skipped changes, and one aggregate status: `completed`, `partial`,
-`cancelled`, `blocked`, `store-registration-required`, `failed`, or `not-applicable`.
+`cancelled`, `blocked`, `coordination-conflict`, `failed`, or `not-applicable`.
 
 Do not add an unselected change, complete or expand the Bundler bundle, select or
 advance a stage, authorize or create a checkpoint/commit, invoke onboarding, or claim

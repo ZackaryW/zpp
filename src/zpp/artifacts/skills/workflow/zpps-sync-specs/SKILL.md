@@ -24,14 +24,13 @@ root for read-only discovery and as a valid `repo:` trace locator. A
 such as `identity/user-auth` and never collapse them to a basename.
 
 Read-only discovery may precede admission. Before the first canonical-spec write or
-capability retirement, require an exact registered store UUID for the selected change.
-A repo-local root without that resolved UUID remains readable but cannot acquire the
-current Bundler lease; return `store-registration-required` with `blocked` before
-mutation. Then require an eligible `zpps-workflow-kernel` assessment for this exact
-sync request and an active Bundler lease containing the exact store UUID/change
-member. Canonical filesystem paths are post-result audit evidence, not lease members.
-A direct request may obtain this bounded guard without an enclosing playbook. Block
-before mutation on missing, stale, or insufficient authority. Verify the installed
+capability retirement, require an eligible `zpps-workflow-kernel` assessment for this
+exact sync request. Pass the resolved root and change name; the kernel invokes ZPP
+runtime coordination and returns structured leased or explicitly authorized bypass
+evidence. Do not resolve registration, manifest UUID, owner, environment overrides,
+or bundle commands here. Canonical filesystem paths are post-result audit evidence.
+A direct request may obtain this bounded guard. Block before mutation on missing
+product authority or any runtime-reported coordination conflict. Verify the installed
 CLI supports public list, structured status, structured spec instructions, and spec
 validation. Never run `openspec init`, load or repair generated `openspec-*` skills,
 or invoke a ZPP lifecycle command.
@@ -131,7 +130,7 @@ provenance, every exact changed/created/deleted canonical path for kernel post-r
 audit, requirements
 added/modified/removed/renamed, binding or retirement blockers, validation command and
 result, TBD Purpose warnings, and one status: `completed`, `not-applicable`, `blocked`,
-`store-registration-required`, or `failed`.
+`coordination-conflict`, or `failed`.
 
 Stop without archiving the change. Do not select another operation or stage, widen or
 complete the lease bundle, authorize or create a checkpoint/commit, invoke onboarding,

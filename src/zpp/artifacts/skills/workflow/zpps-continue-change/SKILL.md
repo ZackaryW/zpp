@@ -52,15 +52,12 @@ ask the caller before mutation.
 
 ## Obtain authority and create exactly one artifact
 
-Before the write, require a current kernel eligibility assessment and the exact
-Bundler lease for the selected store/change. Accept a valid supplied guard and lease;
-otherwise request them for this already selected `continue-change` operation and
-durable owner. If discovery resolved only a repo-local root and no exact registered
-store UUID from `openspec store list --json`, return
-`blocked: store-registration-required` before writing. Stop if blocked or membership
-differs from the exact registered store UUID/change-name member. Paths are not lease
-members; return changed paths for later kernel audit. Do not broaden or replace the
-lease.
+Before the write, accept a current kernel guard or request it for this already
+selected `continue-change` operation using the resolved root and change name. The
+kernel invokes ZPP runtime coordination and returns structured leased or explicitly
+authorized bypass evidence. Do not resolve registration, manifest UUID, owner,
+environment overrides, or bundle commands here. Stop on missing product authority or
+any runtime-reported coordination conflict. Paths remain post-result audit evidence.
 
 Re-read every non-skipped dependency file from disk. Follow the instruction even when
 the artifact has a familiar name. If it identifies a bounded configured creator,

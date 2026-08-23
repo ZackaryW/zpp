@@ -8,7 +8,8 @@ description: Scaffold one new understood OpenSpec change and create its complete
 Use this component when the intended change is sufficiently understood to create all
 planning artifacts required by the schema's apply phase. It accepts playbook-supplied
 configuration or direct partial configuration: accepted intent, repository or store,
-a proposed kebab-case name, and a durable owner. This operation always scaffolds a new
+a proposed kebab-case name, and accepted mutation authority. Internal coordination
+identity is runtime-owned. This operation always scaffolds a new
 change. Ask for clarification only when missing input would materially change the plan.
 
 ## Resolve the target
@@ -32,15 +33,13 @@ interface.
 
 ## Obtain authority and scaffold
 
-Before the first mutation, accept a still-current kernel guard and exact Bundler lease
-for the selected store/change, or request them for this already-selected `ff-change`
-operation using the durable owner. A missing prior delegation is not itself a
-rejection. Stop if eligibility is blocked or lease membership differs; never broaden
-or replace the bundle. If discovery resolved only a repo-local root and no exact
-registered store UUID from `openspec store list --json`, return
-`blocked: store-registration-required` before scaffolding. The lease member is exactly
-the registered store UUID/change name; paths are not lease members and are returned
-later for kernel audit.
+Before the first mutation, accept a current kernel guard or request it for this
+already-selected `ff-change` operation using the resolved root and proposed change
+name. The kernel invokes ZPP runtime coordination and returns structured leased or
+explicitly authorized bypass evidence. Do not resolve registration, manifest UUID,
+owner, environment overrides, or bundle commands here. Stop on missing product
+authority or any runtime-reported coordination conflict. Paths remain post-result
+audit evidence.
 
 Run `openspec new change <name>` in the sticky scope. Use the configured default
 schema; pass `--schema <name>` only when the caller explicitly selected it. Treat a

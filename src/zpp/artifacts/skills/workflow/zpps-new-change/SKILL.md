@@ -7,8 +7,8 @@ description: Scaffold one OpenSpec change and report its first artifact instruct
 
 Accept configuration from a playbook or a direct partial invocation: the intended
 change, repository or registered store, optional proposed name, optional schema, and
-durable owner identity needed for governed mutation. The operation ends after the
-scaffold, status, and first ready artifact instructions are available.
+accepted mutation authority. Internal coordination identity is runtime-owned. The
+operation ends after the scaffold, status, and first ready artifact instructions.
 
 ## Resolve input and scope
 
@@ -36,17 +36,13 @@ generated OpenSpec skills, or provide compatibility behavior.
 
 ## Obtain mutation authority
 
-Scaffolding is governed mutation. A playbook may supply a still-current kernel guard
-and the exact Bundler lease for the resolved store/change target. A direct invocation,
-or one with stale or missing authority, requests that guard and exact lease for this
-already selected `new-change` operation using the supplied durable owner. The request
-does not let the kernel select another operation. Stop before mutation if eligibility
-is blocked, the durable owner is missing, or lease membership differs from the exact
-registered store UUID/change-name member. If read-only discovery resolved only a
-repo-local OpenSpec root and no exact UUID from `openspec store list --json`, return
-`blocked: store-registration-required`; a filesystem root cannot substitute for a
-Bundler member. Lease membership contains the store/change member, not scaffold or
-artifact paths. Never acquire a broader bundle or replace a supplied lease.
+Scaffolding is governed mutation. Accept a current kernel guard or request it for this
+already selected `new-change` operation using the resolved root and proposed change
+name. The kernel invokes ZPP runtime coordination and returns structured leased or
+explicitly authorized bypass evidence. Do not resolve registration, manifest UUID,
+owner, environment overrides, or bundle commands here. Stop before mutation on
+missing product authority or any runtime-reported coordination conflict. Paths remain
+post-result evidence and the request does not let the kernel select another operation.
 
 ## Scaffold and inspect
 

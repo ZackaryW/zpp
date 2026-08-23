@@ -6,8 +6,9 @@ description: Revise only existing artifacts of one OpenSpec change, with owner-c
 # Update existing OpenSpec planning
 
 Accept playbook configuration or direct partial configuration containing a repository
-or store, optional change name, requested planning correction, and any current guard,
-lease, and durable owner. This operation may revise existing planning files only; it
+or store, optional change name, requested planning correction, accepted mutation
+authority, and any current guard. Internal coordination identity is runtime-owned.
+This operation may revise existing planning files only; it
 never creates a missing artifact or edits product code.
 
 ## Resolve the store and change
@@ -61,15 +62,14 @@ constraints and must not be copied into the artifact.
 
 ## Obtain authority and write confirmed edits
 
-Read-only analysis and proposal of edits does not require a lease. Before the first
-confirmed write, accept a still-current kernel guard and exact Bundler lease for the
-selected store/change or request them for this already-selected `update-change`
-operation using the durable owner. Direct invocation without prior delegation remains
-valid. If discovery resolved only a repo-local root and no exact registered store UUID
-from `openspec store list --json`, return `blocked: store-registration-required`
-before writing. Stop if eligibility is blocked or membership differs from the exact
-registered store UUID/change-name member. Paths are not lease members; return changed
-paths for later kernel audit. Do not broaden or replace the lease.
+Read-only analysis and proposal of edits does not require coordination. Before the
+first confirmed write, accept a current kernel guard or request it for this
+already-selected `update-change` operation using the resolved root and change name.
+The kernel invokes ZPP runtime coordination and returns structured leased or
+explicitly authorized bypass evidence. Do not resolve registration, manifest UUID,
+owner, environment overrides, or bundle commands here. Stop on missing product
+authority or any runtime-reported coordination conflict. Paths remain post-result
+audit evidence.
 
 Apply only confirmed edits to files already listed in `existingOutputPaths`. Verify
 each changed file and rerun `openspec status --change <name> --json` after the accepted

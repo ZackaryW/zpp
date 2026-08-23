@@ -14,8 +14,9 @@ gate. Kernel results contain no next step; follow only the branches written belo
 
 Owner-authorized end-to-end mode may follow these declared branches automatically
 after accepted results, including continuing after a completed proposal. It never
-answers an owner decision, supplies a missing durable owner or mutation/checkpoint/
-archive authority, or skips a component boundary.
+answers an owner decision, supplies missing mutation/checkpoint/archive/bypass
+authority, or skips a component boundary. Internal coordination identity is resolved
+by the ZPP runtime and is not an owner decision.
 
 ## 1. Establish the capability agreement
 
@@ -33,11 +34,12 @@ the kernel and continue to step 2.
 Custom instruction: preserve an explicitly selected change; otherwise create one
 whose name and scope reflect the accepted capability.
 
-Before the first governed mutation, require the durable Bundler owner, exact
-registered store UUID, and exact change member. A repo-local OpenSpec root may be
-inspected and used as `repo:<path>` trace identity, but pause with
-`store-registration-required` until the current Bundler CLI can lease the exact
-registered member. Never infer the owner or UUID.
+Before the first governed mutation, pass the exact resolved repository roots and
+change names plus accepted mutation authority to `zpps-workflow-kernel`. The kernel
+invokes ZPP's runtime coordination command, which owns registration, manifest and
+owner identity, environment overrides, and exact bundle acquisition. Consume its
+structured coordinated, bypassed, or blocked result; never ask the owner for an
+internal store, UUID, owner string, environment value, bundle, or lease command.
 
 - Existing change with planning artifacts -> use `zpps-update-change` for the exact
   accepted revision. If it reports missing artifacts deferred to continuation, use

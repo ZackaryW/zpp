@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from uuid import uuid4
 
 import support
 from behave import given, then, when
@@ -81,6 +82,60 @@ def only_bundle_state(context) -> None:
         "archived_members",
         "topology_digest",
     }
+
+
+@given("a fresh ZPP home and an unprepared registered OpenSpec store")
+def unprepared_registered_store(context) -> None:
+    _environment(context).use_unprepared_store()
+
+
+@given("a prepared store and a strict workflow owner override")
+def prepared_store_with_owner_override(context) -> None:
+    environment = _environment(context)
+    context.override_owner = f"workflow:{uuid4()}"
+    context.coordination_environment = {
+        "ZPP_WORKFLOW_COORDINATION": json.dumps(
+            {"version": 1, "owner_id": context.override_owner},
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+    }
+    context.coordination_root = environment.child
+
+
+@when("the runtime coordinates the exact store and change without internal identifiers")
+def automatic_runtime_coordination(context) -> None:
+    environment = context.environment
+    root = getattr(context, "coordination_root", environment.unprepared)
+    context.acquisition = environment.acquire_target(
+        root,
+        "runtime-change",
+        environment=getattr(context, "coordination_environment", None),
+    )
+
+
+@then("the store and selected ZPP home gain stable coordination identities")
+def coordination_identities_created(context) -> None:
+    assert (context.environment.unprepared / "openspec" / "bundler.toml").is_file()
+    assert (context.environment.home / "identity.json").is_file()
+
+
+@then("one exact Bundler bundle is acquired under the managed owner")
+def exact_managed_bundle(context) -> None:
+    bundle = context.acquisition["bundle"]
+    assert bundle["owner_id"].startswith("zpp:")
+    assert [item["change_name"] for item in bundle["members"]] == ["runtime-change"]
+
+
+@then("the exact bundle uses the overridden owner")
+def overridden_owner_used(context) -> None:
+    assert context.acquisition["bundle"]["owner_id"] == context.override_owner
+
+
+@then("coordination remains leased rather than bypassed")
+def override_remains_leased(context) -> None:
+    assert context.acquisition["coordination"] == "leased"
+    assert context.environment.status()["bundles"]
 
 
 @given("an automatic workflow bundle with two store and change members")

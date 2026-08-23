@@ -83,11 +83,13 @@ zpp resolve [TARGET] [--trait FAMILY ...] [--stage STAGE] [--facet NAME=VALUE ..
 zpp behave init
 zpp behave COMMAND [--all | --target TARGET ... | --gate GATE | --base REV --head REV]
 zpp trait init context|FAMILY [TARGET]
+zpp lease acquire --root ROOT --change CHANGE [--root ROOT --change CHANGE ...]
 zpp lease acquire --owner OWNER --member UUID:CHANGE [--member UUID:CHANGE ...]
 zpp lease status
 zpp lease audit --bundle UUID --path PATH [--path PATH ...]
-zpp lease archive --bundle UUID --owner OWNER --member UUID:CHANGE
-zpp lease complete|abandon --bundle UUID --owner OWNER
+zpp lease archive --bundle UUID --member UUID:CHANGE [--owner OWNER]
+zpp lease complete|abandon --bundle UUID [--owner OWNER]
+zpp bypass --reason TEXT --acknowledge -- COMMAND [ARG ...]
 zpp workflow install|update|remove [--agent AGENT ...] [--target PATH | --global]
 ```
 
@@ -116,6 +118,22 @@ complete inspection, removal, and state report.
 Resolution is read-only and creates no lease state. If the target is inside a
 registered OpenSpec store, ZPP composes only that store's root-to-target parent
 chain. Sibling stores never contribute.
+
+Ordinary governed workflows pass repository roots and change names to `zpp lease
+acquire`. ZPP then owns OpenSpec registration, `openspec/bundler.toml` preparation,
+the durable owner stored in the selected ZPP home, and atomic Bundler acquisition.
+Users and skills do not need to provide those internal identifiers. The explicit
+`--owner` plus `--member UUID:CHANGE` form remains available for diagnosis and
+recovery.
+
+`ZPP_WORKFLOW_COORDINATION` may override automatic selection with strict version-1
+JSON containing an optional `owner_id` and an optional `stores` map from absolute
+repository roots to registered OpenSpec store IDs. Unknown or invalid fields fail
+before bootstrap, and this variable can never disable leasing. For an exceptional
+owner-authorized unleased operation, `zpp bypass` requires a reason and explicit
+acknowledgement, prints a warning and exact child command to standard error, and
+scopes bypass to that one child process. Bypass grants no mutation, archive,
+checkpoint, verification, or lifecycle authority.
 
 `--stage` accepts only `clarify`, `shape`, `plan-utilities`,
 `mature-utilities`, `wire`, `form-specs`, or `finalize`. Stage is protected

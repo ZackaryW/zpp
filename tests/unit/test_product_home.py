@@ -4,6 +4,7 @@ import pytest
 
 from zpp.utils.product_home import (
     PreparedBundlerState,
+    WorkflowIdentityRepository,
     ZppHome,
     selected_zpp_home,
     validate_reset_boundary,
@@ -61,6 +62,8 @@ def test_reset_boundary_rejects_non_directory_state_child(tmp_path: Path) -> Non
 
 def test_prepared_state_replaces_only_bundler_child(tmp_path: Path) -> None:
     home_path = tmp_path / "home"
+    identity_repository = WorkflowIdentityRepository(ZppHome(home_path))
+    owner = identity_repository.resolve()
     old_state = home_path / "bundler"
     old_state.mkdir(parents=True)
     (old_state / "old.json").write_text("old")
@@ -73,6 +76,7 @@ def test_prepared_state_replaces_only_bundler_child(tmp_path: Path) -> None:
     assert old_state.is_dir()
     assert [path.name for path in old_state.iterdir()] == ["state.lock"]
     assert sibling.read_text() == "keep"
+    assert identity_repository.resolve() == owner
     assert not prepared.staging_root.exists()
 
 

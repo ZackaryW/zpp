@@ -12,8 +12,9 @@ directly; use the kernel afterwards only when their result is consumed as a life
 gate. The kernel never selects the next step.
 
 Owner-authorized end-to-end mode may follow only the declared branches after accepted
-results. It never answers an owner decision, supplies missing durable-owner,
-mutation, checkpoint, or archive authority, or skips a component boundary.
+results. It never answers an owner decision, supplies missing mutation, checkpoint,
+archive, or bypass authority, or skips a component boundary. ZPP runtime-owned
+coordination identity is not an owner decision.
 
 ## 1. Reconcile the failure contract
 
@@ -29,11 +30,13 @@ assessment when consuming clarification as a lifecycle gate and continue.
 
 ## 2. Reconcile the change plan
 
-Before the first governed mutation, require the durable Bundler owner, exact
-registered store UUID, and exact change member. A repo-local root remains valid for
-inspection and `repo:<path>` trace identity, but pause with
-`store-registration-required` until the current Bundler CLI can lease the registered
-member. Never infer the owner or UUID.
+Before the first governed mutation, pass the exact resolved repository roots and
+change names plus accepted mutation authority to `zpps-workflow-kernel`. Consume the
+structured result from ZPP's runtime coordination command. The runtime, not this
+playbook, owns registration, store manifests, durable coordination identity,
+environment overrides, and Bundler transitions. Never ask the owner for those
+internal values; pause only on the concrete runtime conflict or missing product
+authority.
 
 Use the exact planning adapter returned by `planning-operation-required`. Without
 that signal, use `zpps-update-change` for an existing applicable change. Otherwise use

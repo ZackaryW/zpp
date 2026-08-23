@@ -8,12 +8,12 @@ description: Wire accepted behavior through the repository's public composition 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots, approved feature and binding
 inventory, verified utility evidence, resolved public composition owner, and a
-current kernel assessment carrying a durable owner, exact registered store UUID and
-change member, and Bundler membership covering every mutation target. If the guard is
-absent, stale, or mismatched, return `kernel-assessment-required`; return
-`durable-owner-required` or `store-registration-required` for those missing inputs.
-A repo-local root may be inspected but cannot authorize Bundler mutation. Do not
-reject a direct caller merely for being direct.
+current kernel assessment for every exact root and change target. The kernel invokes
+ZPP runtime coordination and returns structured leased or explicitly authorized
+bypass evidence. Do not resolve registration, manifest UUIDs, owner identity,
+environment overrides, or bundle commands here. If the guard is absent or stale,
+return `kernel-assessment-required`; block on any runtime-reported coordination
+conflict. Do not reject a direct caller merely for being direct.
 
 Reconcile the proposed composition with current public entry points. Bind each
 approved feature scenario through the actual application or composition owner. Keep
@@ -31,9 +31,9 @@ After every required wiring edit and its focused evidence succeed, update only
 supplied OpenSpec tasks whose text and scope are each fully satisfied by this wiring
 result. Never mark a partial, adjacent, inferred, or unrelated task complete.
 
-Return `completed` or `blocked`, with `kernel-assessment-required`,
-`durable-owner-required`, or `store-registration-required` when that is the blocking
-reason, plus changed paths, exact public bindings, verification evidence, and any
+Return `completed` or `blocked`, with `kernel-assessment-required` or
+`coordination-conflict` when that is the blocking reason, plus changed paths,
+exact public bindings, verification evidence, and any
 design contradiction. Never invoke another `zpps-*` skill, invent policy, redesign
 utilities, form specifications, select continuation, expand the lease, checkpoint,
 or claim lifecycle completion.

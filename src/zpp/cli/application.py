@@ -7,6 +7,7 @@ import typer
 
 from zpp import __version__
 from zpp.cli.behavior import behave
+from zpp.cli.bypass import bypass
 from zpp.cli.initialization import initialize
 from zpp.cli.lease import app as lease_app
 from zpp.cli.open import open_home
@@ -29,6 +30,10 @@ app.command("open")(open_home)
 app.command("reset")(reset)
 app.command("resolve")(resolve)
 app.command("behave")(behave)
+app.command(
+    "bypass",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(bypass)
 app.add_typer(trait_app, name="trait")
 app.add_typer(lease_app, name="lease")
 app.add_typer(workflow_app, name="workflow")

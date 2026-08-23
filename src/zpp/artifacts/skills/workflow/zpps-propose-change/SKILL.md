@@ -6,8 +6,8 @@ description: Reconcile a proposed change, scaffold it, and create its complete c
 # Propose an OpenSpec change
 
 Accept playbook configuration or a direct partial request containing the intended
-change, repository or store, optional name and schema, accepted owner decisions, and a
-durable owner. This operation authorizes planning only. Even when the selecting request
+change, repository or store, optional name and schema, accepted owner decisions, and
+mutation authority. Internal coordination identity is runtime-owned. This operation authorizes planning only. Even when the selecting request
 says to build or fix the product, do not edit product code or begin apply work. A
 standalone invocation stops after presenting this result and requires a later owner
 request for apply. When an owner-authorized end-to-end `zpp-*` playbook selected this
@@ -43,15 +43,13 @@ behavior.
 
 ## Obtain authority and scaffold
 
-Before mutation, accept a still-current kernel guard and exact Bundler lease for the
-selected store/change target, or request them for this already-selected
-`propose-change` operation using the durable owner. Direct invocation does not require
-prior delegation. If discovery resolved only a repo-local root and no exact registered
-store UUID from `openspec store list --json`, return
-`blocked: store-registration-required` before scaffolding. Stop if eligibility is
-blocked or membership differs from the exact registered store UUID/change-name member.
-Paths are not lease members; return them for later kernel audit. Never broaden or
-replace the bundle.
+Before mutation, accept a current kernel guard or request it for this already-selected
+`propose-change` operation using the resolved root and proposed change name. Direct
+invocation does not require prior delegation. The kernel invokes ZPP runtime
+coordination and returns structured leased or explicitly authorized bypass evidence.
+Do not resolve registration, manifest UUID, owner, environment overrides, or bundle
+commands here. Stop on missing product authority or any runtime-reported coordination
+conflict. Paths remain post-result audit evidence.
 
 Run `openspec new change <name>` in the sticky scope, passing
 `--schema <schema-name>` only for an explicitly selected schema. The CLI scaffold and

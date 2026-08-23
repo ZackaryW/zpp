@@ -22,17 +22,14 @@ on every store-aware command. Otherwise use the nearest repository-local `opensp
 root for read-only discovery and as a valid `repo:` trace locator. Never substitute a
 store name, directory basename, or invented UUID.
 
-Read-only selection and status discovery may precede admission. Before the first edit
-to product code, tests, or task artifacts, require an exact registered store UUID for
-the selected change. A repo-local OpenSpec root without that resolved UUID remains
-readable but cannot acquire the current Bundler lease; return
-`store-registration-required` with `blocked` before mutation. Then require an eligible
-`zpps-workflow-kernel` assessment for this exact apply request and an active Bundler
-lease containing the exact store UUID/change member. Filesystem and repository paths
-are post-result audit evidence, not lease members. A direct invocation may request
-that bounded assessment; it does not need an enclosing playbook. If eligibility,
-mutation authority, or exact member coverage is absent or stale, return `blocked`
-before mutation.
+Read-only selection and status discovery may precede admission. Before the first edit,
+require an eligible `zpps-workflow-kernel` assessment for this exact apply request.
+Pass the resolved root and change name; the kernel invokes ZPP runtime coordination
+and returns structured leased or explicitly authorized bypass evidence. Do not
+resolve registration, manifest UUID, owner, environment overrides, or bundle commands
+here. Filesystem and repository paths are post-result audit evidence. A direct
+invocation may request the assessment. Stop before mutation on missing product
+authority or any runtime-reported coordination conflict.
 
 At invocation time verify that the installed `openspec` executable supports the
 public list, structured status, and structured `instructions apply` interfaces used
@@ -99,7 +96,7 @@ invoke a ZPP lifecycle command on the owner's behalf.
    selected root/store/change, schema, tasks completed in this invocation, overall
    progress, every exact changed product/test/task path for kernel post-result audit,
    commands and results, unresolved issues, and one of `completed`, `blocked`,
-   `store-registration-required`, `failed`, or `already-completed`.
+   `coordination-conflict`, `failed`, or `already-completed`.
 
 ## Stopping boundary
 

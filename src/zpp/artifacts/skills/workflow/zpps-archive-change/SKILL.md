@@ -22,15 +22,13 @@ root for read-only discovery and as a valid `repo:` trace locator. Preserve the 
 capability path relative to `specs/`.
 
 Read-only inspection may precede admission. Before any canonical-spec write or change
-move, require an exact registered store UUID for the selected change. A repo-local
-root without that resolved UUID remains readable but cannot acquire the current
-Bundler lease; return `store-registration-required` with `blocked` before mutation.
-Then require an eligible `zpps-workflow-kernel` assessment carrying explicit archive
-authority and an active Bundler lease containing the exact store UUID/change member.
-Canonical and archive paths are post-result audit evidence, not lease members. A
-direct request may obtain this bounded guard; it does not require an enclosing
-playbook. Block before mutation if the assessment or exact member coverage is absent
-or stale.
+move, require an eligible `zpps-workflow-kernel` assessment carrying explicit archive
+authority. Pass the resolved root and change name; the kernel invokes ZPP runtime
+coordination and returns structured leased or explicitly authorized bypass evidence.
+Do not resolve registration, manifest UUID, owner, environment overrides, or bundle
+commands here. Canonical and archive paths are post-result audit evidence. A direct
+request may obtain this bounded guard. Block before mutation on missing archive
+authority or any runtime-reported coordination conflict.
 
 Verify at invocation time that the installed CLI supports public list, structured
 status, archive/spec instructions where available, and spec validation. Never run
@@ -109,7 +107,7 @@ Return the selected root/store/change, schema, exact archive path and every exac
 canonical/archive path changed for kernel post-result audit, whether specs were
 absent/synced/skipped, validation and post-sync comparison evidence, confirmed
 incomplete-artifact/task warnings, and `completed`, `cancelled`, `blocked`,
-`store-registration-required`, or `failed`. Claim specs were synced only when
+`coordination-conflict`, or `failed`. Claim specs were synced only when
 synchronous sync and independent comparison both passed.
 
 Do not archive another change, complete or expand the Bundler bundle, select or

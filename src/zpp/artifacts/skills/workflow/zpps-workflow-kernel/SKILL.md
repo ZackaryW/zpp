@@ -12,29 +12,32 @@ this skill, selects the playbook action and component.
 ## Pre-action assessment
 
 Require the caller to provide the playbook or direct-invocation identity, outcome,
-selected action and component, exact repository roots, resolved store/change targets
-when known, accepted-input revision, whether the action mutates governed state,
-predecessor evidence, and owner-granted checkpoint authority. Assess only that
-selected action.
+selected action and component, exact repository roots and change names, accepted-input
+revision, whether the action mutates governed state, predecessor evidence, and
+owner-granted mutation, checkpoint, archive, abandonment, and bypass authority.
+Assess only that selected action.
 
 Return one of `eligible`, `blocked`, `completed`, or `accepted-not-applicable`, plus
 the assessed action identity, reasons, required evidence, authority facts, and any
-`durable-owner-required` or `store-registration-required` blocking signal. The result
-has no next-step, next-stage, or component-selection field.
+runtime coordination conflict. The result has no next-step, next-stage, or
+component-selection field.
 
-For a governed mutation, require a durable owner plus an exact registered store UUID
-and exact change member before the first write. The current Bundler CLI cannot lease
-a repo-local-only OpenSpec root. Such a root may be inspected and may remain the
-`repo:<path>` trace locator, but return `store-registration-required` and `blocked`
-until the caller resolves an exact UUID from the public registered-store list. Never
-invent or derive a UUID from a name or path.
+For a governed mutation with accepted mutation authority, invoke `zpp lease acquire`
+with one matching `--root` and `--change` pair per exact target. ZPP's Python runtime
+owns OpenSpec registration, Bundler manifest preparation, product-home owner
+identity, `ZPP_WORKFLOW_COORDINATION` parsing, topology resolution, and atomic bundle
+acquisition. Do not duplicate those algorithms, inspect the environment variable, or
+ask the owner for any internal coordination value.
 
-Once those inputs exist, acquire or confirm one Bundler bundle for the durable owner
-and return the exact bundle identity and membership as the mutation guard. Return
-`durable-owner-required` when that owner is missing. Never add a member, replace a
-bundle, or treat traits, artifacts, skill identity, component output, or end-to-end
-mode as mutation authority. A direct component caller may request this assessment;
-prior playbook delegation is not required.
+Accept `coordination: leased` only when the structured result contains the exact
+targets, resolved store UUID members, and bundle identity. Accept
+`coordination: bypassed` only when the assessment input carries explicit owner bypass
+authority for this action; bypass grants no other authority. Return `blocked` with
+the runtime diagnostic on invalid override, registration, manifest, topology,
+ownership, or lease conflict. Never add a target, replace a bundle, fall back to
+unleased mutation, or treat traits, artifacts, skill identity, component output, or
+end-to-end mode as mutation authority. A direct component caller may request this
+assessment; prior playbook delegation is not required.
 
 ## Result assessment
 
@@ -43,9 +46,11 @@ status, changed paths, unresolved questions, and verification evidence. Return
 `accepted`, `blocked`, `checkpointed`, or `lifecycle-complete`, with reasons and
 observed authority facts. Again return no next-step field.
 
-Audit changed paths against the bundle. Record member archives only from observed
-archive results and complete the bundle only after every declared member is archived
-and every required gate and path audit succeeds. At a material accepted result,
+For leased execution, submit changed paths to ZPP's runtime audit operation, record
+member archives only from observed archive results, and complete the bundle only
+after every declared member is archived and every required gate and path audit
+succeeds. For explicitly bypassed execution, retain structured bypass evidence and do
+not claim an audit or bundle transition occurred. At a material accepted result,
 author a checkpoint through `zmem-author-commits` only when the owner supplied
 checkpoint authority; otherwise report `accepted` without committing.
 

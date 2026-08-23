@@ -12,8 +12,9 @@ kernel afterwards only when their result is consumed as a lifecycle gate. Never 
 the kernel which component follows.
 
 Owner-authorized end-to-end mode may follow only these declared branches after
-accepted results. It never answers owner decisions, supplies missing durable-owner,
-mutation, checkpoint, or archive authority, or skips a component boundary.
+accepted results. It never answers owner decisions, supplies missing mutation,
+checkpoint, archive, or bypass authority, or skips a component boundary. Internal
+coordination identity remains ZPP runtime state.
 
 ## 1. Define the structural outcome
 
@@ -28,11 +29,12 @@ and owner decisions. Satisfy `exploration-required` through one explicit
 
 ## 2. Establish the OpenSpec planning boundary
 
-Before the first governed mutation, require the durable Bundler owner, exact
-registered store UUID, and exact change member. A repo-local root may be inspected
-and used as `repo:<path>` trace identity, but pause with
-`store-registration-required` until the current Bundler CLI can lease the exact
-registered member. Never infer the owner or UUID.
+Before the first governed mutation, pass the exact resolved repository roots and
+change names plus accepted mutation authority to `zpps-workflow-kernel`. Consume the
+structured result from ZPP's runtime coordination command. Do not resolve or ask for
+store registration, manifest UUID, owner string, environment override, bundle, or
+lease commands in this playbook; ZPP owns those mechanics and reports genuine
+conflicts.
 
 Use `zpps-new-change` and stop at its published scaffold boundary when the owner asked
 only to start planning. For an understood end-to-end scaffold, use

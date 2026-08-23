@@ -13,7 +13,11 @@ from typer.testing import CliRunner
 
 from zpp.artifacts import packaged_companion_skills, packaged_workflow_hook
 from zpp.cli import app
-from zpp.utils.bundler import BundlerDocuments, BundlerLeaseService
+from zpp.utils.bundler import (
+    BundlerDocuments,
+    BundlerLeaseService,
+    WorkflowCoordinationService,
+)
 
 PARENT = UUID("52b7223b-3d15-4e8a-98f7-d8ddc90fbf1c")
 CHILD = UUID("8f85ef9f-d18a-4787-903e-1ecb920acb77")
@@ -48,6 +52,8 @@ class Environment:
             self._store(self.sibling, SIBLING, PARENT, "sibling"),
         )
         self.provider = InMemoryStoreProvider(stores)
+        self.registry = _Registry(self)
+        self.unprepared = self.repository / "unprepared"
         self.runner = CliRunner()
         self._patches: list[tuple[object, str, object]] = []
         self._patch_public_adapters()
@@ -73,6 +79,14 @@ class Environment:
             lease,
             "_service",
             lambda ctx: BundlerLeaseService(ctx.obj.home, self.provider),
+        )
+        self._patch(
+            lease,
+            "_coordination_service",
+            lambda ctx: WorkflowCoordinationService(
+                ctx.obj.home,
+                registry=self.registry,
+            ),
         )
 
     @staticmethod
@@ -112,6 +126,38 @@ class Environment:
             arguments.extend(("--member", f"{store}:{change}"))
         return self.invoke_json(*arguments)
 
+    def use_unprepared_store(self) -> None:
+        self.unprepared.mkdir()
+        (self.unprepared / "openspec").mkdir()
+        self.provider = InMemoryStoreProvider(
+            (RegisteredStore("unprepared", self.unprepared),)
+        )
+
+    def acquire_target(
+        self,
+        root: Path,
+        change: str,
+        *,
+        environment: dict[str, str] | None = None,
+    ) -> dict:
+        result = self.runner.invoke(
+            app,
+            [
+                "--path",
+                str(self.home),
+                "lease",
+                "acquire",
+                "--root",
+                str(root),
+                "--change",
+                change,
+            ],
+            env=environment,
+            catch_exceptions=False,
+        )
+        assert result.exit_code == 0, result.output
+        return json.loads(result.stdout)
+
     def status(self) -> dict:
         return self.invoke_json("lease", "status")
 
@@ -140,3 +186,23 @@ class Environment:
             "hook": packaged_workflow_hook(Agent.CODEX).name,
             "skills": tuple(skill.name for skill in packaged_companion_skills()),
         }
+
+
+class _Registry:
+    def __init__(self, environment: Environment) -> None:
+        self._environment = environment
+
+    def list_stores(self):
+        return self._environment.provider.list_stores()
+
+    def ensure_registered(self, root: Path, *, store_id: str | None = None):
+        resolved = root.resolve()
+        matches = tuple(
+            store
+            for store in self.list_stores()
+            if store.root.resolve() == resolved
+            and (store_id is None or store.store_id == store_id)
+        )
+        if len(matches) != 1:
+            raise ValueError("test registry target is unavailable or ambiguous")
+        return matches[0]
