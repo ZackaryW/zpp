@@ -27,6 +27,6 @@
 
 ## 5. Repository and Change Verification
 
-- [ ] 5.1 Run strict validation for `correct-zpps-component-admission` and verify semantic coherence among its proposal, design, delta, tasks, and revised packaged skills.
-- [ ] 5.2 Run the repository's established complete pytest and independent Behave capability roots, then check the supported interpreter, lock, Ruff lint and format gates, Git diff hygiene, and a clean package build through the declared backend.
-- [ ] 5.3 Confirm no AppBuilder files, compatibility identities, OpenSpec CLI behavior, canonical specifications, or unrelated component procedures changed during apply; leave canonical reconciliation to the later explicit specification-formation and synchronization operations.
+- [x] 5.1 Run strict validation for `correct-zpps-component-admission` and verify semantic coherence among its proposal, design, delta, tasks, and revised packaged skills.
+- [x] 5.2 Run the repository's established complete pytest and independent Behave capability roots, then check the supported interpreter, lock, Ruff lint and format gates, Git diff hygiene, and a clean package build through the declared backend.
+- [x] 5.3 Confirm no AppBuilder files, compatibility identities, OpenSpec CLI behavior, canonical specifications, or unrelated component procedures changed during apply; leave canonical reconciliation to the later explicit specification-formation and synchronization operations.
