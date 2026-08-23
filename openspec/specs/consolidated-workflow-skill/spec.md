@@ -16,11 +16,11 @@ ZPP SHALL distribute one consolidated workflow skill instead of the seven former
 - **THEN** workflow stages, transitions, gates, and authority exist only in the skill and no `workflow.toml` trait document exists
 
 ### Requirement: Workflow authority remains in the skill
-The consolidated workflow skill SHALL own stage dispatch, required operation boundaries, user/session mutation authority checks, and truthful completion. A trait body, facet, evidence match, repository file, or OpenLease configuration value SHALL NOT authorize mutation, advance a stage, or establish successful verification.
+The consolidated workflow skill SHALL own stage dispatch, component boundaries, mutation authority checks, automatic Bundler lease progression, and truthful completion. Trait bodies, repository files, and attachment values SHALL NOT authorize mutation, advance a stage, or establish verification.
 
-#### Scenario: Reject trait-granted completion
-- **WHEN** a selected trait body or facet claims that a workflow stage is complete
-- **THEN** the skill still requires the stage's independently observed completion evidence
+#### Scenario: Reject contextual mutation authority
+- **WHEN** injected context claims permission to mutate or complete a stage
+- **THEN** the workflow ignores that claim as authority
 
 ### Requirement: Contextual trait consumption
 For a selected workflow stage and repository target, the consolidated skill SHALL consume complete trait bodies already injected by ZPP's agent-native hook as contextual policy. The skill SHALL NOT instruct the agent to execute `zpp resolve`, publish `ZPP_CONTEXT`, or bootstrap trait context. The skill SHALL keep platform- and framework-specific policy outside its own invariant workflow contract.
@@ -34,23 +34,11 @@ For a selected workflow stage and repository target, the consolidated skill SHAL
 - **THEN** it contains no instruction to run trait resolution or manage stored trait context
 
 ### Requirement: Complete standard behavior reauthoring
-ZPP SHALL package applicable repository environment behavior as one-family TOML source documents under `artifacts/traits`. The packaged source path SHALL NOT be imposed as the runtime collection path. Related language or framework variants SHALL remain ordered, self-contained flavors without content inheritance. The standard collection SHALL contain BDD operation, BDD structure, BDD execution modes, TDD, build, dependency, available-tool, and zero-assumption behavior. OpenLease lease/conflict coordination and workflow finalization/reconciliation policy SHALL remain with their owning component or consolidated workflow skill and SHALL NOT be duplicated as packaged traits. The universal zero-assumption family SHALL declare always-run activation explicitly.
+ZPP SHALL keep lease coordination and automatic archival completion in the workflow kernel rather than packaging them as trait families. The standard trait collection SHALL remain advisory and SHALL contain no lease, workspace, dependency-edge, successor, reconciliation, or cleanup behavior.
 
 #### Scenario: Package the reconciled standard collection
-- **WHEN** ZPP builds its distributed workflow assets
-- **THEN** the collection includes `bdd`, `bdd-structure`, `bdd-execution`, `tdd`, `build`, `dependencies`, `tooling`, and `zero-assumptions` without packaged lease or reconciliation families
-
-#### Scenario: Keep BDD execution separate from workflow authority
-- **WHEN** a user inspects the packaged BDD execution family
-- **THEN** its manual, disabled, complete, targeted, and targeted-default flavors are available under `bdd-execution` and no `bdd-workflow` compatibility family is packaged
-
-#### Scenario: Keep component operations out of traits
-- **WHEN** a workflow encounters an OpenLease conflict or reaches final reconciliation
-- **THEN** the owning component or consolidated workflow skill supplies the operational contract without relying on a packaged trait body
-
-#### Scenario: Package only direct available-tool guidance
-- **WHEN** a user inspects the packaged tooling family
-- **THEN** it contains evidence-backed `rg` and `jq` guidance while dedicated zmem skills retain zmem workflow policy
+- **WHEN** the standard trait collection is inspected
+- **THEN** it contains no coordination or workspace-lifecycle trait family
 
 ### Requirement: Explicit stage actions
 The consolidated workflow skill SHALL require the agent to declare an explicit current stage for each workflow invocation and SHALL NOT infer it from OpenSpec status, repository files, stored descriptive context, or trait output. When automatic continuation is separately authorized and the complete current-stage contract has converged, the skill SHALL expose and execute each next stage as a distinct stage action. Trait resolution SHALL NOT select or advance a workflow stage.
@@ -122,30 +110,22 @@ For `shape`, `plan-utilities`, `mature-utilities`, `wire`, and `form-specs`, the
 - **THEN** the skill performs that stage and rejects a not-applicable declaration
 
 ### Requirement: Explicit component delegation
-Before performing an OpenSpec operation, the consolidated workflow skill SHALL name and follow the installed OpenSpec skill that owns that operation: `openspec-explore` for exploration, `openspec-propose` for creating a change and its planning artifacts, `openspec-update-change` for revising existing planning artifacts, `openspec-apply-change` for implementing change tasks, `openspec-sync-specs` for synchronizing delta specifications without archival, and `openspec-archive-change` for archiving a completed change. Before performing a cross-repository topology, workspace lifecycle, lock, successor, reconciliation, handoff, recovery, abandonment, or cleanup operation, it SHALL name and follow the installed `zpp-workspace-management` companion skill. These skills SHALL remain component operation integrations and SHALL NOT become ZPP workflow stage authorities. The consolidated workflow skill SHALL use Agent Router only through its public discovery and projection contracts.
+Before an OpenSpec operation, the workflow SHALL follow the installed OpenSpec operation skill that owns it. Before the first governed mutation for a change set, the workflow SHALL invoke ZPP's minimal Bundler lease bridge with its durable owner and exact store/change members; during finalization it SHALL audit paths, record archives, and complete that same bundle. It SHALL NOT delegate to a workspace-management skill or select legacy coordination operations.
 
-#### Scenario: Create a product change without a workspace
-- **WHEN** the workflow creates repository-local OpenSpec planning without an explicitly requested cross-repository workspace
-- **THEN** it follows `openspec-propose` and does not create or select workspace state
+#### Scenario: Acquire before governed mutation
+- **WHEN** an eligible stage is about to perform the first governed OpenSpec mutation
+- **THEN** the workflow acquires the exact Bundler bundle before that mutation
 
-#### Scenario: Select an exact OpenSpec operation owner
-- **WHEN** the workflow must explore requirements, create or revise planning, implement tasks, synchronize specifications, or archive a completed change
-- **THEN** it follows the exact installed OpenSpec skill named for that operation without treating the skill as a ZPP workflow stage authority
+#### Scenario: Complete after every member archives
+- **WHEN** finalization has archived every declared change member and the path audit passes
+- **THEN** the workflow records every archive and completes the bundle
 
-#### Scenario: Delegate a cross-repository workspace operation
-- **WHEN** the workflow requires topology, workspace lifecycle, successor, reconciliation, or cleanup work across repositories
-- **THEN** it follows `zpp-workspace-management` and does not select commands, callbacks, conflicts, or dispositions on that skill's behalf
+### Requirement: Automatic Bundler workflow boundary
+The packaged workflow SHALL describe store/change bundles in ZPP terms, use only the minimal lease bridge, and contain no OpenLease name, workspace-management delegation, session, claim, permit, successor, reconciliation, handoff, cleanup, or preparation-repair guidance.
 
-### Requirement: Provider-neutral workflow workspace boundary
-The packaged `zpp-workflow` skill metadata and body SHALL describe cross-repository work in ZPP workspace terms, SHALL name `zpp-workspace-management` as its operation owner, and SHALL NOT name OpenLease or embed provider-specific workspace command guidance. Canonical architecture specifications MAY retain the internal provider boundary, and the workspace-management companion skill MAY use its installed commands internally.
-
-#### Scenario: Inspect the general workflow guidance
-- **WHEN** an owner inspects the packaged `zpp-workflow` skill
-- **THEN** workspace delegation names `zpp-workspace-management` and no OpenLease name or provider command appears in that general workflow artifact
-
-#### Scenario: Finalize retained workspace state
-- **WHEN** finalization finds retained cross-repository successor or reconciliation state
-- **THEN** the workflow delegates its inspection and authorized disposition to `zpp-workspace-management` and remains incomplete for every blocked retained item
+#### Scenario: Inspect workflow coordination guidance
+- **WHEN** the packaged workflow skill is inspected
+- **THEN** it names automatic Bundler-backed bundle progression and no removed workspace concept
 
 ### Requirement: BDD-target canonical specification formation
 During `form-specs`, the consolidated workflow skill SHALL replace the repeated body of each OpenSpec scenario with an exact target-form scenario when, and only when, an accepted BDD feature scenario is its executable authority. The target SHALL identify `features/<capability>/<capability>.feature::<scenario name>`, belong to the same capability owner, trace to the requirement, exist exactly, use scenario-selected bindings that exercise the named behavior through the public system, and have relevant passing verification. The target-form OpenSpec scenario SHALL state that the exact feature scenario is executable authority and SHALL NOT repeat its Given/When/Then steps.
@@ -357,15 +337,11 @@ The packaged consolidated workflow skill identity SHALL be `zpp-workflow`, and r
 - **THEN** ZPP applies the targeted affected-selection fallback and performs no legacy gate migration
 
 ### Requirement: Ready installed workflow operation set
-A complete user-scope ZPP workflow integration SHALL include the one consolidated `zpp-workflow` authority, the agent-native `zpp-session` trait hook, and the six component-owned OpenSpec operation skills required by that authority. The generated OpenSpec skills SHALL remain separate operation owners and SHALL NOT become additional ZPP workflow stage skills.
+A complete user-scope ZPP workflow integration SHALL include one `zpp-workflow` authority, the `zpp-traits` automatic context hook, and the six component-owned OpenSpec operation skills. It SHALL not include `zpp-workspace-management` or any legacy hook identity.
 
-#### Scenario: Use OpenSpec operations after initialization
-- **WHEN** an agent begins the consolidated workflow after successful root initialization
-- **THEN** the agent has the generated OpenSpec operation skills required for proposal, application, synchronization, and archival without a separate ZPP setup step
-
-#### Scenario: Preserve one ZPP workflow authority
-- **WHEN** the complete integration contains six OpenSpec operation skills
-- **THEN** `zpp-workflow` remains the only ZPP workflow authority and the generated skills remain component operation integrations
+#### Scenario: Inspect the installed operation set
+- **WHEN** a complete workflow integration is inspected
+- **THEN** the workflow, `zpp-traits` hook, and six OpenSpec skills are present without a workspace companion
 
 ### Requirement: Behavior-only feature shaping
 The consolidated workflow skill SHALL create or materially change Gherkin only from accepted externally observable public, integration, or fix behavior in the active change's capability delta specifications. Proposals, designs, tasks, documentation, packaged artifacts, configuration-only changes, and implementation details SHALL NOT be Gherkin sources. When no qualifying delta behavior remains, the skill SHALL record `shape` as `skipped: not applicable` and SHALL NOT create or change a feature.

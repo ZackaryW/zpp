@@ -50,35 +50,23 @@ Trait flavors SHALL remain independent. ZPP SHALL NOT infer inheritance, templat
 - **WHEN** two flavors declare related facets and similar bodies
 - **THEN** changing one flavor does not alter the decoded content or metadata of the other
 
-### Requirement: Repository-space-global composition
-When OpenLease sources contribute same-basename trait documents to the same trait family, ZPP SHALL compose the effective family in repository → space → global order. ZPP SHALL preserve the established order within each source category and authored flavor order within each document. The highest-precedence contributing document's `selection` and `activation` SHALL be the effective family policies, with omitted activation interpreted as `automatic`.
+### Requirement: Repository-and-store-chain composition
+ZPP SHALL compose each effective trait family from repository documents followed by the selected managed store's `zpp-traits` namespaces in root-to-child order and then packaged global defaults. Repository input SHALL have the highest policy precedence; otherwise, later selected-child store input SHALL have higher policy precedence than its parent. Siblings and stores outside the selected chain SHALL not participate, and there SHALL be no space or global OpenLease source.
 
-#### Scenario: Override one repository specialization and retain defaults
-- **WHEN** repository `bdd.toml` contributes Python-and-Click, space `bdd.toml` contributes Python, and global `bdd.toml` contributes Flutter
-- **THEN** the effective flavor order is repository Python-and-Click, space Python, then global Flutter
-
-#### Scenario: Use the highest-precedence family policies
-- **WHEN** repository and global documents contribute to one family with different `selection` and `activation` values
-- **THEN** the repository document's selection and activation govern the complete layered family
-
-#### Scenario: Preserve source-local order
-- **WHEN** one source contributes several ordered flavors to a trait family
-- **THEN** those flavors remain in their authored order relative to one another after layered composition
+#### Scenario: Compose a selected store chain
+- **WHEN** repository, parent-store, selected-child, and sibling inputs contribute one family
+- **THEN** ZPP composes repository, parent, then selected child and excludes the sibling
 
 ### Requirement: Explicit repository overwrite mode
-A repository trait document MAY declare `[meta] mode = "repository-overwrite"`. When declared, ZPP SHALL exclude every space and global contribution to that family before selection. When `mode` is omitted, ZPP SHALL use repository-space-global layered composition. ZPP SHALL reject `repository-overwrite` on a non-repository contribution.
+A repository trait document MAY declare `[meta] mode = "repository-overwrite"`. When declared, ZPP SHALL exclude every store and packaged global contribution to that family before selection. Store attachments SHALL NOT declare repository overwrite mode.
 
-#### Scenario: Replace inherited family contributions
-- **WHEN** repository `bdd.toml` declares `mode = "repository-overwrite"` while space and global `bdd.toml` documents also exist
-- **THEN** the effective `bdd` family contains only repository flavors and uses the repository selection policy
+#### Scenario: Exclude store contributions explicitly
+- **WHEN** a repository family declares repository overwrite mode while related stores contribute the same family
+- **THEN** only the repository document contributes
 
-#### Scenario: Layer by default
-- **WHEN** repository `bdd.toml` omits `mode` while space and global `bdd.toml` documents exist
-- **THEN** all three documents contribute in repository-space-global order
-
-#### Scenario: Reject overwrite outside repository scope
-- **WHEN** a space or global trait document declares `mode = "repository-overwrite"`
-- **THEN** ZPP rejects that source declaration as invalid
+#### Scenario: Reject overwrite mode in a store attachment
+- **WHEN** a store contribution declares repository overwrite mode
+- **THEN** ZPP rejects that store contribution
 
 ### Requirement: Scalar flavor constraints and scalar-or-list context
 Trait flavor facet constraints SHALL be strings. Repository-known and explicitly supplied categorical context facets SHALL be either strings or non-empty lists of distinct strings. A scalar flavor constraint SHALL match an equal scalar context value or a member of the corresponding context list. ZPP SHALL reject tables, non-string categorical values, empty lists, and lists containing duplicates or non-strings. Runtime boolean facets produced by registered evidence predicates SHALL remain separately typed derived context rather than authored categorical facets.

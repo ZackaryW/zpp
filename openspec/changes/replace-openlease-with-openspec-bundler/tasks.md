@@ -23,5 +23,5 @@
 ## 5. Verification and Reconciliation
 
 - [x] 5.1 Run focused unit tests and each affected capability-owned Behave root independently
-- [ ] 5.2 Reconcile and synchronize all capability deltas, removing retired canonical capabilities and stale BDD targets
+- [x] 5.2 Reconcile and synchronize all capability deltas, removing retired canonical capabilities and stale BDD targets
 - [ ] 5.3 Run lock, Python 3.12, lint, format, complete tests, strict OpenSpec validation, residual compatibility searches, and a clean package build

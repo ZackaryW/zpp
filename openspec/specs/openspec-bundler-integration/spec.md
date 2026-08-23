@@ -1,8 +1,10 @@
+# OpenSpec Bundler Integration Specification
+
 ## Purpose
 
 Defines ZPP's breaking replacement of OpenLease with raw Bundler attachments and UUID-addressed atomic store lease bundles while ZPP retains ownership of its schemas and workflow behavior.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Use OpenSpec Bundler without an OpenLease compatibility surface
 ZPP SHALL use `openspec-bundler` as its attachment and store-lease dependency and SHALL NOT import or invoke OpenLease, read or convert OpenLease state, accept OpenLease environment variables or identifiers, expose compatibility aliases, or silently translate old configuration.

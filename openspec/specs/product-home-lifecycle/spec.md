@@ -5,108 +5,50 @@
 Define ZPP home selection, native folder opening, and the complete integration lifecycle: first-time root initialization, drift-selected synchronization, confirmed state replacement, all-agent reset preflight, reset ownership exclusions, and the shared projection inventory those commands share.
 ## Requirements
 ### Requirement: Selected ZPP home layout
-ZPP SHALL treat root `--path` as the selected ZPP home and SHALL default it to `~/.zpp`. Every OpenLease-backed ZPP operation SHALL use the exact `openlease` child of that selected home as its state root, and that state root SHALL hold registered repository topology, authorities, relationships, sessions, and leases in addition to bound configuration. Selecting or resolving a home SHALL NOT by itself create the home or state; establishing a session SHALL create the home and state when they are absent.
+ZPP SHALL treat root `--path` as the selected ZPP home and default it to `~/.zpp`. Bundler-backed lease operations SHALL use exactly the selected home's `bundler` child as their `LeaseStateRepository` root. Selecting or resolving a home and performing read-only attachment resolution SHALL NOT create the home or state. ZPP SHALL ignore and never migrate, delete, or inspect a sibling `openlease` child.
 
-#### Scenario: Use the default ZPP home
-- **WHEN** a caller omits root `--path`
-- **THEN** ZPP selects `~/.zpp` as its home and supplies `~/.zpp/openlease` to OpenLease-backed operations
+#### Scenario: Select the default home without creation
+- **WHEN** no explicit path is supplied for a read-only operation
+- **THEN** ZPP selects `~/.zpp`, derives its `bundler` child, and creates neither path
 
-#### Scenario: Use an alternate ZPP home
-- **WHEN** a caller supplies root `--path` with an eligible custom directory
-- **THEN** ZPP treats that exact directory as the ZPP home and supplies only its `openlease` child as managed state
-
-#### Scenario: Avoid eager home mutation
-- **WHEN** a caller only requests help, version, or another operation that does not require filesystem state
-- **THEN** selecting the ZPP home creates no directory or OpenLease state
-
-#### Scenario: BDD target — Create home state when establishing a session
-- **WHEN** executable behavior is covered by `features/product_home_lifecycle/product_home_lifecycle.feature::Create home state when establishing a session`
-- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
+#### Scenario: Create state on first lease acquisition
+- **WHEN** automatic workflow coordination acquires its first Bundler bundle
+- **THEN** ZPP creates state only beneath the selected home's exact `bundler` child
 
 ### Requirement: Explicit native home opening
-Root `zpp open` SHALL create the selected ZPP home when absent and open that exact directory through the host platform's native folder-opening facility without a command shell. It SHALL report the resolved home path. It SHALL NOT open only the OpenLease child, inspect or rewrite home contents, initialize OpenLease state, install agent assets, or execute repository behavior.
+Root `zpp open` SHALL create and open the selected ZPP home through the host platform's native folder-opening facility without a command shell. It SHALL NOT initialize Bundler state, inspect legacy state, install agent assets, or execute repository behavior.
 
-#### Scenario: Open an existing default home
-- **WHEN** a caller invokes `zpp open` with an existing eligible default home
-- **THEN** ZPP launches the native folder opener for `~/.zpp` and reports that path without changing its contents
-
-#### Scenario: Create and open an alternate home
-- **WHEN** a caller supplies an eligible absent `--path` and invokes `zpp open`
-- **THEN** ZPP creates exactly that home directory, opens it natively, and does not create its `openlease` child
-
-#### Scenario: Report an unavailable native opener
-- **WHEN** the selected home is valid but the platform folder opener cannot launch
-- **THEN** ZPP reports the launch failure without deleting the explicitly created home or falling back to a shell command
+#### Scenario: Open a missing home natively
+- **WHEN** a caller selects a missing ZPP home and invokes `zpp open`
+- **THEN** ZPP creates and opens exactly that home without creating its `bundler` child
 
 ### Requirement: Confirmed complete product reset
-Root `zpp reset` SHALL require `--yes` before inspecting or mutating external state. A confirmed reset SHALL target every supported agent's ZPP-owned `zpp-workflow` skill, every discovered packaged companion skill, `zpp-session` hook, and six canonical ZPP-provisioned OpenSpec operation skills in user scope, prepare fresh OpenLease state, remove every selected asset through Agent Router, and replace only the selected home's `openlease` child after projection cleanup succeeds. Reset SHALL apply ordinary complete preflight and ownership-safe removal to the packaged ZPP skills and native hook. It SHALL force-delete only the canonical OpenSpec skills by stable name under Agent Router's explicit forced-owned deletion contract, retain no backup or history for them, and SHALL NOT invoke OpenSpec generation. It SHALL NOT expose or accept the former `--overwrite-global-traits` option.
-
-#### Scenario: Reject unconfirmed reset
-- **WHEN** a caller invokes `zpp reset` without `--yes`
-- **THEN** ZPP rejects the command before inspecting agent projections, preparing state, or changing the filesystem
+Root `zpp reset` SHALL require `--yes`, remove every ownership-safe selected ZPP projection through Agent Router, and replace only the selected home's exact `bundler` child with fresh empty lease state after projection cleanup succeeds. It SHALL target the `zpp-traits` hook and remaining packaged companions, exclude the removed workspace skill, and never inspect or change legacy `openlease` state.
 
 #### Scenario: Reset complete user integration and state
-- **WHEN** a caller confirms reset, existing preflight passes, and every selected removal succeeds or is already absent
-- **THEN** ZPP removes all present ZPP-owned user workflow, companion, OpenSpec operation skills, and hooks through Agent Router and replaces the exact OpenLease state child with fresh state
-
-#### Scenario: Target every discovered companion skill
-- **WHEN** a caller confirms reset and the packaged companion inventory contains skills beyond the packaged authoring pair
-- **THEN** reset targets every discovered companion skill for each supported agent without requiring a declared list of skill names
-
-#### Scenario: Force-delete modified generated skills
-- **WHEN** a confirmed reset encounters a modified canonical OpenSpec skill with valid matching Agent Router ownership
-- **THEN** Agent Router deletes that exact skill and its ownership state without backup or OpenSpec regeneration
-
-#### Scenario: Omit obsolete global-trait replacement
-- **WHEN** a caller inspects reset help or supplies the former overwrite option
-- **THEN** ZPP exposes no global-trait overwrite mode and rejects the unsupported option
+- **WHEN** confirmed reset preflight succeeds and every selected removal succeeds or is absent
+- **THEN** ZPP removes the current owned integration and replaces only the `bundler` state child
 
 ### Requirement: Complete reset preflight and retry safety
-Before any reset mutation, ZPP SHALL inspect every supported agent's user-scope `zpp-session` hook, `zpp-workflow` skill, and every discovered packaged companion skill through Agent Router, validate the selected home and exact state child, and prepare replacement OpenLease state. An absent preflighted projection SHALL be eligible and require no standard removal. Any modified, unmanaged, ambiguous, conflicting, unknown, or failed preflight inspection SHALL abort the complete reset without removing any projection or replacing state.
-
-After successful preflight, ZPP SHALL attempt the standard preflighted removals and forced canonical OpenSpec skill removals in deterministic supported-agent and within-agent asset order and SHALL aggregate runtime failures. Within each agent, standard removal SHALL follow hook, workflow skill, then every packaged companion skill in the deterministic packaged order, before forced OpenSpec removals. Forced OpenSpec removal SHALL treat a wholly absent skill and ownership record as an eligible no-op, remove modified content only with valid matching Agent Router ownership, and reject a present unmanaged target or invalid ownership. Any removal failure SHALL leave the prior OpenLease state unchanged. Earlier successful removals MAY remain removed; a retry SHALL treat already absent assets as eligible and SHALL converge without adopting or directly deleting native assets.
-
-#### Scenario: Abort on one projection conflict
-- **WHEN** any selected user-scope workflow skill, packaged companion skill, or hook is not absent or ownership-safe removable during preflight
-- **THEN** reset identifies the agent and asset and changes no selected projection or OpenLease state
+Before reset mutation, ZPP SHALL inspect every selected current projection, validate the exact `bundler` child, and prepare replacement Bundler lease state. Any unmanaged or unsafe projection or state target SHALL abort before mutation. Any removal failure SHALL leave prior Bundler state unchanged, and retry SHALL treat already absent projections as eligible.
 
 #### Scenario: Preserve state after runtime removal failure
-- **WHEN** standard preflight succeeds but one standard or forced Agent Router removal fails
-- **THEN** reset attempts the remaining planned removals, reports all outcomes, leaves prior OpenLease state unchanged, and does not claim completion
-
-#### Scenario: Reject an unmanaged same-named OpenSpec skill
-- **WHEN** forced reset cleanup encounters a present canonical OpenSpec skill without valid matching Agent Router ownership
-- **THEN** Agent Router preserves that skill, reset reports the conflict, and OpenLease state is not replaced
-
-#### Scenario: Retry after partial cleanup
-- **WHEN** reset is retried after an earlier runtime failure removed some selected projections
-- **THEN** absent assets are eligible, remaining owned assets are removed through Agent Router, and state replacement occurs only after cleanup succeeds
+- **WHEN** a planned Agent Router removal fails after preflight
+- **THEN** ZPP reports the failure and leaves prior Bundler state unchanged
 
 ### Requirement: Reset ownership and destructive-path boundary
-Reset SHALL preserve the selected ZPP home itself and every path outside its exact `openlease` child. Repository `.zpp` documents, repository `zpp.behave.yaml`, project-scope projections, plugins, external worktrees, and unrelated user agent assets SHALL remain outside reset authority. Reset SHALL reject a selected home or state child that is broad, symlinked, non-directory where a directory is required, or otherwise cannot be proven safe, and SHALL NOT follow a symlink during preparation or replacement.
+Reset SHALL preserve the selected ZPP home and every path outside its exact `bundler` child, including legacy `openlease` state, repository documents, project projections, plugins, and worktrees. It SHALL reject broad, symlinked, or incompatible state targets and SHALL NOT follow a symlink.
 
-#### Scenario: Preserve repository and project assets
-- **WHEN** confirmed reset runs while repositories contain traits, behavior mappings, project projections, plugins, or external worktrees
-- **THEN** reset changes none of those assets and operates only on the selected user projections and OpenLease state child
-
-#### Scenario: Preserve other ZPP-home contents
-- **WHEN** the selected ZPP home contains user-authored files outside `openlease`
-- **THEN** reset preserves those files byte-for-byte and never recursively deletes the complete home
-
-#### Scenario: Reject an unsafe reset boundary
-- **WHEN** the selected home or `openlease` child is a broad destructive target, unsafe symlink, or incompatible filesystem object
-- **THEN** reset fails before projection or state mutation and does not follow or delete the unsafe path
+#### Scenario: Preserve legacy and user-authored content
+- **WHEN** the selected home contains an `openlease` child or other user-authored paths outside `bundler`
+- **THEN** reset changes none of them
 
 ### Requirement: Concise reset reporting
-Confirmed root `zpp reset --yes` SHALL print exactly one concise human summary line by default after successful cleanup and state replacement. The summary SHALL aggregate removed and already-absent integration outcomes and identify the OpenLease state result without printing inspection or removal arrays. When the caller supplies `--json`, reset SHALL instead emit its complete deterministic inspection, removal, and state report as valid JSON.
+Confirmed reset SHALL print one concise summary by default identifying projection outcomes and the Bundler state result; `--json` SHALL emit the complete deterministic report.
 
-#### Scenario: Summarize confirmed reset
-- **WHEN** confirmed reset succeeds without `--json`
-- **THEN** ZPP prints one line summarizing removed and already-absent integrations and the replaced OpenLease state
-
-#### Scenario: Request reset JSON
-- **WHEN** confirmed reset succeeds with `--json`
-- **THEN** ZPP emits the complete deterministic reset report as valid JSON instead of the human summary
+#### Scenario: Report successful reset concisely
+- **WHEN** confirmed reset completes without `--json`
+- **THEN** ZPP prints one line summarizing integration cleanup and Bundler state replacement
 
 ### Requirement: Drift-selected integration synchronization
 Root `zpp sync` SHALL inspect the shared lifecycle projection inventory in user scope for each selected agent that already carries at least one ZPP projection, and SHALL reproject only the entries whose observed state is not current. A selected agent carrying no ZPP projection SHALL be reported and left unmodified, because first-time projection belongs to root initialization.
@@ -169,16 +111,11 @@ Rejection SHALL apply per selected agent. Selected agents carrying no projection
 - **THEN** ZPP exposes no initialization force mode and rejects the unsupported option
 
 ### Requirement: Shared lifecycle projection inventory
-Root initialization, synchronization, and reset SHALL derive their per-agent asset set from one shared projection inventory covering the `zpp-session` hook, the `zpp-workflow` skill, every discovered packaged companion skill, and the canonical ZPP-provisioned OpenSpec operation skills. The inventory SHALL expose inspection, projection, and removal for each entry in deterministic supported-agent and within-agent order. A lifecycle command SHALL NOT enumerate an asset set that diverges from the shared inventory.
+Root initialization, synchronization, and reset SHALL derive one shared per-agent inventory containing `zpp-traits`, `zpp-workflow`, every remaining packaged companion skill, and the canonical generated OpenSpec operation skills. It SHALL contain neither `zpp-session` nor `zpp-workspace-management`.
 
-#### Scenario: Describe one integration across lifecycle commands
-- **WHEN** the packaged companion inventory changes
-- **THEN** root initialization, synchronization, and reset all target the changed asset set without a separately maintained list
-
-#### Scenario: Preserve deterministic lifecycle ordering
-- **WHEN** any lifecycle command enumerates its per-agent entries
-- **THEN** it follows the shared deterministic supported-agent and within-agent order
-
+#### Scenario: Share one current projection inventory
+- **WHEN** lifecycle operations enumerate current ZPP integration assets
+- **THEN** all use the same deterministic hard-cut inventory
 ### Requirement: Concise synchronization reporting
 Root `zpp sync` SHALL select agents through the established interactive prompt when no agent is supplied and an interactive terminal is available, and SHALL reject an omitted selection when no interactive terminal is available. It SHALL print exactly one concise human summary line by default, aggregating reprojected, already current, repaired, modified, preserved, and uninitialized outcomes without printing inspection or projection arrays. When the caller supplies `--json`, synchronization SHALL instead emit its complete deterministic inspection and projection report as valid JSON. Synchronization SHALL NOT emit machine-readable output by default.
 

@@ -2,28 +2,16 @@
 
 ## Purpose
 
-Define repository-owned verification declarations, deterministic affected selection, explicit provider execution, direct OpenLease behavior operations, and opt-in reconciliation cross-checks.
+Define repository-owned verification declarations, deterministic affected selection, and explicit shell-free provider execution through direct behavior operations.
 
 ## Requirements
 
 ### Requirement: Repository-owned named verification
-`zpp behave init` SHALL discover the current Git worktree root, then explicitly initialize or validate its root `zpp.behave.yaml` as a dedicated YAML document bound invocation-scoped to extension identity `zpp.behave`. The scaffold SHALL remain `version: 1` with an empty `commands` mapping. Existing valid version-one files SHALL remain semantically and structurally authored in place; ZPP SHALL NOT wrap them under `zpp.behave`, convert them to TOML or JSON, or run the former behavior implementation as fallback. Initialization SHALL report current provider discovery as machine-local diagnostics without changing provider configuration.
-
-`zpp behave <command>` SHALL open the same exact dedicated binding and invoke one named `zpp.behave` operation. The selected command and every exact target or gate name MUST resolve within one strict declaration before any configured process starts. An absent, invalid, or duplicate declaration, undeclared requested target, or unknown requested gate SHALL fail without fallback. Derived impact evidence and execution outcomes SHALL remain managed or machine-local and SHALL NOT replace the committed mapping as runtime authority.
-
-Direct initialization and execution SHALL NOT create an OpenLease space, topology node, source record, pack, lease, or reconciliation state.
+`zpp behave init` SHALL discover the current Git worktree root, then explicitly initialize or validate its root `zpp.behave.yaml` as a dedicated raw Bundler repository attachment owned semantically by ZPP. `zpp behave <command>` SHALL load the same exact document and execute only a valid named command and selected declared targets. Direct initialization and execution SHALL create no session or lease state.
 
 #### Scenario: Initialize a behavior mapping
 - **WHEN** a caller runs `zpp behave init` in a worktree without `zpp.behave.yaml`
-- **THEN** ZPP creates the valid dedicated YAML scaffold through `zpp.behave`, reports provider diagnostics, and creates no OpenLease space or topology
-
-#### Scenario: Preserve an existing mapping
-- **WHEN** a caller runs `zpp behave init` with an existing valid version-one mapping
-- **THEN** ZPP validates and preserves its root schema and commands while reporting only machine-local provider discovery
-
-#### Scenario: Resolve a declared command
-- **WHEN** a caller selects a valid named behavior command
-- **THEN** ZPP resolves exactly that declaration through the current `zpp.behave` operation before preparing execution
+- **THEN** ZPP creates the valid dedicated YAML scaffold and creates no coordination state
 
 #### Scenario: Reject an unavailable declaration
 - **WHEN** the selected command, target, or gate is absent, duplicated, undeclared, or invalid
@@ -62,9 +50,7 @@ Each command MAY declare a `gates` mapping from stable, non-empty gate identitie
 - **THEN** ZPP identifies the unknown gate and starts no process or fallback selection
 
 ### Requirement: Bounded affected-target filtering
-Each named command SHALL declare a closed set of filterable verification targets and repository impact rules. For local execution, `zpp behave` SHALL derive the change from `HEAD` plus staged, unstaged, and untracked non-ignored working-tree paths. For revision execution, the caller SHALL supply comparison base and head together. Unmapped, invalid, or uncertain changed paths SHALL select every target declared by the selected command rather than be treated as unaffected. No changed paths SHALL produce a successful no-target result without starting the provider.
-
-Agents MAY help author or broaden `zpp.behave.yaml`, but runtime selection SHALL remain deterministic from its validated mapping and current repository evidence. Changed paths, agent text, undeclared target names, hook output, and OpenLease configuration metadata SHALL NOT become executable command syntax.
+Each named command SHALL declare a closed set of filterable verification targets and repository impact rules. Runtime selection SHALL remain deterministic from its validated mapping and current repository evidence. Changed paths, agent text, undeclared target names, hook output, and Bundler attachment metadata SHALL NOT become executable command syntax.
 
 #### Scenario: Filter to declared affected targets
 - **WHEN** repository evidence maps the current change conclusively to a proper subset of one selected command's targets
@@ -73,14 +59,6 @@ Agents MAY help author or broaden `zpp.behave.yaml`, but runtime selection SHALL
 #### Scenario: Fall back for unknown impact
 - **WHEN** any changed path has no conclusive declared impact mapping
 - **THEN** ZPP selects every target declared by the named command
-
-#### Scenario: Return without provider execution when nothing changed
-- **WHEN** deterministic affected selection observes no changed path
-- **THEN** ZPP reports that no target is affected and starts no provider process
-
-#### Scenario: Reject executable agent output
-- **WHEN** agent-assisted impact output contains undeclared target or command material
-- **THEN** ZPP does not execute that material and reports why it cannot participate
 
 ### Requirement: Filtered and complete execution modes
 `zpp behave <command>` SHALL use deterministic affected filtering by default. Repeatable `--target` SHALL execute exactly the requested declared target identities, de-duplicate repeated identities, and preserve target declaration order. `--gate` SHALL execute exactly one configured command-local gate target set. Explicit `--all` SHALL execute every target declared by that command without discarding provider-specific cache behavior. Exact target, configured gate, complete, and revision-range affected selection SHALL be mutually exclusive modes. Provider-specific uncached verification SHALL remain a separately declared behavior command rather than a universal flag. `--base` and `--head` SHALL be accepted only together, and `init` SHALL reject every execution-selection option.
@@ -121,63 +99,27 @@ The `argv` provider SHALL contain `kind: argv` and a typed argv sequence with ex
 - **THEN** ZPP identifies the declaration error and starts no process
 
 ### Requirement: Explicit behavior provider adapter registry
-The `zpp.behave` extension SHALL use an explicit adapter registry keyed by each declaration's `provider.kind`. Current ZPP SHALL register `argv`, `nx`, and `go-task` adapters. A host MAY explicitly supply another conforming adapter when constructing the extension, but ZPP SHALL NOT discover adapters dynamically from installed packages, entry points, executable availability, or configuration. Unknown, duplicate, invalid, or unavailable adapters SHALL fail without selecting another provider.
+ZPP SHALL use an explicit behavior adapter registry containing `argv`, `nx`, and `go-task`, validate each closed provider mapping before process creation, and construct shell-free argv. Bundler SHALL provide only exact raw document bytes and provenance; ZPP SHALL own validation and execution and SHALL NOT discover adapters dynamically or ask an agent for command text.
 
-Every adapter SHALL validate its own closed settings before process creation and SHALL construct one shell-free argv sequence from validated command and target values. OpenLease SHALL treat provider declarations and results as opaque extension values.
-
-Nx SHALL prefer compatible executables in this order: an existing package-local wrapper, an official repository-root wrapper backed by `.nx/installation`, then a PATH executable. ZPP SHALL delegate only to an existing configured Nx project and target surface and SHALL revalidate that surface before execution. The `go-task` adapter SHALL treat selected values as declared Task task names, MAY accept validated literal extra arguments, and SHALL use an explicitly configured or safely discovered repository-local or PATH executable. ZPP SHALL NOT install, download, migrate, connect cloud services, infer a provider, or ask an agent for command text.
-
-#### Scenario: Delegate to configured Nx
-- **WHEN** a valid command selects Nx and its repository executable, project, and target surface are available
-- **THEN** ZPP delegates only the validated selected targets through the Nx adapter
-
-#### Scenario: Discover a non-JavaScript Nx wrapper
-- **WHEN** an Nx workspace has the official repository-root wrapper backed by `.nx/installation` and no package-local wrapper
-- **THEN** ZPP discovers that absolute repository-owned wrapper before considering PATH
-
-#### Scenario: Run configured Go Task
-- **WHEN** a valid command selects Go Task and its declared task surface and executable are available
-- **THEN** ZPP delegates only the validated selected task names and literal settings through the Go Task adapter
+#### Scenario: Delegate to a configured provider
+- **WHEN** a valid command selects an available declared provider surface
+- **THEN** ZPP delegates only the validated selected targets through that adapter
 
 #### Scenario: Reject an unavailable provider
 - **WHEN** the selected adapter or required repository surface is unavailable
 - **THEN** ZPP starts no alternate provider and identifies the unmet requirement
 
-#### Scenario: Keep provider settings opaque to OpenLease
-- **WHEN** `zpp.behave` validates a built-in or host-supplied adapter's settings
-- **THEN** OpenLease supplies configuration and invocation boundaries without interpreting or executing those settings
-
-### Requirement: Direct operations and opt-in OpenLease cross-checks
-ZPP SHALL register `zpp.behave` independently with `initialize` for direct targets and `run` for direct, repository, and cohort targets. It SHALL declare `run` for `RECONCILE_BEFORE_REPOSITORY` in `gate` and `observe` modes, for `RECONCILE_AFTER_REPOSITORY` in `observe` mode, and for `RECONCILE_AFTER_COHORT` in `observe` mode. Registration, configuration presence, and agent hook execution SHALL NOT invoke a behavior operation or select a callback.
-
-The native agent hook SHALL remain limited to repository trait resolution. Explicit `zpp behave init` or `zpp behave <command>` invocation SHALL discover the containing Git worktree, bind its exact dedicated YAML internally, and invoke the selected direct operation without exposing OpenLease coordination concepts to the agent.
-
-A reconciliation callback SHALL require an explicit OpenLease selection identifying its behavior command, complete or affected selection mode, event, mode, and real repository or cohort target. The handler SHALL derive the exact target worktree from that context and reopen its dedicated `zpp.behave.yaml` through invocation-scoped direct binding. It SHALL NOT require an extension-managed behavior configuration source or create another repository registration, space, lease, or topology record.
-
-#### Scenario: Register both ZPP extensions independently
-- **WHEN** ZPP constructs its OpenLease host
-- **THEN** `zpp.traits` and `zpp.behave` are available as isolated extensions and no handler runs during construction
+### Requirement: Explicit direct behavior operations
+ZPP SHALL initialize and execute `zpp.behave.yaml` only through explicit direct `zpp behave` invocations. The native trait hook SHALL remain limited to read-only trait resolution. ZPP SHALL register no OpenLease callback, reconciliation event, repository callback, cohort callback, or compatibility selection, and document presence alone SHALL invoke no verification operation.
 
 #### Scenario: Resolve traits without invoking behavior
 - **WHEN** an agent-native hook resolves repository traits in a worktree containing `zpp.behave.yaml`
-- **THEN** ZPP opens only the required trait documents and starts no behavior operation or repository process
+- **THEN** ZPP opens only the required trait inputs and starts no behavior operation or repository process
 
 #### Scenario: Invoke behavior without coordination state
-- **WHEN** a caller explicitly runs a valid `zpp behave` command from an unregistered worktree
-- **THEN** ZPP binds the exact repository YAML and invokes `run` without creating or selecting OpenLease coordination state
+- **WHEN** a caller explicitly runs a valid `zpp behave` command from a Git worktree
+- **THEN** ZPP reads the exact repository YAML and invokes the command without creating lease state
 
 #### Scenario: Leave verification inactive when unselected
-- **WHEN** `zpp.behave.yaml` exists and compatible callbacks are registered but reconciliation selects none
-- **THEN** reconciliation invokes no behavior command
-
-#### Scenario: Cross-check one repository through its direct document
-- **WHEN** reconciliation explicitly selects a valid repository callback with complete or affected mode
-- **THEN** ZPP reopens that repository's exact root `zpp.behave.yaml` directly and returns its behavior outcome without requiring managed callback configuration
-
-#### Scenario: Observe one cohort with isolated repository context
-- **WHEN** reconciliation explicitly selects a valid post-cohort callback with a real target repository context
-- **THEN** ZPP runs only the selected repository command policy and returns observational evidence without inventing a blocking state
-
-#### Scenario: Reject incomplete callback policy
-- **WHEN** a callback selection omits its behavior command, selection mode, event, mode, or required target context
-- **THEN** planning rejects it instead of guessing repository verification policy
+- **WHEN** `zpp.behave.yaml` exists but no `zpp behave` command is invoked
+- **THEN** ZPP runs no behavior command

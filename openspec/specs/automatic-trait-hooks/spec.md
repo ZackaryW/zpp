@@ -7,23 +7,11 @@ Define agent-native automatic trait resolution and context injection without tra
 ## Requirements
 
 ### Requirement: Agent-native automatic trait hooks
-ZPP SHALL package one native trait-context hook for each supported Agent Router agent. Each hook SHALL invoke `zpp resolve --agent <agent> .` at the earliest native context-injection event, and that invocation SHALL establish the session for the repository so space-scoped sources resolve without an explicit `--space` argument or `OPENLEASE_SPACE` value. The hook SHALL inject only the successful command's prompt-ready complete trait bodies. The hook SHALL NOT declare an affected claim, evaluate lockability, acquire a permit, dispatch workflow stages, or grant mutation, transition, verification, or completion authority.
+ZPP SHALL package one native trait-context hook named `zpp-traits` for each supported Agent Router agent. Each hook SHALL invoke `zpp resolve --agent <agent> .` at the earliest native context-injection event, inject only the successful command's prompt-ready complete trait bodies, and create no session, claim, lease, or other coordination state. The hook SHALL NOT dispatch workflow stages or grant mutation, transition, verification, or completion authority.
 
-#### Scenario: Inject traits for a supported agent session
-- **WHEN** an installed Codex, Claude Code, Pi, or Kimi integration begins its earliest supported context-injection event in a repository
-- **THEN** its native hook resolves traits with that agent identity, establishes the session, and contributes the successful prompt-ready body output as environment policy
-
-#### Scenario: BDD target — Establish the session from a native hook resolution
-- **WHEN** executable behavior is covered by `features/automatic_trait_hooks/automatic_trait_hooks.feature::Establish the session from a native hook resolution`
-- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
-
-#### Scenario: BDD target — Resolve space-scoped sources without explicit selection
-- **WHEN** executable behavior is covered by `features/automatic_trait_hooks/automatic_trait_hooks.feature::Resolve space-scoped sources without explicit selection`
-- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
-
-#### Scenario: BDD target — Keep permit authority out of the hook
-- **WHEN** executable behavior is covered by `features/automatic_trait_hooks/automatic_trait_hooks.feature::Keep permit authority out of the hook`
-- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
+#### Scenario: Inject traits without coordination state
+- **WHEN** an installed supported agent begins its earliest context-injection event in a repository
+- **THEN** `zpp-traits` resolves and injects the successful trait bodies without creating session or lease state
 
 #### Scenario: Keep workflow authority out of the hook
 - **WHEN** an injected trait body describes a workflow action or claims completion
@@ -44,22 +32,12 @@ A hook SHALL make resolver failure visible according to the native agent hook co
 - **THEN** the failure remains observable and no body from that invocation or an earlier invocation is injected as successful context
 
 ### Requirement: Agent Router-owned hook lifecycle
-Root initialization and grouped workflow lifecycle operations SHALL project and remove the selected agent's packaged hook through Agent Router together with the consolidated workflow skill. Install and update SHALL use Agent Router's hook installation contract, removal SHALL use its hook uninstallation contract, and ZPP SHALL NOT write hook destinations directly.
-
-Confirmed product reset SHALL separately inspect every supported agent's packaged `zpp-session` hook in user scope and remove each present ownership-safe hook through Agent Router only after complete reset preflight succeeds. Reset SHALL NOT broaden ordinary grouped workflow removal, target project-scope hooks, or directly mutate a native hook destination.
+Root initialization and grouped workflow lifecycle operations SHALL project and remove the selected agent's packaged `zpp-traits` hook through Agent Router together with the consolidated workflow skill. Install and update SHALL use Agent Router's hook installation contract, removal SHALL use its hook uninstallation contract, and ZPP SHALL NOT write hook destinations directly. Confirmed reset SHALL inspect and remove only the new hook identity and SHALL NOT search for, adopt, or remove the former `zpp-session` identity as a compatibility operation.
 
 #### Scenario: Install a complete workflow integration
 - **WHEN** a user installs the ZPP workflow integration for a supported agent and scope
-- **THEN** Agent Router projects both the consolidated skill and that agent's native hook
-
-#### Scenario: Remove a complete workflow integration
-- **WHEN** a user removes an intact Agent Router-owned ZPP workflow integration for a supported agent and scope
-- **THEN** Agent Router removes both the consolidated skill and native hook for that scope
-
-#### Scenario: Reset every user-scope hook safely
-- **WHEN** confirmed reset preflight proves each supported agent's user-scope ZPP hook absent or ownership-safe removable
-- **THEN** reset removes every present selected hook through Agent Router without inspecting or changing project-scope hooks
+- **THEN** Agent Router projects both the consolidated skill and that agent's `zpp-traits` hook
 
 #### Scenario: Preserve hooks on reset conflict
-- **WHEN** any supported agent's selected user-scope hook is modified, unmanaged, ambiguous, conflicting, or cannot be inspected
-- **THEN** complete reset aborts before removing any hook or changing OpenLease state
+- **WHEN** any selected `zpp-traits` hook is modified, unmanaged, ambiguous, conflicting, or cannot be inspected
+- **THEN** complete reset aborts before removing any hook or changing Bundler state
