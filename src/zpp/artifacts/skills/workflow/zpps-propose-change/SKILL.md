@@ -1,9 +1,24 @@
 ---
 name: zpps-propose-change
-description: Reconcile a proposed change, scaffold it, and create its complete coherent planning set while remaining strictly planning-only.
+description: Reconcile and create the complete planning set for one resolved proposed change when that exact planning mutation is requested; never implement the product.
 ---
 
 # Propose an OpenSpec change
+
+## Admit complete proposal planning
+
+Admit this component only when an active playbook configures this exact proposal or
+the caller explicitly requests the immediate planning mutation of reconciling,
+scaffolding, and completing one proposed OpenSpec change. Required readiness is
+accepted product intent, owner decisions, target scope, and evidence sufficient to
+form a coherent planning set. Eventual build/fix intent, an imperative verb, or facts
+still requiring exploration do not admit proposal planning.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-propose-change`, the
+`observed_immediate_operation`, `missing_readiness`, and the
+`separately_eligible_operation`. Stop before the normal procedure and never invoke
+the separately eligible component.
 
 Accept playbook configuration or a direct partial request containing the intended
 change, repository or store, optional name and schema, accepted owner decisions, and

@@ -1,9 +1,23 @@
 ---
 name: zpps-clarify
-description: Reconcile an accepted product agreement from explicit repository and owner inputs, for a playbook stage or a direct partial clarification request.
+description: Reconcile accepted owner statements into one read-only product agreement; use exploration first for unresolved factual evidence and never edit artifacts here.
 ---
 
 # Clarify the product agreement
+
+## Admit agreement clarification
+
+Admit this component only when an active playbook configures this exact clarification
+or the caller's immediate operation is to reconcile explicit owner statements and
+available evidence into an accepted product agreement. Required readiness is a
+bounded agreement question with the relevant owner inputs identified. Unresolved
+package, version, API, remote, repository, or integration facts belong to
+`zpps-explore`; planning or product edits require a separately admitted mutation.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-clarify`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
+procedure and never invoke the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 selected outcome, exact repository roots, accepted owner statements, and the current

@@ -1,9 +1,25 @@
 ---
 name: zpps-bulk-archive-change
-description: Archive an owner-selected set of OpenSpec changes with cross-change conflict resolution, atomic rule preflight, synchronous spec merges, and truthful partial results.
+description: Archive an explicitly selected ready set of OpenSpec changes only when that exact batch mutation is requested; never infer the batch or use it for discovery.
 ---
 
 # Bulk archive OpenSpec changes
+
+## Admit batch archival
+
+Admit this component only when an active playbook configures this exact batch archive
+or the caller explicitly requests the immediate mutation of archiving a selected set
+of OpenSpec changes in one root. Required readiness is the root, candidate set,
+available completion evidence, and explicit batch archive intent; the owner selection
+and existing archive authority checks remain mandatory. Multiple active or completed
+changes, eventual cleanup, or unresolved cross-change facts do not independently
+admit bulk archive.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-bulk-archive-change`, the
+`observed_immediate_operation`, `missing_readiness`, and the
+`separately_eligible_operation`. Stop before the normal procedure and never invoke
+the separately eligible component.
 
 Coordinate one selected-root batch. This is a substantive archive operation usable
 from a playbook or directly; it never decides what the enclosing workflow does next.
@@ -16,9 +32,10 @@ on every store-aware command. Otherwise use the nearest repository-local `opensp
 root for read-only discovery and as a valid `repo:` trace locator. Never combine
 results from an unscoped repository root with a selected store or invent a store UUID.
 
-Read-only selection and validation may precede admission. Before the first canonical
-write or change move, require an eligible `zpps-workflow-kernel` assessment with bulk
-archive authority. Pass every resolved root and confirmed change name; the kernel
+After successful component admission, read-only selection and validation may occur
+before obtaining the mutation guard. Before the first canonical write or change move,
+require an eligible `zpps-workflow-kernel` assessment with bulk archive authority.
+Pass every resolved root and confirmed change name; the kernel
 invokes ZPP runtime coordination and returns structured leased or explicitly
 authorized bypass evidence for the complete batch. Do not resolve registration,
 manifest UUIDs, owner identity, environment overrides, or bundle commands here.

@@ -1,9 +1,25 @@
 ---
 name: zpps-planning-ponytail
-description: Plan only the utility boundaries required by accepted behavior using the complete Ponytail ladder, from playbook or direct explicit configuration.
+description: Plan resolved utility responsibilities with the Ponytail ladder, read-only unless an exact planning write is requested; explore unknown dependency evidence first.
 ---
 
 # Plan utilities with Ponytail
+
+## Admit utility planning
+
+Admit this component only when an active playbook configures this exact utility plan
+or the caller's immediate operation is to plan utility boundaries for accepted,
+shaped behavior. Required readiness includes the accepted responsibility and the
+dependency evidence needed to apply the ladder. A read-only plan needs no mutation
+intent; writing a planning artifact additionally requires explicit intent for that
+exact write or exact playbook configuration. Unknown package, API, repository, or
+integration facts belong to `zpps-explore` before utility planning.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-planning-ponytail`, the
+`observed_immediate_operation`, `missing_readiness`, and the
+`separately_eligible_operation`. Stop before the normal procedure and never invoke
+the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots, shaped behavior and binding

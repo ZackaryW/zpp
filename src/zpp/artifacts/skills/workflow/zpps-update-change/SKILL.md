@@ -1,9 +1,24 @@
 ---
 name: zpps-update-change
-description: Revise only existing artifacts of one OpenSpec change, with owner-confirmed coherent edits and no product implementation.
+description: Revise exact existing planning artifacts of one resolved OpenSpec change when that mutation is explicitly requested; never discover, scaffold, or implement.
 ---
 
 # Update existing OpenSpec planning
+
+## Admit planning-artifact revision
+
+Admit this component only when an active playbook configures this exact update or the
+caller explicitly requests the immediate mutation of revising existing artifacts of
+one OpenSpec change. Required readiness is an identifiable change, an accepted
+correction or coherence objective, and resolved evidence needed for the edit. A
+request to discover the needed correction, create a missing artifact, implement the
+change, or update merely because tasks remain does not admit this component.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-update-change`, the
+`observed_immediate_operation`, `missing_readiness`, and the
+`separately_eligible_operation`. Stop before the normal procedure and never invoke
+the separately eligible component.
 
 Accept playbook configuration or direct partial configuration containing a repository
 or store, optional change name, requested planning correction, accepted mutation

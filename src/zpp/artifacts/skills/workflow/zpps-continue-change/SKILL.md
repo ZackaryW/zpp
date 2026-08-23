@@ -1,9 +1,25 @@
 ---
 name: zpps-continue-change
-description: Resolve one OpenSpec change, create exactly its next eligible planning artifact, and return updated status.
+description: Create exactly the next eligible artifact of one resolved OpenSpec change when that planning mutation is explicitly requested; never implement or explore it.
 ---
 
 # Continue one OpenSpec change
+
+## Admit one-artifact continuation
+
+Admit this component only when an active playbook configures this exact continuation
+or the caller explicitly requests the immediate mutation of creating one next
+eligible planning artifact for an existing OpenSpec change. Required readiness is an
+identifiable change, accepted artifact intent, and resolved facts needed to author
+that next artifact. An active change, pending artifact, or eventual implementation
+does not independently admit continuation; unresolved evidence belongs to
+`zpps-explore`.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-continue-change`, the
+`observed_immediate_operation`, `missing_readiness`, and the
+`separately_eligible_operation`. Stop before the normal procedure and never invoke
+the separately eligible component.
 
 Accept a repository or store, optional change name, accepted artifact intent, and any
 current kernel guard and Bundler lease from a playbook or direct partial caller. Ask

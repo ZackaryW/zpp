@@ -1,9 +1,25 @@
 ---
 name: zpps-apply-change
-description: Implement the remaining tasks of one OpenSpec change through its schema-driven apply contract, either as a bounded playbook component or a directly requested operation.
+description: Implement exact tasks of one existing OpenSpec change only after prerequisites and external evidence are resolved and implementation is explicitly requested; exclude discovery.
 ---
 
 # Apply one OpenSpec change
+
+## Admit resolved implementation
+
+Admit this component only when an active playbook configures this exact apply action
+or the caller explicitly requests the immediate mutation of product or test code for
+one existing OpenSpec change. Required readiness is an identifiable change, resolved
+task prerequisites, and resolved package, version, API, remote, repository, and
+integration evidence needed for the implementation. An active change, pending tasks,
+an imperative verb, or eventual adoption intent does not independently admit apply.
+When any prerequisite fact still needs discovery, the separately eligible operation
+is `zpps-explore`, not apply.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-apply-change`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before task-order,
+status, or repository work and never invoke the separately eligible component.
 
 Implement the selected change until its tasks are complete or a real blocker requires
 owner input. This is a substantive operation, not a workflow router: it never chooses
@@ -22,8 +38,9 @@ on every store-aware command. Otherwise use the nearest repository-local `opensp
 root for read-only discovery and as a valid `repo:` trace locator. Never substitute a
 store name, directory basename, or invented UUID.
 
-Read-only selection and status discovery may precede admission. Before the first edit,
-require an eligible `zpps-workflow-kernel` assessment for this exact apply request.
+After successful component admission, read-only selection and status discovery may
+occur before obtaining the mutation guard. Before the first edit, require an eligible
+`zpps-workflow-kernel` assessment for this exact apply request.
 Pass the resolved root and change name; the kernel invokes ZPP runtime coordination
 and returns structured leased or explicitly authorized bypass evidence. Do not
 resolve registration, manifest UUID, owner, environment overrides, or bundle commands

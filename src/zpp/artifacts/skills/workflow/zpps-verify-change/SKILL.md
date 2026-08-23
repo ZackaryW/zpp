@@ -1,9 +1,23 @@
 ---
 name: zpps-verify-change
-description: Read-only verification of one OpenSpec change against its implementation, executable evidence, design, tasks, and single acceptance-authority bindings.
+description: Assess one identified OpenSpec change read-only against existing implementation and evidence; do not produce missing evidence, repair, or implement it.
 ---
 
 # Verify one OpenSpec change
+
+## Admit change verification
+
+Admit this component only when an active playbook configures this exact semantic
+verification or the caller's immediate operation is to assess one existing OpenSpec
+change against already available implementation and executable evidence. Required
+readiness is an identifiable change and a verification question. Discovery of
+unknown external or repository facts belongs to `zpps-explore`; executing missing
+repository gates and correcting findings are separately admitted operations.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-verify-change`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
+procedure and never invoke the separately eligible component.
 
 Produce an evidence-backed completeness, correctness, and coherence assessment. This
 component is read-only and may be invoked by a playbook or directly. It never repairs

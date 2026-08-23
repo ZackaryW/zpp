@@ -1,9 +1,23 @@
 ---
 name: zpps-finalize
-description: Assess supplied repository, semantic-verification, and archive evidence for finalization without invoking those operations or completing the lifecycle.
+description: Assemble and assess already supplied phase, verification, and archive evidence read-only; do not create missing evidence or complete the lifecycle.
 ---
 
 # Assemble final change evidence
+
+## Admit finalization assessment
+
+Admit this component only when an active playbook configures this exact assessment or
+the caller's immediate operation is to evaluate assembled lifecycle evidence for a
+known change bundle. Required readiness is an identified bundle or change set and
+the evidence currently available for finalization. Discovery, repository execution,
+semantic verification, archive mutation, and bundle completion remain separately
+admitted operations even when this assessment later reports they are required.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-finalize`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
+procedure and never invoke the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository and store roots, every change member,

@@ -1,9 +1,24 @@
 ---
 name: zpps-workflow-kernel
-description: Assess a caller-selected ZPP action, govern its exact Bundler lease and checkpoints, and assess its result without choosing or dispatching workflow steps.
+description: Guard an exact caller-selected ZPP action and its result; never choose a component, resolve an ambiguous operation, or dispatch workflow work.
 ---
 
 # Guard one selected workflow action
+
+## Admit one selected guard assessment
+
+Admit this component only when an active playbook configures a guard for an exact
+action or the caller's immediate operation is pre-action or post-result assessment
+of an already selected component. Required readiness includes the selected action,
+component, targets, effect class, predecessor evidence, and relevant authority facts.
+Requests to choose a component, discover missing facts, perform the selected action,
+or continue a workflow do not admit the kernel.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-workflow-kernel`, the
+`observed_immediate_operation`, `missing_readiness`, and the
+`separately_eligible_operation`. Stop before the normal guard procedure and never
+invoke the separately eligible component.
 
 Act as a lifecycle guard, never as a workflow or stage dispatcher. Accept either a
 pre-action assessment request or a post-action result assessment. The caller, not

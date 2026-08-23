@@ -1,9 +1,23 @@
 ---
 name: zpps-wire
-description: Wire accepted behavior through the repository's public composition boundary using proven utilities, from playbook or direct explicit configuration.
+description: Mutate a resolved public composition boundary to connect accepted behavior and proven utilities only when that exact wiring is explicitly requested.
 ---
 
 # Wire public behavior
+
+## Admit public composition wiring
+
+Admit this component only when an active playbook configures this exact wiring or the
+caller explicitly requests the immediate mutation of a resolved public composition
+boundary. Required readiness includes accepted behavior, approved feature bindings,
+proven utilities, and an identified composition owner. Unknown integration owners,
+APIs, repositories, or composition choices require separate exploration; unproven
+utilities and unaccepted design changes do not admit wiring.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-wire`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
+procedure and never invoke the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots, approved feature and binding

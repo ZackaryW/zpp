@@ -1,9 +1,24 @@
 ---
 name: zpps-explore
-description: Investigate an OpenSpec-backed product question or active change without modifying planning artifacts, specifications, or product files.
+description: Discover or compare unresolved package, version, API, remote, repository, or integration evidence read-only; do not use for an already resolved mutation.
 ---
 
 # Explore OpenSpec context without mutation
+
+## Admit evidence discovery
+
+Admit this component only when an active playbook configures this exact exploration
+or the caller's immediate operation is read-only discovery, comparison, or validation
+of unresolved external or repository evidence. It expressly owns unresolved package
+availability, published versions, APIs, remote sources, repository changes, and
+integration boundaries even when the eventual intent is to mutate dependencies,
+planning, implementation, specifications, or archives. It does not admit an already
+resolved mutation or grant mutation authority.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-explore`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
+procedure and never invoke the separately eligible component.
 
 Use this component for open-ended discovery, architecture investigation, requirement
 clarification, and comparison of alternatives. It may be selected by a configured

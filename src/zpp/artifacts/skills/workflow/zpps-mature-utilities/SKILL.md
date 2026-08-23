@@ -1,9 +1,24 @@
 ---
 name: zpps-mature-utilities
-description: Mature explicitly planned utility seams through relevant RED, a minimum coherent slice, and focused plus complete GREEN verification.
+description: Implement already planned utility seams from relevant RED to GREEN only when that exact code mutation is explicitly requested; exclude utility discovery and wiring.
 ---
 
 # Mature planned utilities
+
+## Admit utility implementation
+
+Admit this component only when an active playbook configures this exact maturation or
+the caller explicitly requests the immediate mutation of implementing already
+planned utility seams. Required readiness includes an accepted utility plan, relevant
+RED evidence, resolved dependencies, and explicit utility implementation intent.
+Unknown package, API, repository, or integration evidence belongs to exploration;
+missing utility boundaries belong to planning; public composition belongs to wiring.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-mature-utilities`, the
+`observed_immediate_operation`, `missing_readiness`, and the
+`separately_eligible_operation`. Stop before the normal procedure and never invoke
+the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots, current signature-level utility

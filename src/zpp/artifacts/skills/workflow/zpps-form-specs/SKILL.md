@@ -1,9 +1,25 @@
 ---
 name: zpps-form-specs
-description: Audit OpenSpec and BDD authority, prepare trace-only specification form, and signal required canonical synchronization without invoking it.
+description: Audit resolved OpenSpec-to-BDD authority and optionally write exact trace-only form; do not discover missing behavior evidence or synchronize canonical specs.
 ---
 
 # Form specifications without duplicate acceptance authority
+
+## Admit specification formation
+
+Admit this component only when an active playbook configures this exact formation or
+the caller's immediate operation is to audit resolved OpenSpec/BDD authority and
+prepare its trace-only specification form. Required readiness includes an accepted
+contract, identified change, binding inventory, and mature evidence. A read-only
+authority audit needs no mutation intent; any trace-form edit additionally requires
+explicit intent for that exact write or exact playbook configuration. Unresolved
+behavior or integration evidence belongs to exploration, and canonical merging is a
+separate synchronization operation.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-form-specs`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
+procedure and never invoke the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository and OpenSpec roots, resolved store and

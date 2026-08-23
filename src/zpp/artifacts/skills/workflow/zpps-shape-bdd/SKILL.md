@@ -1,9 +1,24 @@
 ---
 name: zpps-shape-bdd
-description: Shape accepted public behavior into independently runnable capability BDD with one executable authority, from playbook or direct explicit configuration.
+description: Mutate BDD and trace artifacts for already accepted public behavior only when that exact shaping operation is explicitly requested; exclude requirement discovery.
 ---
 
 # Shape behavior and BDD authority
+
+## Admit behavior shaping
+
+Admit this component only when an active playbook configures this exact shaping or
+the caller explicitly requests the immediate mutation of BDD and trace artifacts for
+accepted public behavior. Required readiness includes the accepted contract,
+observable obligations, capability owner, provisional examples, and current binding
+evidence. Unresolved behavior, ownership, repository, or integration facts require
+separate exploration or clarification; an eventual testable feature alone does not
+admit shaping.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-shape-bdd`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
+procedure and never invoke the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots and capability owner, resolved

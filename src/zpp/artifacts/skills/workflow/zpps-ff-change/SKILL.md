@@ -1,9 +1,23 @@
 ---
 name: zpps-ff-change
-description: Scaffold one new understood OpenSpec change and create its complete transitive apply-required planning set without implementing it.
+description: Fast-forward one fully understood new OpenSpec change through all apply-required planning when that exact mutation is explicitly requested; never implement it.
 ---
 
 # Fast-forward OpenSpec planning
+
+## Admit fast-forward planning
+
+Admit this component only when an active playbook configures this exact fast-forward
+or the caller explicitly requests the immediate mutation of scaffolding one new
+change and creating its complete apply-required planning set. Required readiness is
+complete accepted intent, a target root, and resolved evidence sufficient for every
+required artifact. A vague eventual outcome, existing change, or unresolved product,
+package, API, repository, or integration fact does not admit fast-forward planning.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-ff-change`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
+procedure and never invoke the separately eligible component.
 
 Use this component when the intended change is sufficiently understood to create all
 planning artifacts required by the schema's apply phase. It accepts playbook-supplied

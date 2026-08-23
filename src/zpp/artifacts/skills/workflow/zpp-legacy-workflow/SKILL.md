@@ -18,6 +18,16 @@ archive, or bypass authority, or skips a component boundary. Explicit end-to-end
 delegation carries checkpoint commit authority only for new stage-owned commits
 produced by this playbook. Internal coordination identity remains ZPP runtime state.
 
+## Component admission invariant
+
+Before invoking a declared `zpps-*` component, choose its exact configuration from
+the immediate necessary operation and its evidence readiness, not the eventual
+product outcome, current change or task status, or imperative wording. Unresolved
+evidence admits `zpps-explore`; unresolved outcome-changing owner policy admits
+`zpps-clarify`. Every configured component remains subject to its own readiness and
+authority contract. Consume `component-mismatch` as failed admission, report it
+immediately, and select no continuation from inside the rejected component.
+
 ## Incremental checkpoint rule
 
 Before advancing past any stage or operation result that owns a non-empty coherent

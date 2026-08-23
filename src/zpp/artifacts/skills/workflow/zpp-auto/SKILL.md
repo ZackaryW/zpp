@@ -8,6 +8,18 @@ description: Triage a product request through a complete non-mutating procedure 
 This playbook owns only classification and handoff. It never performs governed
 mutation, acquires a lease, or inherits the selected playbook's sequence.
 
+## Component admission invariant
+
+Outcome routing and subordinate component admission are separate decisions. Use the
+eventual product outcome only to select one `zpp-*` playbook; never use it to select
+a `zpps-*` component. Before any `zpps-*` use, choose the exact configured component
+from the immediate necessary operation and its evidence readiness, not change status,
+task position, or imperative wording. Unresolved evidence admits `zpps-explore`;
+unresolved outcome-changing owner policy admits `zpps-clarify`. Every configured
+component remains subject to its own readiness and authority contract. Consume
+`component-mismatch` as failed admission, report it immediately, and select no
+continuation from inside the rejected component.
+
 ## 1. Frame the request
 
 Preserve the user's words, explicit repository roots, accepted constraints, and

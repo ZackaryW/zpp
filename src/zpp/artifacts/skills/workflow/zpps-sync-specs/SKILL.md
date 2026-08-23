@@ -1,9 +1,24 @@
 ---
 name: zpps-sync-specs
-description: Intelligently merge selected delta specifications from one OpenSpec change into canonical specifications without archiving, as a bounded playbook or direct operation.
+description: Merge a resolved delta-spec selection into canonical specifications only when that exact mutation is explicitly requested; never discover intent or archive the change.
 ---
 
 # Synchronize one change's specifications
+
+## Admit canonical specification synchronization
+
+Admit this component only when an active playbook configures this exact sync or the
+caller explicitly requests the immediate mutation of merging selected delta specs
+from one existing change into canonical specifications. Required readiness is an
+identifiable change, a resolved delta/capability selection, accepted semantics, and
+resolved binding evidence. Unknown product, repository, or authority facts require
+separate exploration or specification formation; a future archive does not itself
+admit synchronization.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-sync-specs`, the `observed_immediate_operation`,
+`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
+procedure and never invoke the separately eligible component.
 
 Read delta specs and edit canonical specs directly. Merge semantically rather than
 copying delta documents. Stop after validation; this operation never archives or
@@ -23,9 +38,10 @@ root for read-only discovery and as a valid `repo:` trace locator. A
 `<capability-path>` is the complete path relative to `specs/`; preserve nested paths
 such as `identity/user-auth` and never collapse them to a basename.
 
-Read-only discovery may precede admission. Before the first canonical-spec write or
-capability retirement, require an eligible `zpps-workflow-kernel` assessment for this
-exact sync request. Pass the resolved root and change name; the kernel invokes ZPP
+After successful component admission, read-only discovery may occur before obtaining
+the mutation guard. Before the first canonical-spec write or capability retirement,
+require an eligible `zpps-workflow-kernel` assessment for this exact sync request.
+Pass the resolved root and change name; the kernel invokes ZPP
 runtime coordination and returns structured leased or explicitly authorized bypass
 evidence. Do not resolve registration, manifest UUID, owner, environment overrides,
 or bundle commands here. Canonical filesystem paths are post-result audit evidence.

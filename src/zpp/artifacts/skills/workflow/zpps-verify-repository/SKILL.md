@@ -1,9 +1,24 @@
 ---
 name: zpps-verify-repository
-description: Execute established repository verification from explicit targets and return truthful evidence without judging OpenSpec satisfaction or mutating artifacts.
+description: Run already selected repository verification targets read-only; do not discover product facts, repair failures, or judge OpenSpec change satisfaction.
 ---
 
 # Verify repository evidence
+
+## Admit repository verification
+
+Admit this component only when an active playbook configures this exact verification
+or the caller's immediate operation is to execute established repository checks for
+an identified scope. Required readiness is a repository or capability target plus a
+declared command source or an explicit need to resolve only command authority. Use
+exploration for unresolved product, dependency, API, or integration evidence, and a
+separate mutating component to repair any observed failure.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-verify-repository`, the
+`observed_immediate_operation`, `missing_readiness`, and the
+`separately_eligible_operation`. Stop before the normal procedure and never invoke
+the separately eligible component.
 
 Accept playbook configuration or a direct partial invocation. Require exact repository
 roots, changed-path or capability scope, shaped BDD obligations, and either commands

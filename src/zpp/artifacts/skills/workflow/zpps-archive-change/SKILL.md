@@ -1,9 +1,24 @@
 ---
 name: zpps-archive-change
-description: Archive exactly one OpenSpec change with completion warnings, owner confirmation, synchronous canonical sync when selected, and verified move safety.
+description: Archive one resolved OpenSpec change only with explicit archive intent or exact playbook configuration and ready completion evidence; never infer authority from completion.
 ---
 
 # Archive one OpenSpec change
+
+## Admit single-change archival
+
+Admit this component only when an active playbook configures this exact archive or
+the caller explicitly requests the immediate mutation of archiving one identified
+OpenSpec change. Required readiness is the exact change, available completion and
+verification evidence, resolved specification-sync choice, and explicit archive
+intent; completed tasks, eventual cleanup, or a pending archive does not independently
+admit it. Missing factual evidence requires a separately admitted read-only operation.
+
+On any mismatch, return `component-mismatch` immediately with
+`selected_component: zpps-archive-change`, the
+`observed_immediate_operation`, `missing_readiness`, and the
+`separately_eligible_operation`. Stop before the normal procedure and never invoke
+the separately eligible component.
 
 Archive one selected change as a bounded playbook component or direct operation. This
 skill preserves the complete archive decision and safety procedure; it does not
@@ -21,9 +36,10 @@ every store-aware command. Otherwise use the nearest repository-local `openspec/
 root for read-only discovery and as a valid `repo:` trace locator. Preserve the full
 capability path relative to `specs/`.
 
-Read-only inspection may precede admission. Before any canonical-spec write or change
-move, require an eligible `zpps-workflow-kernel` assessment carrying explicit archive
-authority. Pass the resolved root and change name; the kernel invokes ZPP runtime
+After successful component admission, read-only inspection may occur before obtaining
+the mutation guard. Before any canonical-spec write or change move, require an
+eligible `zpps-workflow-kernel` assessment carrying explicit archive authority. Pass
+the resolved root and change name; the kernel invokes ZPP runtime
 coordination and returns structured leased or explicitly authorized bypass evidence.
 Do not resolve registration, manifest UUID, owner, environment overrides, or bundle
 commands here. Canonical and archive paths are post-result audit evidence. A direct
