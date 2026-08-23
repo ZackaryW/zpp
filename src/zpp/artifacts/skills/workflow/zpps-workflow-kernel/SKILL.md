@@ -28,9 +28,17 @@ this skill, selects the playbook action and component.
 
 Require the caller to provide the playbook or direct-invocation identity, outcome,
 selected action and component, exact repository roots and change names, accepted-input
-revision, whether the action mutates governed state, predecessor evidence, and
+revision, whether the action mutates governed state, complete ordered predecessor
+outcomes, invalid or stale evidence, accepted effects, stage-owned output, and
 owner-granted mutation, checkpoint, archive, abandonment, and bypass authority.
 Assess only that selected action.
+
+For a workflow stage, require every declared predecessor to have a distinct actual
+result for the same accepted-input revision. Block on the earliest missing, stale,
+failed, contradicted, or superseded result. In particular, `plan-utilities` and
+`mature-utilities` are separate actions: a planning result or skip never supplies a
+maturation result, and wiring is ineligible until both have been independently
+assessed. Report the invalid predecessor without selecting or invoking its component.
 
 Treat explicit owner-authorized end-to-end playbook delegation as checkpoint commit
 authority only for new stage-owned commits produced by that playbook. A standalone
@@ -66,11 +74,13 @@ status, changed paths, unresolved questions, and verification evidence. Return
 `accepted`, `blocked`, `checkpointed`, or `lifecycle-complete`, with reasons and
 observed authority facts. Again return no next-step field.
 
-For leased execution, submit changed paths to ZPP's runtime audit operation, record
-member archives only from observed archive results, and complete the bundle only
-after every declared member is archived and every required gate and path audit
-succeeds. For explicitly bypassed execution, retain structured bypass evidence and do
-not claim an audit or bundle transition occurred.
+For leased execution, submit the component's complete changed-path inventory to ZPP's
+runtime audit operation. Accept held OpenSpec paths as audited and repository-local
+non-OpenSpec paths as explicitly ignored; block on unknown-root or unheld-OpenSpec
+violations. Record member archives only from observed archive results, and complete
+the bundle only after every declared member is archived and every required gate and
+path audit succeeds. For explicitly bypassed execution, retain structured bypass
+evidence and do not claim an audit or bundle transition occurred.
 
 At every material accepted result with a non-empty coherent stage-owned diff, require
 checkpoint authority and invoke the exact installed `zmem-author-commits` skill before

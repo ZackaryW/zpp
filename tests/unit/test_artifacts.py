@@ -9,6 +9,7 @@ from agent_router import Agent, InvalidAssetError
 import zpp.artifacts
 from zpp.artifacts import (
     COMPANION_SKILL_ROLE,
+    COMPLETE_WORKFLOW_SKILL_NAMES,
     OPENSPEC_ADAPTER_SKILL_NAMES,
     REPOSITORY_EVIDENCE_SKILL_NAME,
     WORKFLOW_ENTRY_SKILL_NAMES,
@@ -45,7 +46,8 @@ def test_packaged_assets_are_loaded_before_resource_lifetime_ends(
     (traits / "a.toml").write_bytes(b"a-content")
     role = tmp_path / "skills" / WORKFLOW_SKILL_ROLE
     for name in WORKFLOW_SKILL_NAMES:
-        _write_skill(role / name, name, "Run it.")
+        body = _workflow_body() if name in COMPLETE_WORKFLOW_SKILL_NAMES else "Run it."
+        _write_skill(role / name, name, body)
     monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
 
     loaded_skills = packaged_workflow_skills()
@@ -147,7 +149,8 @@ def test_packaged_workflow_family_rejects_mismatched_declared_name(
     role = tmp_path / "skills" / WORKFLOW_SKILL_ROLE
     for name in WORKFLOW_SKILL_NAMES:
         declared = "wrong-name" if name == REPOSITORY_EVIDENCE_SKILL_NAME else name
-        _write_skill(role / name, declared, "Run it.")
+        body = _workflow_body() if name in COMPLETE_WORKFLOW_SKILL_NAMES else "Run it."
+        _write_skill(role / name, declared, body)
     monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
 
     with pytest.raises(PackagedSkillError, match="declares name"):
@@ -215,6 +218,30 @@ def test_complete_workflows_require_distinct_ordered_stage_sequence(
     else:
         with pytest.raises(PackagedSkillError, match=error):
             validate_workflow_stage_sequence("zpp-fix-bug", body)
+
+
+def test_packaged_loader_rejects_an_invalid_complete_workflow(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    role = tmp_path / "skills" / WORKFLOW_SKILL_ROLE
+    missing_planning = tuple(
+        stage
+        for stage in WORKFLOW_STAGE_SKILL_NAMES
+        if stage != "zpps-planning-ponytail"
+    )
+    for name in WORKFLOW_SKILL_NAMES:
+        if name == "zpp-fix-bug":
+            body = _workflow_body(missing_planning)
+        elif name in COMPLETE_WORKFLOW_SKILL_NAMES:
+            body = _workflow_body()
+        else:
+            body = "Run it."
+        _write_skill(role / name, name, body)
+    monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
+
+    with pytest.raises(PackagedSkillError, match="zpps-planning-ponytail"):
+        packaged_workflow_skills()
 
 
 def test_packaged_roles_fail_when_missing_or_empty(

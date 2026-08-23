@@ -32,6 +32,11 @@ or bundle commands here. If absent or mismatched, return
 `kernel-assessment-required` or `coordination-conflict` with the precise unresolved
 inputs. A prior playbook delegation is not required.
 
+When the accepted contract has no mature behavior and no accepted delta requiring
+canonical specification reconciliation, return `skipped: not applicable` with that
+evidence. A governed prose or declarative delta is applicable even without BDD and
+therefore cannot use this skip.
+
 Resolve every OpenSpec-to-feature binding in both directions. Each executable
 obligation must have one or more scenario-selected public-system feature authorities
 and no semantically equivalent concrete OpenSpec example. A specification-only
@@ -56,7 +61,7 @@ After all exact specification edits and the final audit succeed, update only sup
 OpenSpec tasks whose text and scope are each fully satisfied by this formation result.
 Never mark a partial, adjacent, inferred, or unrelated task complete.
 
-Return `completed`, `blocked`, or `sync-required`, with
+Return `completed`, `skipped: not applicable`, `blocked`, or `sync-required`, with
 `kernel-assessment-required` or `coordination-conflict` when that is the blocking
 reason, plus changed paths
 and the complete audit. Never invoke another `zpps-*` skill, perform canonical

@@ -28,6 +28,16 @@ evidence admits `zpps-explore`; unresolved outcome-changing owner policy admits
 authority contract. Consume `component-mismatch` as failed admission, report it
 immediately, and select no continuation from inside the rejected component.
 
+## Visible stage progression invariant
+
+Execute every primary stage below as a distinct visible `zpps-*` action. Before each
+one, ask `zpps-workflow-kernel` to assess that already selected stage using the current
+contract revision, complete ordered predecessor outcomes, invalid or stale evidence,
+accepted effects, stage-owned output, and authority. After it runs, submit its actual
+status, verification, and changed paths for result assessment. A result from one stage
+never supplies, skips, or completes another stage. Only this playbook selects the next
+declared action after the current result is accepted.
+
 ## Incremental checkpoint rule
 
 Before advancing past any stage or operation result that owns a non-empty coherent
@@ -75,38 +85,45 @@ kernel guard and result assessment to every mutation.
 
 ## 3. Shape accepted observable behavior
 
-For every public-system obligation, use `zpps-shape-bdd` to establish independent RED
-and single executable authority. For non-observable policy, take an explicit
-not-applicable branch and keep the obligation normative in OpenSpec. Resolve missing
-guards and re-enter; pause on binding or agreement failures.
+Use `zpps-shape-bdd` across the accepted effects. For every public-system obligation,
+require independent RED and single executable authority. For non-observable policy,
+require the stage to return an evidence-backed `skipped: not applicable` and keep the
+obligation normative in OpenSpec. Resolve missing guards and re-enter; pause on
+binding or agreement failures.
 
-## 4. Plan and mature utilities
+## 4. Plan utilities
 
-Use `zpps-planning-ponytail` across all accepted responsibilities. For each returned
-plan, use `zpps-mature-utilities` with relevant RED and complete GREEN. A truthful
-not-applicable result proceeds to wiring. A plan contradiction returns through an
-explicit clarification or update action, never through kernel dispatch.
+Use `zpps-planning-ponytail` across all accepted responsibilities. Assess its plan or
+evidence-backed `skipped: not applicable` as the planning result only. A plan
+contradiction returns through an explicit clarification or update action, never
+through kernel dispatch.
 
-## 5. Wire applicable public behavior
+## 5. Mature utilities
+
+Use `zpps-mature-utilities` with the exact planning result. Require relevant RED and
+complete GREEN for every plan, or require this stage to independently return
+`skipped: not applicable`. Assess this result separately before wiring.
+
+## 6. Wire applicable public behavior
 
 Use `zpps-wire` for accepted public composition. Take an explicit not-applicable
 branch for work with no public composition change. Require the kernel to assess the
 observed result without naming a next step.
 
-## 6. Form and synchronize specifications
+## 7. Form and synchronize specifications
 
 Use `zpps-form-specs`. For `sync-required`, explicitly use `zpps-sync-specs` with the
 returned delta selection and re-enter form-specs for canonical audit. Pause on
 duplicate or orphan authority.
 
-## 7. Verify repository and change
+## 8. Verify repository and change
 
 Use `zpps-verify-repository` for shaped scenarios and every relevant repository gate.
 Then use `zpps-verify-change` with the returned evidence. On
 `repository-evidence-required`, explicitly run the named evidence and re-enter. Pause
 on incomplete tasks, unmet requirements, divergence, or insufficient evidence.
 
-## 8. Finalize and archive
+## 9. Finalize and archive
 
 Use `zpps-finalize`. Explicitly satisfy and re-enter for each
 `repository-evidence-required` or `change-verification-required` signal. For

@@ -27,6 +27,16 @@ evidence admits `zpps-explore`; unresolved outcome-changing owner policy admits
 authority contract. Consume `component-mismatch` as failed admission, report it
 immediately, and select no continuation from inside the rejected component.
 
+## Visible stage progression invariant
+
+Execute every primary stage below as a distinct visible `zpps-*` action. Before each
+one, ask `zpps-workflow-kernel` to assess that already selected stage using the current
+contract revision, complete ordered predecessor outcomes, invalid or stale evidence,
+accepted effects, stage-owned output, and authority. After it runs, submit its actual
+status, verification, and changed paths for result assessment. A result from one stage
+never supplies, skips, or completes another stage. Only this playbook selects the next
+declared action after the current result is accepted.
+
 ## Incremental checkpoint rule
 
 Before advancing past any stage or operation result that owns a non-empty coherent
@@ -84,32 +94,43 @@ pause on any other blocker. Continue after the kernel accepts the RED and bindin
 ## 4. Plan the smallest correction
 
 Use `zpps-planning-ponytail` only for utility responsibilities implicated by the
-failure. A truthful `skipped: not applicable` proceeds directly to wiring. Otherwise
-assess the plan, then use `zpps-mature-utilities` for relevant RED, the smallest
-coherent correction, focused GREEN, and the relevant complete utility surface. A
-plan contradiction caused by the accepted contract returns explicitly to
+failure. Assess either its signature-level plan or its evidence-backed
+`skipped: not applicable` result. That outcome completes only `plan-utilities` and
+continues to step 5; it never skips maturation or authorizes wiring. A plan
+contradiction caused by the accepted contract returns explicitly to
 `zpps-clarify`; a contradiction between current repository evidence and an existing
 planning artifact returns explicitly to `zpps-update-change`. It never triggers
 silent redesign or kernel-selected routing.
 
-## 5. Wire and prove public GREEN
+## 5. Mature the correction utilities
+
+Use `zpps-mature-utilities` with the exact planning result. For a plan, require the
+relevant RED, smallest coherent correction, focused GREEN, and complete utility
+surface. For a planning skip, require this stage to independently confirm and return
+`skipped: not applicable`. Assess that distinct result before continuing.
+
+## 6. Wire and prove public GREEN
 
 Use `zpps-wire` with the regression scenario, accepted correction, proven utilities,
 and real public composition owner. Require scenario-specific GREEN. Pause if the
 public owner or accepted boundary is wrong. Continue after kernel result assessment.
 
-## 6. Form and synchronize specifications
+## 7. Form and synchronize specifications
 
 Use `zpps-form-specs`. On `sync-required`, explicitly use `zpps-sync-specs` for the
 returned deltas and re-enter form-specs for canonical audit. Components never invoke
 one another. Continue only after duplicate and orphan authority checks pass.
 
-## 7. Verify and finalize
+## 8. Verify repository and change
 
 Use `zpps-verify-repository` for the regression scenario, affected tests, relevant
 complete suite, interpreter/lock, lint, format, and clean build. Use
 `zpps-verify-change` with that evidence; satisfy `repository-evidence-required` by an
-explicit repository-verification use and re-entry. Then use `zpps-finalize`.
+explicit repository-verification use and re-entry.
+
+## 9. Finalize and archive
+
+Use `zpps-finalize` with every accepted stage and verification result.
 
 Follow finalization signals visibly: obtain missing repository or change evidence.
 For `archive-required`, require explicit archive authority and use the exact single

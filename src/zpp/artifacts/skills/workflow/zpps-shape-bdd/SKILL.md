@@ -9,11 +9,12 @@ description: Mutate BDD and trace artifacts for already accepted public behavior
 
 Admit this component only when an active playbook configures this exact shaping or
 the caller explicitly requests the immediate mutation of BDD and trace artifacts for
-accepted public behavior. Required readiness includes the accepted contract,
-observable obligations, capability owner, provisional examples, and current binding
-evidence. Unresolved behavior, ownership, repository, or integration facts require
-separate exploration or clarification; an eventual testable feature alone does not
-admit shaping.
+accepted public behavior. A configured workflow stage may also request an
+applicability result for an accepted contract with no observable obligation. Required
+readiness includes the accepted contract, capability owner, provisional examples,
+and current binding evidence. Unresolved behavior, ownership, repository, or
+integration facts require separate exploration or clarification; an eventual
+testable feature alone does not admit shaping.
 
 On any mismatch, return `component-mismatch` immediately with
 `selected_component: zpps-shape-bdd`, the `observed_immediate_operation`,
@@ -23,8 +24,8 @@ procedure and never invoke the separately eligible component.
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots and capability owner, resolved
 OpenSpec root, change name, provisional examples, and current binding evidence.
-Because shaping mutates governed artifacts, also require a current kernel assessment
-whose action is `shape-bdd`. Pass the exact roots and change names; the kernel invokes
+When observable obligations require mutation, also require a current kernel
+assessment whose action is `shape-bdd`. Pass the exact roots and change names; the kernel invokes
 ZPP runtime coordination and returns structured leased or explicitly authorized
 bypass evidence. Do not resolve registration, manifest UUIDs, owner identity,
 environment overrides, or bundle commands here. If the assessment is absent or
@@ -37,6 +38,10 @@ support entry point, delegated environment lifecycle, and thin scenario-selected
 bindings. Keep pure-function case matrices in unit tests, retaining a public BDD
 scenario only when needed to prove system enforcement. Keep non-observable policy as
 normative specification content; never fabricate BDD for it.
+
+When classification finds no public-system obligation requiring an executable
+feature contract, return `skipped: not applicable` with the classification evidence.
+This verified no-op requires no mutation guard and changes no artifact.
 
 Transfer every concrete executable OpenSpec example to the feature root. Immediately
 above each scenario, write compact JSON with exactly these ordered keys:
@@ -60,7 +65,7 @@ text and scope are each fully satisfied by this shaping result. Never mark a par
 adjacent, inferred, or unrelated task complete; omit task mutation when no matching
 task record was supplied.
 
-Return `completed` or `blocked`, with `kernel-assessment-required` or
+Return `completed`, `skipped: not applicable`, or `blocked`, with `kernel-assessment-required` or
 `coordination-conflict` when that is the blocking reason, plus classifications, exact
 bindings, changed paths, and RED evidence. Never
 invoke another `zpps-*` skill, implement product behavior, select workflow

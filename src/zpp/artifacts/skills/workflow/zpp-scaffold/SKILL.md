@@ -27,6 +27,16 @@ evidence admits `zpps-explore`; unresolved outcome-changing owner policy admits
 authority contract. Consume `component-mismatch` as failed admission, report it
 immediately, and select no continuation from inside the rejected component.
 
+## Visible stage progression invariant
+
+Execute every primary stage below as a distinct visible `zpps-*` action. Before each
+one, ask `zpps-workflow-kernel` to assess that already selected stage using the current
+contract revision, complete ordered predecessor outcomes, invalid or stale evidence,
+accepted effects, stage-owned output, and authority. After it runs, submit its actual
+status, verification, and changed paths for result assessment. A result from one stage
+never supplies, skips, or completes another stage. Only this playbook selects the next
+declared action after the current result is accepted.
+
 ## Incremental checkpoint rule
 
 Before advancing past any stage or operation result that owns a non-empty coherent
@@ -74,34 +84,44 @@ generated skills, and backwards-compatibility aliases.
 
 ## 3. Shape behavior when the scaffold is observable
 
-Condition: the accepted scaffold exposes or changes public behavior. Use
-`zpps-shape-bdd`, resolve any `kernel-assessment-required`, and require an independent
-RED capability feature with single executable authority.
+Use `zpps-shape-bdd` with the accepted scaffold effects. When the scaffold exposes or
+changes public behavior, resolve any `kernel-assessment-required` and require an
+independent RED capability feature with single executable authority. Otherwise
+require the stage itself to return an evidence-backed `skipped: not applicable`;
+never let the playbook manufacture that outcome or fabricate BDD for filesystem
+wording or prompt policy.
 
-Otherwise record a truthful specification-only obligation and an accepted
-`not-applicable` assessment; never fabricate BDD for filesystem wording or prompt
-policy.
+## 4. Plan reusable structure
 
-## 4. Plan and mature reusable structure
-
-Use `zpps-planning-ponytail` for any reusable bootstrap utility. On a returned plan,
-use `zpps-mature-utilities` with exact RED/GREEN targets. On
-`skipped: not applicable`, continue without manufacturing a utility. Pause if the
+Use `zpps-planning-ponytail` for any reusable bootstrap utility. Assess its plan or
+evidence-backed `skipped: not applicable` as the planning result only. Pause if the
 requested structure conflicts with the repository's real ownership model.
 
-## 5. Wire the owning surface
+## 5. Mature reusable structure
+
+Use `zpps-mature-utilities` with the exact planning result. Require exact RED/GREEN
+targets for a plan, or require this stage to independently return
+`skipped: not applicable` when planning found no utility responsibility.
+
+## 6. Wire the owning surface
 
 Use `zpps-wire` when the scaffold has an accepted public composition point. If the
-scaffold is structure-only, take the playbook's explicit not-applicable branch and
+scaffold is structure-only, require the stage to return `skipped: not applicable` and
 preserve focused structural verification evidence. Assess either result through the
 kernel before continuing.
 
-## 6. Form, verify, and finalize
+## 7. Form and synchronize specifications
 
 Use `zpps-form-specs`; on `sync-required`, explicitly use `zpps-sync-specs` and
-re-enter for canonical audit. Use `zpps-verify-repository` for affected and complete
-tests plus interpreter/lock, lint, format, and clean build, then use
-`zpps-verify-change`, supplying any additional repository evidence it signals.
+re-enter for canonical audit.
+
+## 8. Verify repository and change
+
+Use `zpps-verify-repository` for affected and complete tests plus interpreter/lock,
+lint, format, and clean build, then use `zpps-verify-change`, supplying any additional
+repository evidence it signals.
+
+## 9. Finalize and archive
 
 Use `zpps-finalize` with all results. Explicitly satisfy
 `repository-evidence-required` or `change-verification-required` and re-enter. For

@@ -30,6 +30,12 @@ WORKFLOW_ENTRY_SKILL_NAMES: Final[tuple[str, ...]] = (
     "zpp-scaffold",
     "zpp-legacy-workflow",
 )
+COMPLETE_WORKFLOW_SKILL_NAMES: Final[tuple[str, ...]] = (
+    "zpp-new-feature",
+    "zpp-fix-bug",
+    "zpp-scaffold",
+    "zpp-legacy-workflow",
+)
 WORKFLOW_KERNEL_SKILL_NAME: Final[str] = "zpps-workflow-kernel"
 WORKFLOW_STAGE_SKILL_NAMES: Final[tuple[str, ...]] = (
     "zpps-clarify",
@@ -64,7 +70,7 @@ WORKFLOW_SKILL_NAMES: Final[tuple[str, ...]] = (
 
 _SKILL_DOCUMENT = "SKILL.md"
 _NUMBERED_WORKFLOW_SECTION = re.compile(r"(?m)^##\s+\d+\.\s+.+$")
-_EXPLICIT_COMPONENT_USE = re.compile(r"(?m)^Use `(zpps-[a-z0-9-]+)`(?:[.\s]|$)")
+_EXPLICIT_COMPONENT_USE = re.compile(r"(?m)^Use `(zpps-[a-z0-9-]+)`(?:[.,;:\s]|$)")
 
 
 class PackagedSkillError(ValueError):
@@ -121,6 +127,18 @@ def validate_workflow_stage_sequence(name: str, document: str) -> None:
         )
 
 
+def _skill_document(skill: Skill) -> str:
+    documents = tuple(
+        item for item in skill.files if item.relative_path == _SKILL_DOCUMENT
+    )
+    if len(documents) != 1:
+        raise PackagedSkillError(
+            f"packaged workflow member {skill.name!r} must contain one "
+            f"{_SKILL_DOCUMENT}"
+        )
+    return documents[0].content.decode("utf-8")
+
+
 def _role_skill_names(role: str) -> tuple[str, ...]:
     root = files("zpp.artifacts").joinpath("skills", role)
     if not root.is_dir():
@@ -166,6 +184,8 @@ def packaged_workflow_skills() -> tuple[Skill, ...]:
             raise PackagedSkillError(
                 f"packaged workflow member {name!r} declares name {skill.name!r}"
             )
+        if name in COMPLETE_WORKFLOW_SKILL_NAMES:
+            validate_workflow_stage_sequence(name, _skill_document(skill))
         loaded.append(skill)
     return tuple(loaded)
 
@@ -225,6 +245,7 @@ def packaged_trait_source() -> BoundTraitSource:
 
 __all__ = [
     "COMPANION_SKILL_ROLE",
+    "COMPLETE_WORKFLOW_SKILL_NAMES",
     "OPENSPEC_ADAPTER_SKILL_NAMES",
     "REPOSITORY_EVIDENCE_SKILL_NAME",
     "WORKFLOW_ENTRY_SKILL_NAMES",

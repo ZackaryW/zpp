@@ -56,6 +56,10 @@ planning tasks whose text and scope are each fully satisfied by the completed
 Ponytail plan. Never mark a partial, implementation, adjacent, inferred, or unrelated
 task complete.
 
+This result completes only `plan-utilities`. It never supplies a
+`mature-utilities` result, authorizes wiring, or lets the caller collapse the two
+stages into one action.
+
 Never invoke another `zpps-*` skill, implement utilities, select workflow
 continuation, mutate OpenSpec incidentally, expand a lease, checkpoint, or claim
 lifecycle completion.

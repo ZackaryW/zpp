@@ -29,6 +29,16 @@ evidence admits `zpps-explore`; unresolved outcome-changing owner policy admits
 authority contract. Consume `component-mismatch` as failed admission, report it
 immediately, and select no continuation from inside the rejected component.
 
+## Visible stage progression invariant
+
+Execute every primary stage below as a distinct visible `zpps-*` action. Before each
+one, ask `zpps-workflow-kernel` to assess that already selected stage using the current
+contract revision, complete ordered predecessor outcomes, invalid or stale evidence,
+accepted effects, stage-owned output, and authority. After it runs, submit its actual
+status, verification, and changed paths for result assessment. A result from one stage
+never supplies, skips, or completes another stage. Only this playbook selects the next
+declared action after the current result is accepted.
+
 ## Incremental checkpoint rule
 
 Before advancing past any stage or operation result that owns a non-empty coherent
@@ -94,21 +104,27 @@ testable example to capability BDD and trace-only OpenSpec anchors. On
 `kernel-assessment-required`, obtain the named guard and re-enter. On `blocked`,
 pause. Assess `completed` through the kernel, then continue to step 4.
 
-## 4. Plan and mature utilities
+## 4. Plan utilities
 
 Use `zpps-planning-ponytail` with shaped behavior and dependency evidence. If it
-returns `skipped: not applicable`, assess the skip and continue to step 5. If it
-returns a plan, assess it, then use `zpps-mature-utilities` with that exact revision
-and relevant RED targets. Pause on any contradiction. After verified GREEN is
-accepted by the kernel, continue to step 5.
+returns `skipped: not applicable`, assess that planning result without treating it as
+a maturation result. If it returns a plan, assess its exact revision. Pause on any
+contradiction, and continue to step 5 only after this distinct stage is accepted.
 
-## 5. Wire the public capability
+## 5. Mature utilities
+
+Use `zpps-mature-utilities` with the exact planning result and relevant RED targets.
+For a planning skip, require this stage to independently confirm and return
+`skipped: not applicable`. Otherwise require verified utility GREEN. Assess the
+distinct maturation result before continuing.
+
+## 6. Wire the public capability
 
 Use `zpps-wire` with approved scenarios, bindings, proven utilities, and the actual
 public composition owner. Pause if wiring requires a new owner decision or revised
-plan. After focused public evidence is accepted, continue to step 6.
+plan. After focused public evidence is accepted, continue to step 7.
 
-## 6. Form and synchronize specifications
+## 7. Form and synchronize specifications
 
 Use `zpps-form-specs` with delta/canonical paths reported by OpenSpec, bindings, and
 mature evidence. On `sync-required`, explicitly use `zpps-sync-specs` with exactly
@@ -116,7 +132,7 @@ the returned delta set, then re-enter `zpps-form-specs` with its result. Never l
 either component invoke the other. Continue only after the canonical authority audit
 returns `completed` and the kernel accepts it.
 
-## 7. Verify repository and change
+## 8. Verify repository and change
 
 Use `zpps-verify-repository` with scenario-selected BDD, focused and complete tests,
 interpreter/lock, lint, format, and clean-build targets. Resolve
@@ -125,7 +141,7 @@ planning artifacts, implementation, bindings, and supplied repository evidence. 
 `repository-evidence-required`, run only the newly requested evidence through
 `zpps-verify-repository` and re-enter verification. Pause on any failure.
 
-## 8. Finalize and archive
+## 9. Finalize and archive
 
 Use `zpps-finalize` with all accepted evidence. Follow its visible result:
 

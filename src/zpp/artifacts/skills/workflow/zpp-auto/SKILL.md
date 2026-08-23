@@ -56,7 +56,9 @@ produced by that run. It never answers owner decisions or supplies missing mutat
 archive, abandonment, or bypass authority. Do not preselect any later action.
 
 After invocation, transfer control to that playbook and do not return to triage.
-The selected playbook owns its next action and all subsequent declared branches.
-Never merely report the selected playbook and stop, invoke the kernel directly,
-mutate artifacts during triage, add authority, or claim completion on the selected
-playbook's behalf.
+Remain in the same workflow invocation until the selected playbook returns an actual
+blocked or completed lifecycle result. The selected playbook owns its next action and
+all subsequent declared branches. Naming, recommending, or acknowledging the route
+is not a result and cannot terminate automatic execution. Never invoke the kernel
+directly, mutate artifacts during triage, add authority, or claim completion on the
+selected playbook's behalf.
