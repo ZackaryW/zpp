@@ -6,12 +6,12 @@
 
 ## 2. Runtime Audit Utilities
 
-- [ ] 2.1 Implement a ZPP-owned immutable audit result and a pure most-specific-root classifier that partitions complete changed-path inventories into OpenSpec audit candidates, repository-local ignored paths, and unknown-root violations.
-- [ ] 2.2 Compose classification with Bundler's existing held-store audit so unheld OpenSpec paths remain violations and ignored product paths never reach the OpenSpec-only dependency boundary.
+- [x] 2.1 Implement a ZPP-owned immutable audit result and a pure most-specific-root classifier that partitions complete changed-path inventories into OpenSpec audit candidates, repository-local ignored paths, and unknown-root violations.
+- [x] 2.2 Compose classification with Bundler's existing held-store audit so unheld OpenSpec paths remain violations and ignored product paths never reach the OpenSpec-only dependency boundary.
 
 ## 3. Workflow Contract Utilities
 
-- [ ] 3.1 Implement bounded structural extraction and validation of explicit stage-component uses in complete workflows, requiring the complete ordered reusable-stage sequence without parsing arbitrary narrative wording.
+- [x] 3.1 Implement bounded structural extraction and validation of explicit stage-component uses in complete workflows, requiring the complete ordered reusable-stage sequence without parsing arbitrary narrative wording.
 - [ ] 3.2 Integrate full stage-sequence validation into packaged workflow loading while retaining `zpp-auto` as the triage-only handoff entry.
 
 ## 4. Public Wiring

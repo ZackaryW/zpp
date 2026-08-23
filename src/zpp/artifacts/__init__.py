@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass
 from importlib.resources import as_file, files
@@ -62,10 +63,62 @@ WORKFLOW_SKILL_NAMES: Final[tuple[str, ...]] = (
 )
 
 _SKILL_DOCUMENT = "SKILL.md"
+_NUMBERED_WORKFLOW_SECTION = re.compile(r"(?m)^##\s+\d+\.\s+.+$")
+_EXPLICIT_COMPONENT_USE = re.compile(r"(?m)^Use `(zpps-[a-z0-9-]+)`(?:[.\s]|$)")
 
 
 class PackagedSkillError(ValueError):
     pass
+
+
+def workflow_stage_sections(document: str) -> tuple[tuple[str, ...], ...]:
+    headings = tuple(_NUMBERED_WORKFLOW_SECTION.finditer(document))
+    sections: list[tuple[str, ...]] = []
+    for index, heading in enumerate(headings):
+        end = (
+            headings[index + 1].start() if index + 1 < len(headings) else len(document)
+        )
+        body = document[heading.end() : end]
+        stages = tuple(
+            match.group(1)
+            for match in _EXPLICIT_COMPONENT_USE.finditer(body)
+            if match.group(1) in WORKFLOW_STAGE_SKILL_NAMES
+        )
+        if stages:
+            sections.append(stages)
+    return tuple(sections)
+
+
+def validate_workflow_stage_sequence(name: str, document: str) -> None:
+    sections = workflow_stage_sections(document)
+    collapsed = tuple(stages for stages in sections if len(stages) != 1)
+    if collapsed:
+        raise PackagedSkillError(
+            f"complete workflow {name!r} must declare reusable stages in distinct "
+            "numbered sections"
+        )
+    actual = tuple(stages[0] for stages in sections)
+    missing = tuple(
+        stage for stage in WORKFLOW_STAGE_SKILL_NAMES if stage not in actual
+    )
+    if missing:
+        raise PackagedSkillError(
+            f"complete workflow {name!r} is missing reusable stage(s): "
+            f"{list(missing)!r}"
+        )
+    duplicates = tuple(
+        stage for stage in WORKFLOW_STAGE_SKILL_NAMES if actual.count(stage) != 1
+    )
+    if duplicates:
+        raise PackagedSkillError(
+            f"complete workflow {name!r} must declare each reusable stage once in "
+            "a distinct numbered section"
+        )
+    if actual != WORKFLOW_STAGE_SKILL_NAMES:
+        raise PackagedSkillError(
+            f"complete workflow {name!r} has invalid reusable stage order: "
+            f"expected={WORKFLOW_STAGE_SKILL_NAMES!r}, actual={actual!r}"
+        )
 
 
 def _role_skill_names(role: str) -> tuple[str, ...]:
@@ -186,4 +239,6 @@ __all__ = [
     "packaged_traits",
     "packaged_workflow_hook",
     "packaged_workflow_skills",
+    "validate_workflow_stage_sequence",
+    "workflow_stage_sections",
 ]

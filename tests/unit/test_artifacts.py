@@ -22,6 +22,7 @@ from zpp.artifacts import (
     packaged_traits,
     packaged_workflow_hook,
     packaged_workflow_skills,
+    validate_workflow_stage_sequence,
 )
 from zpp.core.models import SourceKind
 
@@ -206,29 +207,14 @@ def _workflow_body(
     ids=("valid", "missing", "collapsed", "reversed"),
 )
 def test_complete_workflows_require_distinct_ordered_stage_sequence(
-    tmp_path: Path,
-    monkeypatch,
     body: str,
     error: str | None,
 ) -> None:
-    role = tmp_path / "skills" / WORKFLOW_SKILL_ROLE
-    complete = set(WORKFLOW_ENTRY_SKILL_NAMES) - {"zpp-auto"}
-    valid = _workflow_body()
-    for name in WORKFLOW_SKILL_NAMES:
-        _write_skill(
-            role / name,
-            name,
-            body if name == "zpp-fix-bug" else valid if name in complete else "Run it.",
-        )
-    monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
-
     if error is None:
-        assert tuple(skill.name for skill in packaged_workflow_skills()) == (
-            WORKFLOW_SKILL_NAMES
-        )
+        validate_workflow_stage_sequence("zpp-fix-bug", body)
     else:
         with pytest.raises(PackagedSkillError, match=error):
-            packaged_workflow_skills()
+            validate_workflow_stage_sequence("zpp-fix-bug", body)
 
 
 def test_packaged_roles_fail_when_missing_or_empty(

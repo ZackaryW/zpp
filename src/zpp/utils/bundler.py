@@ -14,7 +14,6 @@ import tomli_w
 from openspec_bundler import (
     AcquisitionResult,
     AttachmentService,
-    AuditResult,
     ChangeMember,
     LeaseBundle,
     LeaseCoordinator,
@@ -56,6 +55,53 @@ class CoordinationOverrides:
             if candidate == resolved:
                 return store_id
         return None
+
+
+@dataclass(frozen=True, slots=True)
+class ChangedPathClassification:
+    openspec: tuple[Path, ...]
+    ignored: tuple[Path, ...]
+    violations: tuple[Path, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class WorkflowAuditResult:
+    accepted: tuple[Path, ...]
+    ignored: tuple[Path, ...]
+    violations: tuple[Path, ...]
+
+    @property
+    def ok(self) -> bool:
+        return not self.violations
+
+
+def classify_changed_paths(
+    stores: Iterable[RegisteredStore], paths: Iterable[Path]
+) -> ChangedPathClassification:
+    roots = tuple(
+        sorted(
+            (store.root.resolve() for store in stores),
+            key=lambda root: len(root.parts),
+            reverse=True,
+        )
+    )
+    openspec: list[Path] = []
+    ignored: list[Path] = []
+    violations: list[Path] = []
+    for path in paths:
+        resolved = path.resolve()
+        owner = next((root for root in roots if resolved.is_relative_to(root)), None)
+        if owner is None:
+            violations.append(resolved)
+        elif resolved.is_relative_to(owner / "openspec"):
+            openspec.append(resolved)
+        else:
+            ignored.append(resolved)
+    return ChangedPathClassification(
+        tuple(openspec),
+        tuple(ignored),
+        tuple(violations),
+    )
 
 
 def decode_coordination_overrides(raw: str | None) -> CoordinationOverrides:
@@ -441,8 +487,9 @@ class BundlerLeaseService:
     def __init__(
         self, home: ZppHome, stores: RegisteredStoreProvider | None = None
     ) -> None:
+        self._stores = stores or OpenSpecStoreProvider()
         self._coordinator = LeaseCoordinator(
-            stores or OpenSpecStoreProvider(), LeaseStateRepository(home.state_root)
+            self._stores, LeaseStateRepository(home.state_root)
         )
 
     @staticmethod
@@ -459,8 +506,17 @@ class BundlerLeaseService:
     def status(self) -> tuple[LeaseBundle, ...]:
         return self._coordinator.repository.read().bundles
 
-    def audit(self, bundle_uuid: UUID, paths: Iterable[Path]) -> AuditResult:
-        return self._coordinator.audit(bundle_uuid=bundle_uuid, changed_paths=paths)
+    def audit(self, bundle_uuid: UUID, paths: Iterable[Path]) -> WorkflowAuditResult:
+        classified = classify_changed_paths(self._stores.list_stores(), paths)
+        audited = self._coordinator.audit(
+            bundle_uuid=bundle_uuid,
+            changed_paths=classified.openspec,
+        )
+        return WorkflowAuditResult(
+            accepted=audited.accepted,
+            ignored=classified.ignored,
+            violations=(*audited.violations, *classified.violations),
+        )
 
     def record_archive(
         self, bundle_uuid: UUID, owner_id: str, member: tuple[UUID, str]
