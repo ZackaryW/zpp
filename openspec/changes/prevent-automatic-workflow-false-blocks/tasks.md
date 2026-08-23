@@ -23,5 +23,5 @@
 ## 5. Formation and Verification
 
 - [x] 5.1 Reconcile the executable audit scenario to a trace-only delta anchor, synchronize both capability deltas, and verify no duplicate or orphan acceptance authority remains.
-- [ ] 5.2 Run strict change validation, every relevant capability-owned Behave root, complete pytest, supported-interpreter and lock checks, Ruff lint and format, and a clean package build.
-- [ ] 5.3 Inspect the projected installed family and reproduce the original mixed OpenSpec/product path audit to confirm it no longer blocks while unknown and unheld OpenSpec paths still fail.
+- [x] 5.2 Run strict change validation, every relevant capability-owned Behave root, complete pytest, supported-interpreter and lock checks, Ruff lint and format, and a clean package build.
+- [x] 5.3 Inspect the projected installed family and reproduce the original mixed OpenSpec/product path audit to confirm it no longer blocks while unknown and unheld OpenSpec paths still fail.
