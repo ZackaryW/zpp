@@ -1,7 +1,7 @@
 ## 1. Dependency and Pure Utilities
 
-- [ ] 1.1 Add fail-first tests for the OpenLease-free process boundary, Bundler home boundary, attachment codecs, exact repository reads, selected-store chain composition, and lease service transitions
-- [ ] 1.2 Replace the dependency floor and implement the minimum process, attachment, composition, and lease utilities
+- [x] 1.1 Add fail-first tests for the OpenLease-free process boundary, Bundler home boundary, attachment codecs, exact repository reads, selected-store chain composition, and lease service transitions
+- [x] 1.2 Replace the dependency floor and implement the minimum process, attachment, composition, and lease utilities
 
 ## 2. Public Integration
 

@@ -13,7 +13,7 @@ class ZppHome:
 
     @property
     def state_root(self) -> Path:
-        return self.path / "openlease"
+        return self.path / "bundler"
 
 
 def selected_zpp_home(
