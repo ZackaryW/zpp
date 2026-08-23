@@ -67,6 +67,20 @@ def test_compose_trait_family_preserves_order_inside_each_category() -> None:
     ]
 
 
+def test_selected_child_store_supplies_policy_when_repository_is_absent() -> None:
+    parent = _document(SourceKind.STORE, "parent", "all", "parent", order=1)
+    child = _document(SourceKind.STORE, "child", "first-win", "child", order=2)
+
+    effective = compose_trait_family("bdd", [child, parent])
+
+    assert effective.selection is SelectionPolicy.FIRST_WIN
+    assert effective.policy_source.identifier == "child"
+    assert [item.flavor.content.body for item in effective.flavors] == [
+        "parent",
+        "child",
+    ]
+
+
 def test_compose_trait_family_uses_highest_precedence_activation() -> None:
     effective = compose_trait_family(
         "bdd",

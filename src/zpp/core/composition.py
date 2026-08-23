@@ -62,7 +62,14 @@ def compose_trait_family(
         for item in documents
         if not overwrite or item.source.kind is SourceKind.REPOSITORY
     ]
-    policy_document = included[0]
+    repository_policy = next(
+        (item for item in included if item.source.kind is SourceKind.REPOSITORY),
+        None,
+    )
+    store_policies = [item for item in included if item.source.kind is SourceKind.STORE]
+    policy_document = repository_policy or (
+        store_policies[-1] if store_policies else included[0]
+    )
     effective_flavors: list[EffectiveFlavor] = []
     for document in included:
         for flavor in document.flavors:

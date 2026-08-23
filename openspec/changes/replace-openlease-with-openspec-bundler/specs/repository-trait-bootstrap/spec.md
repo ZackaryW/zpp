@@ -32,14 +32,14 @@ ZPP SHALL expose root `init`, `sync`, `open`, `reset`, `resolve`, and `behave`; 
 - **WHEN** a caller inspects root and grouped commands
 - **THEN** the minimal Bundler-backed hierarchy is present and the complete workspace hierarchy is absent
 
-### Requirement: No-space repository operation
+### Requirement: Lease-free repository operation
 Ordinary trait opening, initialization, resolution, and direct behavior verification SHALL remain session-free and lease-free. Store input MAY come only from the selected store's root-to-child chain; siblings and unselected stores SHALL not participate.
 
 #### Scenario: Resolve repository and selected-store input without a lease
 - **WHEN** a caller resolves traits for a target in a managed store
 - **THEN** ZPP returns repository plus root-to-target store inputs without creating lease state
 
-### Requirement: OpenLease configuration authority
+### Requirement: Bundler attachment and lease authority
 Bundler SHALL own bounded raw repository attachment access, exact store namespace selection, provenance, and store lease persistence. ZPP SHALL own TOML/YAML decoding, validation, repository-plus-store-chain composition, initialization payloads, behavior execution, and automatic workflow use of the minimal lease bridge.
 
 #### Scenario: Keep consumer semantics in ZPP
@@ -52,3 +52,10 @@ ZPP SHALL expose Bundler and Agent Router failures directly and SHALL NOT reprod
 #### Scenario: Propagate a component rejection
 - **WHEN** Bundler rejects an attachment or lease operation or Agent Router rejects a projection
 - **THEN** ZPP reports that rejection without fallback
+
+## RENAMED Requirements
+
+- FROM: `### Requirement: No-space repository operation`
+- TO: `### Requirement: Lease-free repository operation`
+- FROM: `### Requirement: OpenLease configuration authority`
+- TO: `### Requirement: Bundler attachment and lease authority`

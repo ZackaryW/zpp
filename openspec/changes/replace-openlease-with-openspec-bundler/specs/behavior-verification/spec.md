@@ -33,7 +33,7 @@ ZPP SHALL use an explicit behavior adapter registry containing `argv`, `nx`, and
 - **WHEN** the selected adapter or required repository surface is unavailable
 - **THEN** ZPP starts no alternate provider and identifies the unmet requirement
 
-### Requirement: Direct operations and opt-in OpenLease cross-checks
+### Requirement: Explicit direct behavior operations
 ZPP SHALL initialize and execute `zpp.behave.yaml` only through explicit direct `zpp behave` invocations. The native trait hook SHALL remain limited to read-only trait resolution. ZPP SHALL register no OpenLease callback, reconciliation event, repository callback, cohort callback, or compatibility selection, and document presence alone SHALL invoke no verification operation.
 
 #### Scenario: Resolve traits without invoking behavior
@@ -47,3 +47,8 @@ ZPP SHALL initialize and execute `zpp.behave.yaml` only through explicit direct 
 #### Scenario: Leave verification inactive when unselected
 - **WHEN** `zpp.behave.yaml` exists but no `zpp behave` command is invoked
 - **THEN** ZPP runs no behavior command
+
+## RENAMED Requirements
+
+- FROM: `### Requirement: Direct operations and opt-in OpenLease cross-checks`
+- TO: `### Requirement: Explicit direct behavior operations`

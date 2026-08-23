@@ -25,7 +25,7 @@ Before an OpenSpec operation, the workflow SHALL follow the installed OpenSpec o
 - **WHEN** finalization has archived every declared change member and the path audit passes
 - **THEN** the workflow records every archive and completes the bundle
 
-### Requirement: Provider-neutral workflow workspace boundary
+### Requirement: Automatic Bundler workflow boundary
 The packaged workflow SHALL describe store/change bundles in ZPP terms, use only the minimal lease bridge, and contain no OpenLease name, workspace-management delegation, session, claim, permit, successor, reconciliation, handoff, cleanup, or preparation-repair guidance.
 
 #### Scenario: Inspect workflow coordination guidance
@@ -38,3 +38,8 @@ A complete user-scope ZPP workflow integration SHALL include one `zpp-workflow` 
 #### Scenario: Inspect the installed operation set
 - **WHEN** a complete workflow integration is inspected
 - **THEN** the workflow, `zpp-traits` hook, and six OpenSpec skills are present without a workspace companion
+
+## RENAMED Requirements
+
+- FROM: `### Requirement: Provider-neutral workflow workspace boundary`
+- TO: `### Requirement: Automatic Bundler workflow boundary`
