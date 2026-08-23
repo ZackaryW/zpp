@@ -1,8 +1,8 @@
 ## 1. Regression Authority
 
-- [ ] 1.1 Add the scenario-selected `Ignore repository-local product paths during OpenSpec audit` case to `features/openspec_bundler_integration/` using the established support, environment, and step-binding layout, then run that exact scenario to prove RED.
-- [ ] 1.2 Add focused unit RED matrices for most-specific registered-root path classification, unknown-root violations, held and unheld OpenSpec paths, and the audit result's explicit ignored-path evidence.
-- [ ] 1.3 Add focused unit RED matrices for valid, missing, and reversed Ponytail-before-wire component order in complete packaged playbooks.
+- [x] 1.1 Add the scenario-selected `Ignore repository-local product paths during OpenSpec audit` case to `features/openspec_bundler_integration/` using the established support, environment, and step-binding layout, then run that exact scenario to prove RED.
+- [x] 1.2 Add focused unit RED matrices for most-specific registered-root path classification, unknown-root violations, held and unheld OpenSpec paths, and the audit result's explicit ignored-path evidence.
+- [x] 1.3 Add focused unit RED matrices for valid, missing, collapsed, and reversed full stage-component sequences in complete packaged workflows.
 
 ## 2. Runtime Audit Utilities
 

@@ -6,6 +6,7 @@ from uuid import UUID
 
 from openspec_bundler import InMemoryStoreProvider, RegisteredStore
 
+import zpp.utils.bundler as bundler_module
 from zpp.core.models import SourceKind
 from zpp.utils.bundler import BundlerDocuments, BundlerLeaseService
 from zpp.utils.processes import SubprocessRunner
@@ -105,3 +106,60 @@ def test_lease_service_retains_bundle_until_every_archive(tmp_path: Path) -> Non
     assert retained.archived_members == retained.members
     service.complete(result.bundle.bundle_uuid, "workflow-1")
     assert service.status() == ()
+
+
+def test_changed_paths_use_the_most_specific_registered_root(tmp_path: Path) -> None:
+    parent = _store(tmp_path / "repo", PARENT, parent=None, body='owner = "parent"')
+    child = _store(
+        tmp_path / "repo" / "packages" / "app",
+        CHILD,
+        parent=PARENT,
+        body='owner = "child"',
+    )
+    child_spec = child.root / "openspec" / "specs" / "app" / "spec.md"
+    child_product = child.root / "features" / "app.feature"
+    parent_spec = parent.root / "openspec" / "proposal.md"
+    unknown = tmp_path / "elsewhere" / "proposal.md"
+
+    classified = bundler_module.classify_changed_paths(
+        (parent, child),
+        (child_spec, child_product, parent_spec, unknown),
+    )
+
+    assert classified.openspec == (child_spec.resolve(), parent_spec.resolve())
+    assert classified.ignored == (child_product.resolve(),)
+    assert classified.violations == (unknown.resolve(),)
+
+
+def test_lease_audit_partitions_held_unheld_and_unknown_paths(
+    tmp_path: Path,
+) -> None:
+    parent = _store(tmp_path / "repo", PARENT, parent=None, body='owner = "parent"')
+    child = _store(
+        tmp_path / "repo" / "api", CHILD, parent=PARENT, body='owner = "child"'
+    )
+    sibling = _store(
+        tmp_path / "repo" / "web",
+        SIBLING,
+        parent=PARENT,
+        body='owner = "sibling"',
+    )
+    service = BundlerLeaseService(
+        ZppHome(tmp_path / "home"),
+        InMemoryStoreProvider((parent, child, sibling)),
+    )
+    bundle = service.acquire("workflow-1", ((CHILD, "api-change"),)).bundle
+    held_spec = child.root / "openspec" / "specs" / "api" / "spec.md"
+    held_product = child.root / "tests" / "test_api.py"
+    unheld_spec = sibling.root / "openspec" / "specs" / "web" / "spec.md"
+    unknown = tmp_path / "outside" / "test_api.py"
+
+    audit = service.audit(
+        bundle.bundle_uuid,
+        (held_spec, held_product, unheld_spec, unknown),
+    )
+
+    assert audit.accepted == (held_spec.resolve(),)
+    assert audit.ignored == (held_product.resolve(),)
+    assert audit.violations == (unheld_spec.resolve(), unknown.resolve())
+    assert audit.ok is False

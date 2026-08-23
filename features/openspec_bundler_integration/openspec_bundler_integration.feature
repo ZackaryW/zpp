@@ -43,6 +43,15 @@ Feature: Integrate OpenSpec Bundler without an OpenLease compatibility surface
     When the workflow records the remaining archive and completes the bundle
     Then the complete bundle is released
 
+  @lease @audit
+  # zpp-spec: {"root":"repo:openspec","capability":"openspec-bundler-integration","requirement":"Expose a minimal Bundler lease bridge","feature":"features/openspec_bundler_integration/openspec_bundler_integration.feature","scenario":"Ignore repository-local product paths during OpenSpec audit"}
+  Scenario: Ignore repository-local product paths during OpenSpec audit
+    Given an automatic workflow bundle for a registered store
+    And the workflow changed one OpenSpec file and one repository-local product file
+    When the workflow audits the complete changed-path inventory
+    Then the OpenSpec path is accepted and the product path is ignored
+    And no lease violation is reported
+
   @hard-cut
   Scenario: Expose no OpenLease workspace compatibility surface
     Given the installed ZPP command hook and packaged-skill inventories

@@ -153,6 +153,84 @@ def test_packaged_workflow_family_rejects_mismatched_declared_name(
         packaged_workflow_skills()
 
 
+def _workflow_body(
+    stages: tuple[str, ...] = WORKFLOW_STAGE_SKILL_NAMES,
+    *,
+    collapse_utilities: bool = False,
+) -> str:
+    sections: list[str] = []
+    section = 1
+    index = 0
+    while index < len(stages):
+        stage = stages[index]
+        if collapse_utilities and stage == "zpps-planning-ponytail":
+            sections.append(
+                f"## {section}. Utilities\n\nUse `zpps-planning-ponytail`.\n"
+                "Use `zpps-mature-utilities`."
+            )
+            index += 2
+        else:
+            sections.append(f"## {section}. Stage\n\nUse `{stage}`.")
+            index += 1
+        section += 1
+    return "\n\n".join(sections)
+
+
+@pytest.mark.parametrize(
+    ("body", "error"),
+    [
+        (_workflow_body(), None),
+        (
+            _workflow_body(
+                tuple(
+                    stage
+                    for stage in WORKFLOW_STAGE_SKILL_NAMES
+                    if stage != "zpps-planning-ponytail"
+                )
+            ),
+            "zpps-planning-ponytail",
+        ),
+        (_workflow_body(collapse_utilities=True), "distinct"),
+        (
+            _workflow_body(
+                (
+                    *WORKFLOW_STAGE_SKILL_NAMES[:2],
+                    "zpps-mature-utilities",
+                    "zpps-planning-ponytail",
+                    *WORKFLOW_STAGE_SKILL_NAMES[4:],
+                )
+            ),
+            "order",
+        ),
+    ],
+    ids=("valid", "missing", "collapsed", "reversed"),
+)
+def test_complete_workflows_require_distinct_ordered_stage_sequence(
+    tmp_path: Path,
+    monkeypatch,
+    body: str,
+    error: str | None,
+) -> None:
+    role = tmp_path / "skills" / WORKFLOW_SKILL_ROLE
+    complete = set(WORKFLOW_ENTRY_SKILL_NAMES) - {"zpp-auto"}
+    valid = _workflow_body()
+    for name in WORKFLOW_SKILL_NAMES:
+        _write_skill(
+            role / name,
+            name,
+            body if name == "zpp-fix-bug" else valid if name in complete else "Run it.",
+        )
+    monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
+
+    if error is None:
+        assert tuple(skill.name for skill in packaged_workflow_skills()) == (
+            WORKFLOW_SKILL_NAMES
+        )
+    else:
+        with pytest.raises(PackagedSkillError, match=error):
+            packaged_workflow_skills()
+
+
 def test_packaged_roles_fail_when_missing_or_empty(
     tmp_path: Path,
     monkeypatch,

@@ -161,6 +161,13 @@ class Environment:
     def status(self) -> dict:
         return self.invoke_json("lease", "status")
 
+    def audit(self, bundle: str, *paths: Path) -> tuple[int, dict]:
+        arguments = ["lease", "audit", "--bundle", bundle]
+        for path in paths:
+            arguments.extend(("--path", str(path)))
+        result = self.invoke(*arguments)
+        return result.exit_code, json.loads(result.stdout)
+
     def archive(self, bundle: str, member: tuple[UUID, str]) -> dict:
         return self.invoke_json(
             "lease",

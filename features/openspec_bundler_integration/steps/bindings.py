@@ -172,6 +172,42 @@ def bundle_released(context) -> None:
     assert context.environment.status()["bundles"] == []
 
 
+@given("an automatic workflow bundle for a registered store")
+def registered_store_bundle(context) -> None:
+    environment = _environment(context)
+    context.bundle = environment.acquire((support.PARENT, "audit-change"))["bundle"][
+        "bundle_uuid"
+    ]
+
+
+@given("the workflow changed one OpenSpec file and one repository-local product file")
+def mixed_changed_paths(context) -> None:
+    context.openspec_path = context.environment.parent / "openspec" / "proposal.md"
+    context.product_path = context.environment.parent / "features" / "audit.feature"
+
+
+@when("the workflow audits the complete changed-path inventory")
+def audit_complete_inventory(context) -> None:
+    context.audit_exit_code, context.audit = context.environment.audit(
+        context.bundle,
+        context.openspec_path,
+        context.product_path,
+    )
+
+
+@then("the OpenSpec path is accepted and the product path is ignored")
+def accepted_and_ignored(context) -> None:
+    assert context.audit_exit_code == 0
+    assert context.audit["accepted"] == [str(context.openspec_path.resolve())]
+    assert context.audit["ignored"] == [str(context.product_path.resolve())]
+
+
+@then("no lease violation is reported")
+def no_audit_violation(context) -> None:
+    assert context.audit["ok"] is True
+    assert context.audit["violations"] == []
+
+
 @given("the installed ZPP command hook and packaged-skill inventories")
 def inventories(context) -> None:
     context.inventory = _environment(context).public_inventory()
