@@ -23,7 +23,7 @@
 - [ ] 4.1 Validate all twenty revised `zpps-*` skills and the five playbooks through the packaged skill loader and Agent Router's established cross-agent validation without adding assertions for literal governed wording.
 - [ ] 4.2 Run the focused packaged-artifact unit tests and the independently runnable `features/consolidated_workflow_skill/` Behave root as regression gates for inventory, order, loading, and supported-agent compatibility.
 - [ ] 4.3 Perform a semantic admission review of the accepted package-integration RED and representative resolved-mutation, ambiguous, and detected-mismatch cases against the revised installed discovery metadata and procedure entries.
-- [ ] 4.4 Record behavior shaping as not applicable because this packaged-guidance correction has no deterministic public agent-selection boundary; add no wording-only, recorder-only, or capability-wide pseudo-scenario.
+- [x] 4.4 Record behavior shaping as not applicable because this packaged-guidance correction has no deterministic public agent-selection boundary; add no wording-only, recorder-only, or capability-wide pseudo-scenario.
 
 ## 5. Repository and Change Verification
 
