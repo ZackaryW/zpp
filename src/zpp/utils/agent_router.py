@@ -11,6 +11,7 @@ from agent_router import (
     ArtifactEffectiveState,
     ArtifactManifest,
     ArtifactStatus,
+    ConflictError,
     Hook,
     LifecycleResult,
     PluginArtifactContext,
@@ -242,7 +243,15 @@ def project_migratable_workflow_hook(
             scope,
             project_root,
         )
-    return project_workflow_hook(router, hook, scope, project_root)
+        return project_workflow_hook(router, hook, scope, project_root)
+    if current.status in {"current", "outdated"} or (
+        current.status == "absent" and former.status == "absent"
+    ):
+        return project_workflow_hook(router, hook, scope, project_root)
+    raise ConflictError(
+        "former hook migration is not ownership-safe: "
+        f"current={current.status} former={former.status}"
+    )
 
 
 def reproject_workflow_skill(

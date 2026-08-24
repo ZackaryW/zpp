@@ -1,3 +1,4 @@
+import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -121,6 +122,25 @@ def test_project_migratable_workflow_hook_revalidates_removes_and_installs() -> 
     ]
 
 
+def test_project_migratable_hook_installs_when_both_identities_absent() -> None:
+    current = HookStub("zpp-traits")
+    expected = object()
+
+    class Router:
+        def inspect_hook(self, hook, *, scope, project_root):
+            return HookResult("absent")
+
+        def install_hook(self, hook, *, scope, project_root):
+            assert hook is current
+            assert scope is Scope.USER
+            assert project_root is None
+            return expected
+
+    result = project_migratable_workflow_hook(Router(), current, Scope.USER, None)
+
+    assert result is expected
+
+
 def test_real_agent_router_migrates_former_project_hook_ownership(
     tmp_path: Path,
 ) -> None:
@@ -158,6 +178,40 @@ def test_real_agent_router_migrates_former_project_hook_ownership(
         ).status
         == "unmanaged"
     )
+
+
+def test_real_agent_router_preserves_modified_former_project_hook(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    home.mkdir()
+    project.mkdir()
+    router = AgentRouter(
+        Agent.CODEX,
+        home=home,
+        environment=AgentEnvironment(home, project),
+    )
+    current = packaged_workflow_hook(Agent.CODEX)
+    former = former_workflow_hook(current)
+    router.install_hook(former, scope=Scope.PROJECT, project_root=project)
+    document_path = project / ".codex" / "hooks.json"
+    document = json.loads(document_path.read_text(encoding="utf-8"))
+    handler = document["hooks"]["SessionStart"][0]["hooks"][0]
+    handler["command"] += " --modified"
+    modified = json.dumps(document, indent=2, sort_keys=True) + "\n"
+    document_path.write_text(modified, encoding="utf-8")
+
+    observed = inspect_migratable_workflow_hook(router, current, Scope.PROJECT, project)
+
+    assert observed.status == "absent"
+    assert (
+        router.inspect_hook(former, scope=Scope.PROJECT, project_root=project).status
+        == "outdated"
+    )
+    with pytest.raises(ConflictError):
+        project_migratable_workflow_hook(router, current, Scope.PROJECT, project)
+    assert document_path.read_text(encoding="utf-8") == modified
 
 
 def test_reproject_workflow_skill_force_removes_then_installs() -> None:
