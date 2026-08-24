@@ -11,8 +11,8 @@
 
 ## 3. Public Lifecycle Wiring
 
-- [ ] 3.1 Wire migration-aware hook inspection and projection into the shared lifecycle entry used by initialization and synchronization.
-- [ ] 3.2 Prove the new scenario GREEN while preserving current install, update, reset, and conflict scenarios.
+- [x] 3.1 Wire migration-aware hook inspection and projection into the shared lifecycle entry used by initialization and synchronization.
+- [x] 3.2 Prove the new scenario GREEN while preserving current install, update, reset, and conflict scenarios.
 
 ## 4. Contract and Repository Verification
 

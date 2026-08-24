@@ -71,6 +71,7 @@ def _manage(
                 explicit_project_update=(
                     operation == "update" and scope is Scope.PROJECT
                 ),
+                migrate_former_hooks=operation == "update",
             )
         )
         if operation == "install":

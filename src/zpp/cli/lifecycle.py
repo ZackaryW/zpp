@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from agent_router import Agent, Scope, Skill
+from agent_router import Agent, Hook, Scope, Skill
 
 from zpp.artifacts import (
     packaged_companion_skills,
@@ -16,8 +16,10 @@ from zpp.artifacts import (
 )
 from zpp.cli.shared import agent_router
 from zpp.utils.agent_router import (
+    inspect_migratable_workflow_hook,
     inspect_workflow_hook,
     inspect_workflow_skill,
+    project_migratable_workflow_hook,
     project_workflow_hook,
     project_workflow_skill,
     remove_workflow_hook,
@@ -121,6 +123,46 @@ def _skill_entry(
     )
 
 
+def _hook_entry(
+    router,
+    hook: Hook,
+    agent: str,
+    scope: Scope,
+    project_root: Path | None,
+    migrate_former_hook: bool,
+) -> LifecycleEntry:
+    if not migrate_former_hook:
+        return LifecycleEntry(
+            agent=agent,
+            kind="hook",
+            inspect=lambda: inspect_workflow_hook(router, hook, scope, project_root),
+            project=lambda: project_workflow_hook(router, hook, scope, project_root),
+            remove=lambda: remove_workflow_hook(router, hook.name, scope, project_root),
+            reproject=lambda: reproject_workflow_hook(
+                router, hook, scope, project_root
+            ),
+        )
+
+    def reproject():
+        current = inspect_workflow_hook(router, hook, scope, project_root)
+        if current.status == "current":
+            return reproject_workflow_hook(router, hook, scope, project_root)
+        return project_migratable_workflow_hook(router, hook, scope, project_root)
+
+    return LifecycleEntry(
+        agent=agent,
+        kind="hook",
+        inspect=lambda: inspect_migratable_workflow_hook(
+            router, hook, scope, project_root
+        ),
+        project=lambda: project_migratable_workflow_hook(
+            router, hook, scope, project_root
+        ),
+        remove=lambda: remove_workflow_hook(router, hook.name, scope, project_root),
+        reproject=reproject,
+    )
+
+
 def packaged_entries(
     agents: Sequence[Agent] = SUPPORTED_AGENTS,
     *,
@@ -129,6 +171,7 @@ def packaged_entries(
     project_root: Path | None = None,
     include_companions: bool = True,
     explicit_project_update: bool = False,
+    migrate_former_hooks: bool = False,
 ) -> tuple[LifecycleEntry, ...]:
     """Build the shared packaged workflow, hook, and companion inventory.
 
@@ -155,31 +198,13 @@ def packaged_entries(
             for skill in workflow_skills
         )
         entries.append(
-            LifecycleEntry(
-                agent=agent.value,
-                kind="hook",
-                inspect=(
-                    lambda bound_router=router, bound_hook=hook: inspect_workflow_hook(
-                        bound_router, bound_hook, scope, project_root
-                    )
-                ),
-                project=(
-                    lambda bound_router=router, bound_hook=hook: project_workflow_hook(
-                        bound_router, bound_hook, scope, project_root
-                    )
-                ),
-                remove=(
-                    lambda bound_router=router, bound_hook=hook: remove_workflow_hook(
-                        bound_router, bound_hook.name, scope, project_root
-                    )
-                ),
-                reproject=(
-                    lambda bound_router=router, bound_hook=hook: (
-                        reproject_workflow_hook(
-                            bound_router, bound_hook, scope, project_root
-                        )
-                    )
-                ),
+            _hook_entry(
+                router,
+                hook,
+                agent.value,
+                scope,
+                project_root,
+                migrate_former_hooks,
             )
         )
         entries.extend(
@@ -259,6 +284,7 @@ def inspect_installations(
     project_root: Path | None,
     include_companions: bool,
     explicit_project_update: bool = False,
+    migrate_former_hooks: bool = True,
 ) -> tuple[InstallationInspection, ...]:
     """Inspect current and exact obsolete entries once in the selected scope."""
     current = inspect_entries(
@@ -269,6 +295,7 @@ def inspect_installations(
             project_root=project_root,
             include_companions=include_companions,
             explicit_project_update=explicit_project_update,
+            migrate_former_hooks=migrate_former_hooks,
         )
     )
     obsolete = inspect_entries(
