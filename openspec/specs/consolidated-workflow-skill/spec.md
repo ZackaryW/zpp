@@ -7,23 +7,53 @@ Define the packaged ZPP workflow entry family, its single lifecycle kernel, boun
 ## Requirements
 
 ### Requirement: Outcome workflow entry family
-ZPP SHALL distribute `zpp-auto`, `zpp-new-feature`, `zpp-fix-bug`, `zpp-scaffold`, and `zpp-legacy-workflow` as user-invokable Markdown skills. Each complete `zpp-*` skill SHALL own a scenario-specific workflow, state its complete ordered sequence and branch conditions, and execute exact reusable `zpps-*` stage or operation skills as distinct visible actions. A `zpps-*` skill SHALL own only its repeatable bounded procedure and observed result; it SHALL NOT own the caller's workflow sequence or continuation. A workflow SHALL NOT defer its sequence or next-stage selection to `zpps-workflow-kernel`, a shared hidden stage list, or an implicit convention. `zpp-legacy-workflow` SHALL preserve the generic product-workflow outcome of the former `zpp-workflow` identity while using the current reusable stages and kernel guards. ZPP SHALL remove the `zpp-workflow` skill identity without an alias.
+ZPP SHALL distribute `zpp-auto`, `zpp-new-feature`, `zpp-fix-bug`, `zpp-scaffold`,
+and `zpp-generic-workflow` as current user-invokable Markdown playbooks, plus
+`zpp-legacy-workflow` as an explicit compatibility entry. Each complete current
+playbook SHALL own its scenario-specific workflow, state its complete ordered
+sequence and branch conditions, and execute exact reusable `zpps-*` stage or
+operation skills as distinct visible actions. A `zpps-*` skill SHALL own only its
+repeatable bounded procedure and observed result; it SHALL NOT own the caller's
+workflow sequence or continuation. A workflow SHALL NOT defer its sequence or
+next-stage selection to `zpps-workflow-kernel`, a shared hidden stage list, or an
+implicit convention. ZPP SHALL keep the removed `zpp-workflow` identity obsolete and
+SHALL NOT restore it as an alias.
 
-`zpp-auto` SHALL contain the complete ordered non-mutating triage procedure. It SHALL invoke exactly one matching specialized playbook for an unambiguous request and SHALL invoke `zpp-legacy-workflow` at `clarify` for mixed, unsupported, or unresolved intent. It SHALL pass the original request, accepted classification evidence, and only owner-supplied authority, transfer control exactly once within the same workflow invocation, and remain under the selected playbook until that playbook returns a real blocked or completed lifecycle result. Merely reporting or acknowledging the selected playbook, returning to triage, or treating handoff as completion SHALL NOT satisfy the route. A playbook SHALL preserve only authority explicitly supplied by the owner and SHALL NOT grant mutation or checkpoint-commit authority by selecting a route.
+`zpp-auto` SHALL contain the complete ordered non-mutating triage procedure. It SHALL
+invoke exactly one matching specialized playbook for an unambiguous feature, defect,
+or scaffold request. It SHALL invoke `zpp-generic-workflow` only when the request is
+still a ZPP product workflow but is mixed, maintenance-oriented, or otherwise
+unspecialized. A genuine non-match SHALL produce a no-handoff triage result and SHALL
+NOT enter product clarification merely because no specialized route matched. The
+separately governed direct route for ungoverned artifact-only maintenance SHALL
+remain available and SHALL NOT count as generic fallback.
+
+Automatic triage SHALL pass the original request, accepted classification evidence,
+and only owner-supplied authority, transfer control exactly once within the same
+workflow invocation, and remain under the selected playbook until that playbook
+returns a real blocked or completed lifecycle result. Merely reporting or
+acknowledging the selected playbook, returning to triage, or treating handoff as
+completion SHALL NOT satisfy the route. A playbook SHALL preserve only authority
+explicitly supplied by the owner and SHALL NOT grant mutation or checkpoint-commit
+authority by selecting a route.
 
 #### Scenario: Route a clear defect correction
 - **WHEN** `zpp-auto` receives an unambiguous request to correct a defect
 - **THEN** it invokes `zpp-fix-bug` exactly once with the original request and supplied authority and continues under that playbook rather than merely naming or acknowledging the route
 
-#### Scenario: Route unresolved intent to the legacy workflow
-- **WHEN** `zpp-auto` cannot select exactly one specialized outcome
-- **THEN** it delegates to `zpp-legacy-workflow` at `clarify` rather than inventing a workflow kind
+#### Scenario: Route a mixed product workflow to the generic entry
+- **WHEN** a request remains product-workflow-shaped but no specialized outcome exclusively owns it
+- **THEN** `zpp-auto` invokes `zpp-generic-workflow` at clarification instead of using compatibility or inventing a specialized outcome
+
+#### Scenario: Return a genuine non-match without handoff
+- **WHEN** bounded triage establishes that a request is not a ZPP product workflow or an accepted direct artifact-maintenance route
+- **THEN** `zpp-auto` returns a no-handoff result without invoking a workflow or mutating governed state
 
 #### Scenario: Reject a terminal handoff acknowledgement
 - **WHEN** automatic triage selects a playbook but no selected-playbook result is produced
 - **THEN** the workflow remains incomplete and does not treat the handoff itself as a successful outcome
 
-#### Scenario: Reject the removed generic identity
+#### Scenario: Keep the removed generic identity obsolete
 - **WHEN** a projected integration is inspected after migration
 - **THEN** no `zpp-workflow` skill or alias is present
 
@@ -437,16 +467,21 @@ SHALL NOT collapse or replace the preceding checkpoint series.
 - **WHEN** all pre-finalization stages have observed outcomes and the change reaches finalization
 - **THEN** the workflow verifies every material checkpoint, archives the change, and commits only remaining finalization-owned work without collapsing the earlier commits
 
-### Requirement: No legacy workflow compatibility
-`zpp-legacy-workflow` SHALL be the renamed generic ZPP 2 complete playbook and SHALL contain its ordered generic procedure using current subordinate skills and kernel guards. Its legacy name SHALL NOT authorize, translate, require, or preserve any ZPP 1.x `zpp-flow-*` stage skill, former gate, or migration behavior.
+### Requirement: Explicit legacy workflow compatibility
+ZPP SHALL package `zpp-legacy-workflow` as an explicit compatibility entry for the
+immediately preceding consolidated generic-workflow invocation shape. It SHALL invoke
+`zpp-generic-workflow` exactly once with the original request, exact roots, accepted
+owner input, and only owner-supplied authority. It SHALL NOT own or copy lifecycle
+stages, select continuation, participate in `zpp-auto` routing, translate a ZPP 1.x
+`zpp-flow-*` identity, or claim the delegated workflow's result.
 
-#### Scenario: Invoke the renamed generic workflow
-- **WHEN** a user invokes `zpp-legacy-workflow`
-- **THEN** it starts or resumes its declared generic sequence and requests kernel assessment only for the selected actions that require lifecycle control
+#### Scenario: Invoke explicit legacy compatibility
+- **WHEN** a caller explicitly invokes `zpp-legacy-workflow` with a supported preceding generic-workflow request
+- **THEN** it invokes `zpp-generic-workflow` once with the preserved request and authority and applies no independent workflow policy
 
-#### Scenario: Encounter an old stage skill
-- **WHEN** a machine retains a ZPP 1.x `zpp-flow-*` skill
-- **THEN** the current workflow family does not treat it as a workflow stage or migration source
+#### Scenario: Keep legacy out of automatic routing
+- **WHEN** automatic triage needs a current generic product workflow
+- **THEN** it selects `zpp-generic-workflow` and does not invoke the legacy compatibility entry
 
 ### Requirement: Explicit behavior verification consumption
 When an accepted shaped BDD obligation requires repository integration verification, `zpps-verify-repository` SHALL apply the resolved `bdd-execution` body only as advisory mode selection and SHALL invoke an established native repository BDD command identified from repository configuration or an explicit owner choice. The skill-owned verification contract SHALL decide truthfulness, required evidence, and failure handling. The absence of `zpp.behave.yaml` SHALL NOT block native BDD execution, and a trait SHALL NOT supply command text, target identity, gate binding, process arguments, callback selection, completion, or stage-skip authority.
@@ -483,7 +518,15 @@ The shared packaged workflow gate identity SHALL be `zpps-workflow-kernel`, and 
 - **THEN** ZPP applies deterministic affected selection and performs no gate migration
 
 ### Requirement: Ready installed workflow operation set
-A complete user-scope ZPP workflow integration SHALL include the five current complete `zpp-*` playbooks, guard-only `zpps-workflow-kernel`, the seven substantive bounded stage skills, the eleven substantive procedure-complete OpenSpec adapters, `zpps-verify-repository`, and the `zpp-traits` automatic context hook. It SHALL NOT include `zpp-workflow`, `zpps-onboard`, broad `zpps-plan-change`, `zpps-verify`, or `zpps-archive` identities, generated `openspec-*` operation skills, `zpp-workspace-management`, or a ZPP 1.x stage or hook identity.
+A complete user-scope ZPP workflow integration SHALL include the five complete
+current playbooks `zpp-auto`, `zpp-new-feature`, `zpp-fix-bug`, `zpp-scaffold`, and
+`zpp-generic-workflow`; the explicit `zpp-legacy-workflow` compatibility entry;
+guard-only `zpps-workflow-kernel`; the seven substantive bounded stage skills; the
+eleven substantive procedure-complete OpenSpec adapters; `zpps-verify-repository`;
+and the `zpp-traits` automatic context hook. It SHALL NOT include `zpp-workflow`,
+`zpps-onboard`, broad `zpps-plan-change`, `zpps-verify`, or `zpps-archive` identities,
+generated `openspec-*` operation skills, `zpp-workspace-management`, or a ZPP 1.x
+stage or hook identity.
 
 #### Scenario: Conformance trace for the canonical workflow identity sequence
 - **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Ready installed workflow operation set","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Preserve one deterministic public inventory"}`
