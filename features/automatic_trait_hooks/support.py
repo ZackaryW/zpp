@@ -11,13 +11,13 @@ from agent_router import Agent, AgentEnvironment, AgentRouter, Scope, Skill
 from openspec_bundler import InMemoryStoreProvider
 from typer.testing import CliRunner
 
-from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skills
-from zpp.cli import app
-from zpp.utils.bundler import BundlerDocuments
 from features.support.lifecycle import (
     hook_ownership_states,
     replace_current_hook_with_former,
 )
+from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skills
+from zpp.cli import app
+from zpp.utils.bundler import BundlerDocuments
 
 NATIVE_FORMATS = {
     Agent.CODEX: "json",

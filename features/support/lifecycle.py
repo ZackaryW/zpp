@@ -61,4 +61,3 @@ def hook_ownership_states(
         project_root=project_root,
     )
     return current.status, former.status
-

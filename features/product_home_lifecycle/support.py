@@ -13,14 +13,14 @@ from agent_router import Agent, Scope, Skill
 from openspec_bundler import InMemoryStoreProvider, RegisteredStore
 from typer.testing import CliRunner
 
-from zpp.artifacts import packaged_companion_skills, packaged_workflow_skills
-from zpp.cli import app
-from zpp.cli.shared import agent_router
-from zpp.utils.bundler import BundlerLeaseService
 from features.support.lifecycle import (
     hook_ownership_states,
     replace_current_hook_with_former,
 )
+from zpp.artifacts import packaged_companion_skills, packaged_workflow_skills
+from zpp.cli import app
+from zpp.cli.shared import agent_router
+from zpp.utils.bundler import BundlerLeaseService
 
 STORE_UUID = "8f85ef9f-d18a-4787-903e-1ecb920acb77"
 
