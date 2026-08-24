@@ -17,4 +17,4 @@
 ## 4. Contract and Repository Verification
 
 - [x] 4.1 Form the spec-only routing obligations and the installed-inventory trace, then synchronize the consolidated-workflow delta into the canonical specification.
-- [ ] 4.2 Run focused and complete Behave and pytest surfaces, lint, format checking, lock validation, build, supported-interpreter evidence, and strict OpenSpec validation.
+- [x] 4.2 Run focused and complete Behave and pytest surfaces, lint, format checking, lock validation, build, supported-interpreter evidence, and strict OpenSpec validation.
