@@ -17,6 +17,10 @@ from zpp.artifacts import packaged_companion_skills, packaged_workflow_skills
 from zpp.cli import app
 from zpp.cli.shared import agent_router
 from zpp.utils.bundler import BundlerLeaseService
+from features.support.lifecycle import (
+    hook_ownership_states,
+    replace_current_hook_with_former,
+)
 
 STORE_UUID = "8f85ef9f-d18a-4787-903e-1ecb920acb77"
 
@@ -61,6 +65,23 @@ class Environment:
 
     def workflow_skill_document(self) -> Path:
         return self.user_home / CODEX_SKILLS / WORKFLOW_SKILL / "SKILL.md"
+
+    def replace_current_hook_with_former(self) -> None:
+        initialized = self.run("init", "--agent", "codex")
+        assert initialized.exit_code == 0, initialized.output
+        router = agent_router(Agent.CODEX, self.root)
+        replace_current_hook_with_former(
+            router,
+            Agent.CODEX,
+            scope=Scope.USER,
+        )
+
+    def hook_ownership_states(self) -> tuple[str, str]:
+        return hook_ownership_states(
+            agent_router(Agent.CODEX, self.root),
+            Agent.CODEX,
+            scope=Scope.USER,
+        )
 
     def install_owned_obsolete(self, name: str) -> Path:
         source = self.root / "obsolete-source" / name

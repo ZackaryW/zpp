@@ -11,11 +11,10 @@ absent, unmanaged, modified, ambiguous, conflicting, or cannot be inspected.
 Confirmed reset SHALL remain limited to `zpp-traits` and SHALL NOT search for or
 remove `zpp-session`.
 
-#### Scenario: Migrate an intact former Codex hook during synchronization
-- **WHEN** a Codex integration contains the packaged hook fragment under intact Agent Router ownership for `zpp-session`
-- **THEN** synchronization replaces that ownership with `zpp-traits` through Agent Router and leaves no former ownership record
+#### Scenario: Conformance trace for former project hook migration
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"automatic-trait-hooks","requirement":"Ownership-safe former hook migration","feature":"features/automatic_trait_hooks/automatic_trait_hooks.feature","scenario":"Update an intact former Codex hook identity in place"}`
+- **THEN** executable acceptance authority is `features/automatic_trait_hooks/automatic_trait_hooks.feature::Update an intact former Codex hook identity in place`
 
 #### Scenario: Preserve an unowned former Codex hook
 - **WHEN** the native Codex hook fragment has no intact Agent Router ownership for `zpp-session`
 - **THEN** synchronization preserves the destination and does not claim migration
-

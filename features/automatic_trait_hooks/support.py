@@ -14,6 +14,10 @@ from typer.testing import CliRunner
 from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skills
 from zpp.cli import app
 from zpp.utils.bundler import BundlerDocuments
+from features.support.lifecycle import (
+    hook_ownership_states,
+    replace_current_hook_with_former,
+)
 
 NATIVE_FORMATS = {
     Agent.CODEX: "json",
@@ -81,6 +85,40 @@ class Project:
         )
         assert result.status == "installed"
         return result.destination / name / "SKILL.md"
+
+    def replace_current_hook_with_former(self) -> None:
+        self.run_json(
+            "workflow",
+            "install",
+            "--agent",
+            "codex",
+            "--target",
+            str(self.root),
+        )
+        router = AgentRouter(
+            Agent.CODEX,
+            home=self.root / "user-home",
+            environment=AgentEnvironment(self.root / "user-home", self.root),
+        )
+        replace_current_hook_with_former(
+            router,
+            Agent.CODEX,
+            scope=Scope.PROJECT,
+            project_root=self.root,
+        )
+
+    def hook_ownership_states(self) -> tuple[str, str]:
+        router = AgentRouter(
+            Agent.CODEX,
+            home=self.root / "user-home",
+            environment=AgentEnvironment(self.root / "user-home", self.root),
+        )
+        return hook_ownership_states(
+            router,
+            Agent.CODEX,
+            scope=Scope.PROJECT,
+            project_root=self.root,
+        )
 
     def create_unmanaged_current(self, name: str) -> Path:
         document = self.root / ".agents" / "skills" / name / "SKILL.md"

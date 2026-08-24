@@ -1,7 +1,7 @@
 ## 1. Regression Authority
 
-- [ ] 1.1 Add a Codex lifecycle scenario that installs the intact former hook ownership and observes migration through root synchronization.
-- [ ] 1.2 Extend the established Behave support and bindings with the smallest former-hook fixture and ownership assertions.
+- [x] 1.1 Add a Codex lifecycle scenario that installs the intact former hook ownership and observes migration through root synchronization.
+- [x] 1.2 Extend the established Behave support and bindings with the smallest former-hook fixture and ownership assertions.
 
 ## 2. Ownership-Safe Migration Utility
 

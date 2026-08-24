@@ -44,6 +44,13 @@ Feature: Inject repository traits through agent-native hooks
     When a user updates the codex workflow integration in that project
     Then the complete current workflow integration replaces the obsolete project skill
 
+  # zpp-spec: {"root":"repo:openspec","capability":"automatic-trait-hooks","requirement":"Ownership-safe former hook migration","feature":"features/automatic_trait_hooks/automatic_trait_hooks.feature","scenario":"Update an intact former Codex hook identity in place"}
+  Scenario: Update an intact former Codex hook identity in place
+    Given a disposable project root
+    And the codex workflow integration carries intact former hook ownership
+    When a user updates the codex workflow integration in that project
+    Then current project hook ownership replaces the former identity
+
   # zpp-spec: {"root":"repo:openspec","capability":"automatic-trait-hooks","requirement":"Agent Router-owned hook lifecycle","feature":"features/automatic_trait_hooks/automatic_trait_hooks.feature","scenario":"Refuse a conflicting workflow installation before mutation"}
   Scenario: Refuse a conflicting workflow installation before mutation
     Given a disposable project root

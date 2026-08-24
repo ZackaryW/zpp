@@ -33,6 +33,11 @@ def old_only_project(context) -> None:
     context.obsolete = context.project.install_owned_obsolete("zpp-workflow")
 
 
+@given("the codex workflow integration carries intact former hook ownership")
+def former_project_hook(context) -> None:
+    context.project.replace_current_hook_with_former()
+
+
 @given("an unmanaged current workflow destination exists in that project")
 def unmanaged_current_project(context) -> None:
     context.conflict = context.project.create_unmanaged_current("zpp-auto")
@@ -147,6 +152,11 @@ def project_migrated(context) -> None:
     ]
     assert migration[0]["surviving_obsolete"] == []
     assert not context.obsolete.exists()
+
+
+@then("current project hook ownership replaces the former identity")
+def project_hook_migrated(context) -> None:
+    assert context.project.hook_ownership_states() == ("current", "absent")
 
 
 @then(

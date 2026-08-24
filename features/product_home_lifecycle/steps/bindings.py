@@ -17,6 +17,11 @@ def already_initialized(context) -> None:
     assert result.exit_code == 0, result.output
 
 
+@given("the codex agent carries current skills and intact former hook ownership")
+def former_user_hook(context) -> None:
+    context.env.replace_current_hook_with_former()
+
+
 @given("one owned workflow skill has drifted from its packaged asset")
 def drift_workflow_skill(context) -> None:
     document = context.env.workflow_skill_document()
@@ -140,6 +145,11 @@ def sync_all_current(context) -> None:
     decisions = [record["decision"] for record in context.records]
     assert len(decisions) == support.expected_entry_count(), decisions
     assert set(decisions) == {"current"}, decisions
+
+
+@then("current user hook ownership replaces the former identity")
+def user_hook_migrated(context) -> None:
+    assert context.env.hook_ownership_states() == ("current", "absent")
 
 
 @then("synchronization reports the modified entry and leaves its content unchanged")

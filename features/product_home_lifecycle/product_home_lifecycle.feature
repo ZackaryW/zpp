@@ -40,6 +40,13 @@ Feature: Manage one bounded ZPP integration lifecycle
     When a user synchronizes the codex agent
     Then synchronization reprojects nothing and reports every entry as current
 
+  # zpp-spec: {"root":"repo:openspec","capability":"product-home-lifecycle","requirement":"Exact legacy hook lifecycle reconciliation","feature":"features/product_home_lifecycle/product_home_lifecycle.feature","scenario":"Repair former Codex hook ownership during synchronization"}
+  Scenario: Repair former Codex hook ownership during synchronization
+    Given a temporary user environment
+    And the codex agent carries current skills and intact former hook ownership
+    When a user synchronizes the codex agent
+    Then current user hook ownership replaces the former identity
+
   Scenario: Report a modified owned integration without force
     Given a temporary user environment
     And the codex agent is already initialized
