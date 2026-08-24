@@ -16,5 +16,5 @@
 
 ## 4. Contract and Repository Verification
 
-- [ ] 4.1 Form trace authority and synchronize the accepted automatic-trait-hooks and product-home-lifecycle deltas.
+- [x] 4.1 Form trace authority and synchronize the accepted automatic-trait-hooks and product-home-lifecycle deltas.
 - [ ] 4.2 Run focused Behave and pytest targets, the relevant complete suites, lint, format checking, build, and strict OpenSpec validation.
