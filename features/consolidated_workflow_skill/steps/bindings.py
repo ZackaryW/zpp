@@ -24,7 +24,7 @@ def load_current_family(context) -> None:
     context.names = tuple(skill.name for skill in context.family)
 
 
-@then("the five entries precede the kernel and seven stages")
+@then("the six entries precede the kernel and seven stages")
 def entries_kernel_and_stages_are_ordered(context) -> None:
     expected = (
         *WORKFLOW_ENTRY_SKILL_NAMES,
@@ -32,6 +32,11 @@ def entries_kernel_and_stages_are_ordered(context) -> None:
         *WORKFLOW_STAGE_SKILL_NAMES,
     )
     assert context.names[: len(expected)] == expected, context.names
+
+
+@then("the six workflow entries have the canonical entry order")
+def workflow_entries_have_canonical_order(context) -> None:
+    assert WORKFLOW_ENTRY_SKILL_NAMES == support.EXPECTED_WORKFLOW_ENTRY_NAMES
 
 
 @then("every packaged workflow member is valid for every supported agent")

@@ -6,6 +6,15 @@ import tomllib
 
 from zpp.artifacts import packaged_traits, packaged_workflow_skills
 
+EXPECTED_WORKFLOW_ENTRY_NAMES = (
+    "zpp-auto",
+    "zpp-new-feature",
+    "zpp-fix-bug",
+    "zpp-scaffold",
+    "zpp-generic-workflow",
+    "zpp-legacy-workflow",
+)
+
 
 def load_workflow_family():
     """Load the complete validated family through the package public API."""

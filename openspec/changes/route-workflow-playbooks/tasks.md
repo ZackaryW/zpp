@@ -1,6 +1,6 @@
 ## 1. Public Inventory Regression
 
-- [ ] 1.1 Update the established consolidated-workflow installed-inventory scenario and capability support to require `zpp-generic-workflow` in deterministic order while retaining the explicit legacy entry, then prove the focused RED.
+- [x] 1.1 Update the established consolidated-workflow installed-inventory scenario and capability support to require `zpp-generic-workflow` in deterministic order while retaining the explicit legacy entry, then prove the focused RED.
 - [ ] 1.2 Add focused artifact and lifecycle inventory cases for the six-entry public set without asserting arbitrary Markdown wording or fabricating executable routing behavior.
 
 ## 2. Workflow Entry Contracts

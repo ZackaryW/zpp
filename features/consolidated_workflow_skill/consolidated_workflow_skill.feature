@@ -9,7 +9,7 @@ Feature: Load the packaged ZPP workflow family
   # zpp-spec: {"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Bounded workflow phase skills","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Load entries kernel and stages in lifecycle order"}
   Scenario: Load entries kernel and stages in lifecycle order
     When the current workflow family is loaded
-    Then the five entries precede the kernel and seven stages
+    Then the six entries precede the kernel and seven stages
     And every packaged workflow member is valid for every supported agent
 
   # zpp-spec: {"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Complete bounded OpenSpec adapter set","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Cover operational OpenSpec workflows without onboarding"}
@@ -28,4 +28,5 @@ Feature: Load the packaged ZPP workflow family
   # zpp-spec: {"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Ready installed workflow operation set","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Preserve one deterministic public inventory"}
   Scenario: Preserve one deterministic public inventory
     When the current workflow family is loaded
-    Then the workflow family has the exact canonical identity sequence
+    Then the six workflow entries have the canonical entry order
+    And the workflow family has the exact canonical identity sequence
