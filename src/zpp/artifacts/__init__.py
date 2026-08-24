@@ -28,13 +28,14 @@ WORKFLOW_ENTRY_SKILL_NAMES: Final[tuple[str, ...]] = (
     "zpp-new-feature",
     "zpp-fix-bug",
     "zpp-scaffold",
+    "zpp-generic-workflow",
     "zpp-legacy-workflow",
 )
 COMPLETE_WORKFLOW_SKILL_NAMES: Final[tuple[str, ...]] = (
     "zpp-new-feature",
     "zpp-fix-bug",
     "zpp-scaffold",
-    "zpp-legacy-workflow",
+    "zpp-generic-workflow",
 )
 WORKFLOW_KERNEL_SKILL_NAME: Final[str] = "zpps-workflow-kernel"
 WORKFLOW_STAGE_SKILL_NAMES: Final[tuple[str, ...]] = (

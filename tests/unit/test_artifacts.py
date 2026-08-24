@@ -318,6 +318,20 @@ def test_packaged_assets_have_exact_workflow_and_trait_inventories() -> None:
 
     skills = packaged_workflow_skills()
     assert tuple(skill.name for skill in skills) == WORKFLOW_SKILL_NAMES
+    assert WORKFLOW_ENTRY_SKILL_NAMES == (
+        "zpp-auto",
+        "zpp-new-feature",
+        "zpp-fix-bug",
+        "zpp-scaffold",
+        "zpp-generic-workflow",
+        "zpp-legacy-workflow",
+    )
+    assert COMPLETE_WORKFLOW_SKILL_NAMES == (
+        "zpp-new-feature",
+        "zpp-fix-bug",
+        "zpp-scaffold",
+        "zpp-generic-workflow",
+    )
     assert (
         *WORKFLOW_ENTRY_SKILL_NAMES,
         WORKFLOW_KERNEL_SKILL_NAME,
@@ -325,7 +339,7 @@ def test_packaged_assets_have_exact_workflow_and_trait_inventories() -> None:
         *OPENSPEC_ADAPTER_SKILL_NAMES,
         REPOSITORY_EVIDENCE_SKILL_NAME,
     ) == WORKFLOW_SKILL_NAMES
-    assert len(skills) == 25
+    assert len(skills) == 26
     assert len(OPENSPEC_ADAPTER_SKILL_NAMES) == 11
     assert not {
         "zpp-workflow",

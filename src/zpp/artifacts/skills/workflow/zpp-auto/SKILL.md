@@ -1,12 +1,12 @@
 ---
 name: zpp-auto
-description: Triage a product request through a complete non-mutating procedure and hand off exactly once to the matching current ZPP playbook.
+description: Triage one request non-mutatingly into a current ZPP playbook, an accepted direct artifact route, or a truthful no-handoff result.
 ---
 
 # Triage one ZPP workflow
 
 This playbook owns only classification and handoff. It never performs governed
-mutation, acquires a lease, or inherits the selected playbook's sequence.
+mutation, acquires a lease, or inherits a selected playbook's sequence.
 
 ## Component admission invariant
 
@@ -28,37 +28,51 @@ authority. Classify the requested outcome, not the likely implementation:
 - new externally observable capability -> `zpp-new-feature`;
 - correction of an externally observable defect -> `zpp-fix-bug`;
 - product-bearing repository or capability structure -> `zpp-scaffold`;
-- mixed, unsupported, maintenance-only, or unresolved outcome ->
-  `zpp-legacy-workflow` at clarification.
+- mixed, maintenance-oriented, or otherwise unspecialized ZPP product workflow ->
+  `zpp-generic-workflow` at clarification;
+- ungoverned artifact-only maintenance -> its owning artifact guidance;
+- request that is not a ZPP product workflow or accepted direct artifact route ->
+  `no-handoff`.
 
-Do not infer a store, change, mutation authority, checkpoint authority, or later
-stage from repository files or prior artifacts.
+Ungoverned artifact-only maintenance is limited to repository README and reference
+documentation, repository-local ZPP traits and context, and commit metadata. A
+packaged workflow skill, packaged trait, canonical OpenSpec specification, artifact
+loader, parser, validator, model conversion, or any artifact-backed executable or
+public behavior is product work rather than a direct artifact route.
 
-## 2. Use `zpps-explore` only when classification needs evidence
+A missing specialized match is not evidence of product intent. Do not infer a store,
+change, mutation authority, checkpoint authority, or later stage from repository
+files or prior artifacts.
 
-Condition: the outcome cannot be classified without bounded read-only repository
-evidence, but no owner decision is required.
+## 2. Resolve only classification evidence
 
-Configure `zpps-explore` with the exact roots and classification question. Consume
-only its observations, then repeat step 1. If evidence still leaves more than one
-outcome, select `zpp-legacy-workflow`; do not keep exploring indefinitely.
+When bounded read-only repository evidence can decide whether the request is a ZPP
+product workflow, use `zpps-explore` with the exact roots and classification question,
+consume only its observations, then repeat step 1 once. When the classification
+depends on an outcome-changing owner decision, use `zpps-clarify` for that exact
+decision and repeat step 1 once.
 
-## 3. Invoke one playbook and transfer control
+Do not explore or clarify indefinitely. If the result still does not positively
+identify product-workflow shape or an accepted direct artifact route, select
+`no-handoff`; do not use compatibility as a fallback.
 
-Invoke the selected `zpp-*` playbook exactly once. This is an execution handoff,
-not a recommendation or route report. Pass that invocation the original request,
-exact roots, accepted classification evidence, accepted owner input,
-owner-authorized end-to-end mode when explicitly granted, and only authority the
-owner supplied. For the legacy fallback, invoke its first declared clarification
-action. Explicit end-to-end mode permits that playbook to follow its declared
-branches and carries checkpoint commit authority only for new stage-owned commits
-produced by that run. It never answers owner decisions or supplies missing mutation,
-archive, abandonment, or bypass authority. Do not preselect any later action.
+## 3. Complete the selected route
 
-After invocation, transfer control to that playbook and do not return to triage.
-Remain in the same workflow invocation until the selected playbook returns an actual
-blocked or completed lifecycle result. The selected playbook owns its next action and
-all subsequent declared branches. Naming, recommending, or acknowledging the route
-is not a result and cannot terminate automatic execution. Never invoke the kernel
-directly, mutate artifacts during triage, add authority, or claim completion on the
-selected playbook's behalf.
+For a selected `zpp-*` playbook, invoke it exactly once. This is an execution handoff,
+not a recommendation or route report. Pass the original request, exact roots,
+accepted classification evidence, accepted owner input, owner-authorized end-to-end
+mode when explicitly granted, and only authority the owner supplied. Do not select
+`zpp-legacy-workflow`; that entry is eligible only through explicit owner invocation.
+
+After a playbook invocation, transfer control and do not return to triage. Remain in
+the same workflow invocation until the selected playbook returns an actual blocked or
+completed lifecycle result. Naming, recommending, or acknowledging the route is not
+a result and cannot terminate automatic execution.
+
+For an accepted direct artifact route, invoke only its owning artifact guidance and
+return that operation's actual result without creating workflow-stage outcomes. For
+`no-handoff`, report that the request did not establish a ZPP product workflow and
+perform no workflow invocation or governed mutation.
+
+Never invoke the kernel directly, mutate governed artifacts during triage, add
+authority, or claim completion on a selected playbook's behalf.

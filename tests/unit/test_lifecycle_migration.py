@@ -111,6 +111,32 @@ def test_inventory_propagates_exact_project_scope_and_root(
     ]
 
 
+def test_shared_lifecycle_inventory_projects_generic_before_explicit_legacy(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr(lifecycle, "agent_router", lambda agent, root: object())
+    monkeypatch.setattr(lifecycle, "packaged_companion_skills", lambda: ())
+    monkeypatch.setattr(
+        lifecycle,
+        "packaged_workflow_hook",
+        lambda agent: SimpleNamespace(name="zpp-traits"),
+    )
+
+    entries = lifecycle.packaged_entries(
+        (Agent.CODEX,), target=tmp_path, include_companions=False
+    )
+
+    assert tuple(entry.kind for entry in entries[:6]) == (
+        "skill:zpp-auto",
+        "skill:zpp-new-feature",
+        "skill:zpp-fix-bug",
+        "skill:zpp-scaffold",
+        "skill:zpp-generic-workflow",
+        "skill:zpp-legacy-workflow",
+    )
+    assert entries[-1].kind == "hook"
+
+
 def test_obsolete_inventory_propagates_scope_to_inspection_and_retirement(
     tmp_path: Path, monkeypatch
 ) -> None:
