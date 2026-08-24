@@ -376,3 +376,30 @@ def test_packaged_workflow_hook_is_typed_and_resolves_for_its_agent(
     assert "guard" not in payload
     assert "UserPromptSubmit" not in payload
     assert "behave" not in payload
+
+
+def test_packaged_hooks_cover_post_compaction_without_duplicate_paths() -> None:
+    for agent in (Agent.CODEX, Agent.CLAUDE):
+        hook = packaged_workflow_hook(agent)
+
+        assert list(hook.fragment) == ["SessionStart"]
+        assert "matcher" not in hook.fragment["SessionStart"][0]
+
+    kimi_hook = packaged_workflow_hook(Agent.KIMI)
+
+    assert kimi_hook.fragment == [
+        {
+            "event": "SessionStart",
+            "command": "zpp resolve --agent kimi .",
+        },
+        {
+            "event": "PostCompact",
+            "command": "zpp resolve --agent kimi .",
+        },
+    ]
+
+    pi_hook = packaged_workflow_hook(Agent.PI)
+    pi_source = pi_hook.files[0].content.decode("utf-8")
+
+    assert pi_source.count('pi.on("before_agent_start"') == 1
+    assert 'pi.on("session_compact"' not in pi_source

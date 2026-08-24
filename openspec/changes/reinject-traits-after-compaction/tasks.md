@@ -5,9 +5,9 @@
 
 ## 2. Packaged Hook Behavior
 
-- [ ] 2.1 Add the context-bearing `PostCompact` resolver entry to the Kimi hook asset.
-- [ ] 2.2 Add focused artifact tests for the Kimi dual-event form and the non-duplicating Codex, Claude, and Pi paths.
-- [ ] 2.3 Prove the shaped scenario GREEN without changing lifecycle ownership or resolver semantics.
+- [x] 2.1 Add the context-bearing `PostCompact` resolver entry to the Kimi hook asset.
+- [x] 2.2 Add focused artifact tests for the Kimi dual-event form and the non-duplicating Codex, Claude, and Pi paths.
+- [x] 2.3 Prove the shaped scenario GREEN without changing lifecycle ownership or resolver semantics.
 
 ## 3. Contract and Repository Verification
 

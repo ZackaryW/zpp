@@ -1,3 +1,7 @@
 [[hooks]]
 event = "SessionStart"
 command = "zpp resolve --agent kimi ."
+
+[[hooks]]
+event = "PostCompact"
+command = "zpp resolve --agent kimi ."
