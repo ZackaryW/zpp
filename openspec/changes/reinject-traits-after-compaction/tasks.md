@@ -11,5 +11,5 @@
 
 ## 3. Contract and Repository Verification
 
-- [ ] 3.1 Form trace authority and synchronize the automatic-trait-hooks delta into its canonical specification.
+- [x] 3.1 Form trace authority and synchronize the automatic-trait-hooks delta into its canonical specification.
 - [ ] 3.2 Run focused and complete Behave and pytest targets, lint, format checking, lock validation, build, and strict OpenSpec validation.
