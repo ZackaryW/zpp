@@ -1,7 +1,7 @@
 ## 1. Regression Authority
 
-- [ ] 1.1 Add one automatic-trait-hooks scenario for the supported-client post-compaction reinjection matrix.
-- [ ] 1.2 Extend the established capability support and bindings with exact native-strategy observations.
+- [x] 1.1 Add one automatic-trait-hooks scenario for the supported-client post-compaction reinjection matrix.
+- [x] 1.2 Extend the established capability support and bindings with exact native-strategy observations.
 
 ## 2. Packaged Hook Behavior
 

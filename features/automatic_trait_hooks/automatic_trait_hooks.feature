@@ -19,6 +19,12 @@ Feature: Inject repository traits through agent-native hooks
       | kimi   | toml    |
       | pi     | pi-file |
 
+  # zpp-spec: {"root":"repo:openspec","capability":"automatic-trait-hooks","requirement":"Post-compaction trait reinjection","feature":"features/automatic_trait_hooks/automatic_trait_hooks.feature","scenario":"Package post-compaction trait reinjection for every supported agent"}
+  Scenario: Package post-compaction trait reinjection for every supported agent
+    Given ZPP packages every supported native trait hook
+    When the post-compaction reinjection strategies are inspected
+    Then every supported agent uses its context-bearing native strategy
+
   Scenario: Keep guard and prompt events out of the packaged hook
     Given ZPP packages the codex workflow integration
     When the packaged native hook is inspected

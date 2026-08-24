@@ -41,6 +41,27 @@ def resolves_current_repository(payload: str, name: str) -> bool:
     return f"--agent {name} ." in payload or f'"--agent", "{name}"' in payload
 
 
+def post_compaction_strategy(hook, agent: Agent) -> str:
+    if agent in {Agent.CODEX, Agent.CLAUDE}:
+        groups = hook.fragment.get("SessionStart", [])
+        if any(group.get("matcher") in {None, "compact"} for group in groups):
+            return "session-start:compact"
+    if agent is Agent.KIMI and any(
+        entry.get("event") == "PostCompact" for entry in hook.fragment
+    ):
+        return "post-compact"
+    if agent is Agent.PI and "before_agent_start" in hook_payload(hook):
+        return "before-agent-start"
+    return "missing"
+
+
+def post_compaction_strategies(hooks: dict[Agent, object]) -> dict[str, str]:
+    return {
+        agent.value: post_compaction_strategy(hook, agent)
+        for agent, hook in hooks.items()
+    }
+
+
 def packaged_integration_inventory(agent: Agent) -> tuple[tuple[str, str], ...]:
     return (
         *(("skill", skill.name) for skill in packaged_workflow_skills()),

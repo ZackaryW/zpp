@@ -11,6 +11,11 @@ def packaged_integration(context, name: str) -> None:
     context.hook = support.hook_for(name)
 
 
+@given("ZPP packages every supported native trait hook")
+def packaged_supported_hooks(context) -> None:
+    context.supported_hooks = {agent: support.hook_for(agent.value) for agent in Agent}
+
+
 @given("a disposable project root")
 def disposable_project(context) -> None:
     context.project = support.Project()
@@ -46,6 +51,13 @@ def unmanaged_current_project(context) -> None:
 @when("the packaged native hook is inspected")
 def inspect_hook(context) -> None:
     context.payload = support.hook_payload(context.hook)
+
+
+@when("the post-compaction reinjection strategies are inspected")
+def inspect_post_compaction_strategies(context) -> None:
+    context.post_compaction_strategies = support.post_compaction_strategies(
+        context.supported_hooks
+    )
 
 
 @when("a user installs the codex workflow integration into that project")
@@ -104,6 +116,16 @@ def hook_compatibility(context) -> None:
 @then("the hook resolves the current repository with {name} as the invoking agent")
 def hook_resolves_repository(context, name: str) -> None:
     assert support.resolves_current_repository(context.payload, name), context.payload
+
+
+@then("every supported agent uses its context-bearing native strategy")
+def post_compaction_strategies_match(context) -> None:
+    assert context.post_compaction_strategies == {
+        "codex": "session-start:compact",
+        "claude": "session-start:compact",
+        "kimi": "post-compact",
+        "pi": "before-agent-start",
+    }, context.post_compaction_strategies
 
 
 @then("the hook declares no guard and no prompt-submit event")
