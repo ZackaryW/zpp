@@ -14,7 +14,3 @@ remove `zpp-session`.
 #### Scenario: Conformance trace for former project hook migration
 - **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"automatic-trait-hooks","requirement":"Ownership-safe former hook migration","feature":"features/automatic_trait_hooks/automatic_trait_hooks.feature","scenario":"Update an intact former Codex hook identity in place"}`
 - **THEN** executable acceptance authority is `features/automatic_trait_hooks/automatic_trait_hooks.feature::Update an intact former Codex hook identity in place`
-
-#### Scenario: Preserve an unowned former Codex hook
-- **WHEN** the native Codex hook fragment has no intact Agent Router ownership for `zpp-session`
-- **THEN** synchronization preserves the destination and does not claim migration

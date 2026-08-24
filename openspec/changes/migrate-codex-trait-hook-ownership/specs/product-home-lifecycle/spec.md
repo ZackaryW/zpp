@@ -16,7 +16,3 @@ reconciling an owned prior-version installation.
 #### Scenario: Conformance trace for former user hook migration
 - **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"product-home-lifecycle","requirement":"Exact legacy hook lifecycle reconciliation","feature":"features/product_home_lifecycle/product_home_lifecycle.feature","scenario":"Repair former Codex hook ownership during synchronization"}`
 - **THEN** executable acceptance authority is `features/product_home_lifecycle/product_home_lifecycle.feature::Repair former Codex hook ownership during synchronization`
-
-#### Scenario: Keep hook migration scope bounded
-- **WHEN** grouped workflow update selects one project scope containing intact former hook ownership
-- **THEN** reconciliation changes only that project hook and inspects no user-scope hook
