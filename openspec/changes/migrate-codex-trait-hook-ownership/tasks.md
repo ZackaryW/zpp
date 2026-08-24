@@ -5,9 +5,9 @@
 
 ## 2. Ownership-Safe Migration Utility
 
-- [ ] 2.1 Derive the exact former hook identity from the current packaged hook without adding it to the packaged inventory.
-- [ ] 2.2 Add focused unit tests for migration-ready, unmanaged, modified, and scope-preserving hook observations.
-- [ ] 2.3 Implement the Agent Router-backed inspect and projection helpers from RED to focused GREEN.
+- [x] 2.1 Derive the exact former hook identity from the current packaged hook without adding it to the packaged inventory.
+- [x] 2.2 Add focused unit tests for migration-ready, unmanaged, modified, and scope-preserving hook observations.
+- [x] 2.3 Implement the Agent Router-backed inspect and projection helpers from RED to focused GREEN.
 
 ## 3. Public Lifecycle Wiring
 

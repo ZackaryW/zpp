@@ -156,7 +156,7 @@ def project_migrated(context) -> None:
 
 @then("current project hook ownership replaces the former identity")
 def project_hook_migrated(context) -> None:
-    assert context.project.hook_ownership_states() == ("current", "absent")
+    assert context.project.hook_ownership_states() == ("current", "unmanaged")
 
 
 @then(

@@ -1,4 +1,5 @@
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -13,12 +14,17 @@ from agent_router import (
     Skill,
 )
 
+from zpp.artifacts import packaged_workflow_hook
 from zpp.utils.agent_router import (
+    FORMER_WORKFLOW_HOOK_NAME,
     ZPP_TRAITS_ARTIFACT_ID,
     ZppTraitArtifactExtension,
     active_trait_sources,
+    former_workflow_hook,
+    inspect_migratable_workflow_hook,
     inspect_workflow_hook,
     inspect_workflow_skill,
+    project_migratable_workflow_hook,
     project_workflow_hook,
     project_workflow_skill,
     remove_workflow_hook,
@@ -26,6 +32,132 @@ from zpp.utils.agent_router import (
     reproject_workflow_hook,
     reproject_workflow_skill,
 )
+
+
+@dataclass(frozen=True)
+class HookResult:
+    status: str
+
+
+@dataclass(frozen=True)
+class HookStub:
+    name: str
+
+
+def test_former_workflow_hook_changes_only_the_ownership_name() -> None:
+    current = packaged_workflow_hook(Agent.CODEX)
+
+    former = former_workflow_hook(current)
+
+    assert former.name == FORMER_WORKFLOW_HOOK_NAME
+    assert former.fragment is current.fragment
+
+
+@pytest.mark.parametrize("former_status", ["absent", "unmanaged", "conflict"])
+def test_inspect_migratable_workflow_hook_preserves_unowned_current_state(
+    former_status: str,
+) -> None:
+    current = HookStub("zpp-traits")
+    observations = {
+        "zpp-traits": HookResult("unmanaged"),
+        FORMER_WORKFLOW_HOOK_NAME: HookResult(former_status),
+    }
+
+    class Router:
+        def inspect_hook(self, hook, *, scope, project_root):
+            assert scope is Scope.USER
+            assert project_root is None
+            return observations[hook.name]
+
+    result = inspect_migratable_workflow_hook(Router(), current, Scope.USER, None)
+
+    assert result is observations["zpp-traits"]
+    assert result.status == "unmanaged"
+
+
+def test_inspect_migratable_workflow_hook_promotes_intact_former_ownership() -> None:
+    current = HookStub("zpp-traits")
+
+    class Router:
+        def inspect_hook(self, hook, *, scope, project_root):
+            status = "unmanaged" if hook.name == "zpp-traits" else "current"
+            return HookResult(status)
+
+    result = inspect_migratable_workflow_hook(
+        Router(), current, Scope.PROJECT, Path("/repository")
+    )
+
+    assert result.status == "outdated"
+
+
+def test_project_migratable_workflow_hook_revalidates_removes_and_installs() -> None:
+    current = HookStub("zpp-traits")
+    project = Path("/repository")
+    events = []
+    expected = object()
+
+    class Router:
+        def inspect_hook(self, hook, *, scope, project_root):
+            events.append(("inspect", hook.name, scope, project_root))
+            status = "unmanaged" if hook.name == "zpp-traits" else "current"
+            return SimpleNamespace(status=status)
+
+        def uninstall_hook(self, name, *, scope, project_root):
+            events.append(("remove", name, scope, project_root))
+            return SimpleNamespace(status="removed")
+
+        def install_hook(self, hook, *, scope, project_root):
+            events.append(("install", hook.name, scope, project_root))
+            return expected
+
+    result = project_migratable_workflow_hook(Router(), current, Scope.PROJECT, project)
+
+    assert result is expected
+    assert events == [
+        ("inspect", "zpp-traits", Scope.PROJECT, project),
+        ("inspect", FORMER_WORKFLOW_HOOK_NAME, Scope.PROJECT, project),
+        ("remove", FORMER_WORKFLOW_HOOK_NAME, Scope.PROJECT, project),
+        ("install", "zpp-traits", Scope.PROJECT, project),
+    ]
+
+
+def test_real_agent_router_migrates_former_project_hook_ownership(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    home.mkdir()
+    project.mkdir()
+    router = AgentRouter(
+        Agent.CODEX,
+        home=home,
+        environment=AgentEnvironment(home, project),
+    )
+    current = packaged_workflow_hook(Agent.CODEX)
+    installed = router.install_hook(
+        former_workflow_hook(current),
+        scope=Scope.PROJECT,
+        project_root=project,
+    )
+
+    observed = inspect_migratable_workflow_hook(router, current, Scope.PROJECT, project)
+    migrated = project_migratable_workflow_hook(router, current, Scope.PROJECT, project)
+
+    assert installed.status == "installed"
+    assert observed.status == "outdated"
+    assert migrated.status == "installed"
+    assert (
+        router.inspect_hook(current, scope=Scope.PROJECT, project_root=project).status
+        == "current"
+    )
+    assert (
+        router.inspect_hook(
+            former_workflow_hook(current),
+            scope=Scope.PROJECT,
+            project_root=project,
+        ).status
+        == "unmanaged"
+    )
 
 
 def test_reproject_workflow_skill_force_removes_then_installs() -> None:

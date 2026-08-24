@@ -149,7 +149,7 @@ def sync_all_current(context) -> None:
 
 @then("current user hook ownership replaces the former identity")
 def user_hook_migrated(context) -> None:
-    assert context.env.hook_ownership_states() == ("current", "absent")
+    assert context.env.hook_ownership_states() == ("current", "unmanaged")
 
 
 @then("synchronization reports the modified entry and leaves its content unchanged")

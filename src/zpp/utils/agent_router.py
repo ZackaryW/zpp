@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tomllib
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePath
 from typing import Final, Protocol
 
@@ -23,6 +23,7 @@ from zpp.core.models import SourceKind
 
 ZPP_TRAITS_ARTIFACT_ID: Final[str] = "zpp.traits"
 ZPP_TRAITS_CONTRACT_VERSION: Final[str] = "2"
+FORMER_WORKFLOW_HOOK_NAME: Final[str] = "zpp-session"
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,6 +188,34 @@ def inspect_workflow_hook(
     )
 
 
+def former_workflow_hook(hook: Hook) -> Hook:
+    """Derive the exact former ownership identity without another hook asset."""
+    return replace(hook, name=FORMER_WORKFLOW_HOOK_NAME)
+
+
+def _former_hook_migration_ready(current, former) -> bool:
+    return current.status == "unmanaged" and former.status == "current"
+
+
+def inspect_migratable_workflow_hook(
+    router: AgentRouter | _WorkflowRouter,
+    hook: Hook,
+    scope: Scope,
+    project_root: Path | None,
+) -> LifecycleResult:
+    """Expose an intact owned former hook as an outdated current projection."""
+    current = inspect_workflow_hook(router, hook, scope, project_root)
+    former = inspect_workflow_hook(
+        router,
+        former_workflow_hook(hook),
+        scope,
+        project_root,
+    )
+    if _former_hook_migration_ready(current, former):
+        return replace(current, status="outdated")
+    return current
+
+
 def project_workflow_hook(
     router: AgentRouter | _WorkflowRouter,
     hook: Hook,
@@ -194,6 +223,26 @@ def project_workflow_hook(
     project_root: Path | None,
 ) -> LifecycleResult:
     return router.install_hook(hook, scope=scope, project_root=project_root)
+
+
+def project_migratable_workflow_hook(
+    router: AgentRouter | _WorkflowRouter,
+    hook: Hook,
+    scope: Scope,
+    project_root: Path | None,
+) -> LifecycleResult:
+    """Replace only an intact Agent Router-owned former hook identity."""
+    current = inspect_workflow_hook(router, hook, scope, project_root)
+    former_hook = former_workflow_hook(hook)
+    former = inspect_workflow_hook(router, former_hook, scope, project_root)
+    if _former_hook_migration_ready(current, former):
+        remove_workflow_hook(
+            router,
+            former_hook.name,
+            scope,
+            project_root,
+        )
+    return project_workflow_hook(router, hook, scope, project_root)
 
 
 def reproject_workflow_skill(
