@@ -45,6 +45,14 @@ For every assignment and rerun:
 5. Use a separate fresh `zpp --path <temporary-product-home>` prefix for every
    workflow reminder command.
 
+Before every OpenSpec create, update, sync, validate, or archive command, fail closed
+unless all three identities agree: the assigned temporary repository, `git rev-parse
+--show-toplevel` from the command's explicit working directory, and `openspec context
+--json`'s exact `root.path`. Never run a relative OpenSpec mutation from the ZPP
+source checkout merely because a prior initialization named the temp path. Recheck
+source `git status --short` after each mutation and stop immediately on contamination
+while preserving the exact command, cwd, and paths.
+
 The ZPP source checkout remains read-only during a child run. Snapshot its Git status
 plus default-home reminder and lease output before and after all assignments. Never
 clean a difference to make isolation appear successful.

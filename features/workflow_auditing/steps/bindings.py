@@ -90,6 +90,7 @@ def complete_stage_evidence(context) -> None:
 def closed_changes(context) -> None:
     for result in context.results:
         assert result.archive_path.is_dir()
+        assert "scope-preflight" in result.operations
         assert "strict-validation" in result.operations
         assert "reminder-stop" in result.operations
 

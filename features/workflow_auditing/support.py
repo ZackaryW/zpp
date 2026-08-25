@@ -108,6 +108,18 @@ class Audit:
         assert isinstance(payload, dict), payload
         return payload
 
+    def _assert_openspec_scope(self, repository: Path) -> None:
+        git_root = Path(
+            self._run(["git", "rev-parse", "--show-toplevel"], cwd=repository).strip()
+        ).resolve()
+        context = json.loads(
+            self._run(["openspec", "context", "--json"], cwd=repository)
+        )
+        openspec_root = Path(context["root"]["path"]).resolve()
+        expected = repository.resolve()
+        assert git_root == expected, (git_root, expected)
+        assert openspec_root == expected, (openspec_root, expected)
+
     def _write_complete_change(self, repository: Path, change: str) -> None:
         root = repository / "openspec/changes" / change
         (root / "specs/mock-workflow").mkdir(parents=True)
@@ -211,8 +223,10 @@ Use one minimal marker capability so OpenSpec lifecycle commands are real.
         )
         assert (repository / ".git").is_dir()
         assert (repository / "openspec").is_dir()
+        self._assert_openspec_scope(repository)
 
         change = f"audit-{assignment.workflow}-r{revision}"
+        self._assert_openspec_scope(repository)
         self._run(["openspec", "new", "change", change], cwd=repository)
         initial = json.loads(
             self._run(
@@ -243,6 +257,7 @@ Use one minimal marker capability so OpenSpec lifecycle commands are real.
             )
         )
         assert complete["isComplete"] is True
+        self._assert_openspec_scope(repository)
         self._run(
             ["openspec", "validate", change, "--strict", "--json"],
             cwd=repository,
@@ -298,6 +313,7 @@ Use one minimal marker capability so OpenSpec lifecycle commands are real.
             change,
         )
         assert final_status["next_stage"] is None, final_status
+        self._assert_openspec_scope(repository)
         archive = json.loads(
             self._run(
                 ["openspec", "archive", change, "--json", "--yes"],
@@ -336,6 +352,7 @@ Use one minimal marker capability so OpenSpec lifecycle commands are real.
             (
                 "git-init",
                 "openspec-init",
+                "scope-preflight",
                 "change-create",
                 "planning-gap",
                 "planning-closeout",

@@ -193,6 +193,8 @@ def test_packaged_workflow_audit_skill_has_progressive_disclosure() -> None:
     assert b"one distinct bounded subagent" in files["SKILL.md"]
     assert b"git init" in files["references/audit-contract.md"]
     assert b"openspec init" in files["references/audit-contract.md"]
+    assert b"openspec context --json" in files["SKILL.md"]
+    assert b"git rev-parse --show-toplevel" in files["SKILL.md"]
     assert b"closed-in-fixture" in files["references/audit-contract.md"]
     assert b"accepted-fix" in files["references/audit-contract.md"]
     assert b"$zpp-audit-workflows" in files["agents/openai.yaml"]

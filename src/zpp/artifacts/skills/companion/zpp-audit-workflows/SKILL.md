@@ -44,6 +44,14 @@ register the disposable OpenSpec root as a persistent store. It may mutate its
 temporary repository and run targeted verification, but it must not edit the ZPP
 checkout, use the caller's product home, or acquire or mutate a real lease.
 
+Fail closed before every OpenSpec command that can create, update, synchronize,
+validate, or archive state. Run it with the temporary repository as the explicit
+working directory, require `git rev-parse --show-toplevel` to equal that repository,
+and require structured `openspec context --json` to report the same exact root. Stop
+with a critical `isolation-failure` before the OpenSpec command on any mismatch.
+Recheck source Git status immediately after every OpenSpec mutation; never rely on an
+earlier initialization target to preserve a later process working directory.
+
 ## Run the complete playbook sequence
 
 Give each workflow a minimal synthetic request that exercises its custom purpose and
