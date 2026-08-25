@@ -43,6 +43,6 @@
 
 - [x] 6.1 Run the scenario-selected workflow-registration Behave targets and all focused artifact, product-home, workflow-coordination, reminder-state, and CLI tests.
 - [x] 6.2 Run formatting, lint/type checks, the complete Python test suite, and clean package build through the repository's established runners.
-- [ ] 6.3 Validate packaged JSON with the strict schemas and structured parsers, then run strict OpenSpec validation and semantic change verification.
+- [x] 6.3 Validate packaged JSON with the strict schemas and structured parsers, then run strict OpenSpec validation and semantic change verification.
 - [x] 6.4 Confirm no workflow reminder operation changes Bundler members or lease lifecycle and no out-of-sequence reminder returns a blocking result in reminder mode.
 - [x] 6.5 Confirm lifecycle operations reconcile the conditional reminder hook only through Agent Router and that hook execution never creates or advances workflow state.
