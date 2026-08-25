@@ -21,6 +21,10 @@ class ZppHome:
     def identity_path(self) -> Path:
         return self.path / "identity.json"
 
+    @property
+    def workflow_reminder_root(self) -> Path:
+        return self.path / "workflow-reminders"
+
 
 class WorkflowIdentityRepository:
     """Strict durable owner identity scoped to one selected ZPP home."""

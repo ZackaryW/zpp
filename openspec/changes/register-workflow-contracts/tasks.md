@@ -5,20 +5,20 @@
 
 ## 2. Packaged JSON Contract Utilities
 
-- [ ] 2.1 Write focused RED unit tests for strict versioned workflow/component JSON decoding, unknown-field and invalid-type rejection, duplicate detection, and cross-reference failures.
-- [ ] 2.2 Implement immutable workflow and component contract models plus strict JSON decoders using the repository's artifact-loading conventions.
-- [ ] 2.3 Add workflow and component JSON schemas and package them as discoverable artifacts with typed resource access.
-- [ ] 2.4 Write RED inventory tests requiring one contract for every complete current `zpp-*` playbook and every packaged `zpps-*` component, valid stage references, and no obsolete `zpp-workflow` identity.
-- [ ] 2.5 Add the complete workflow/component contract inventory and replace Markdown-derived stage-order validation with JSON contract validation.
+- [x] 2.1 Write focused RED unit tests for strict versioned workflow/component JSON decoding, unknown-field and invalid-type rejection, duplicate detection, and cross-reference failures.
+- [x] 2.2 Implement immutable workflow and component contract models plus strict JSON decoders using the repository's artifact-loading conventions.
+- [x] 2.3 Add workflow and component JSON schemas and package them as discoverable artifacts with typed resource access.
+- [x] 2.4 Write RED inventory tests requiring one contract for every complete current `zpp-*` playbook and every packaged `zpps-*` component, valid stage references, and no obsolete `zpp-workflow` identity.
+- [x] 2.5 Add the complete workflow/component contract inventory and replace Markdown-derived stage-order validation with JSON contract validation.
 
 ## 3. Reminder State Utilities
 
-- [ ] 3.1 Write focused RED tests for exact-target workflow start, idempotent resume, different-workflow preservation, persisted stage states, and product-home isolation.
-- [ ] 3.2 Implement immutable active-run and stage-state models plus atomic product-home reminder persistence without acquiring or mutating Bundler leases.
-- [ ] 3.3 Write RED tests for insert, delete, modify, and idempotent upsert validation, including invalid positions, duplicate IDs, and unknown components.
-- [ ] 3.4 Implement direct checklist customization and stop operations with whole-candidate validation before atomic replacement.
-- [ ] 3.5 Write RED tests for in-sequence and out-of-sequence checks, accepted matching result progress, ignored blocked/unrelated/read-only results, and optional observed bundle association.
-- [ ] 3.6 Implement reminder comparison and accepted-result recording with structured `allowed`, `sequence_match`, expected-stage, unfinished-stage, and warning evidence.
+- [x] 3.1 Write focused RED tests for exact-target workflow start, idempotent resume, different-workflow preservation, persisted stage states, and product-home isolation.
+- [x] 3.2 Implement immutable active-run and stage-state models plus atomic product-home reminder persistence without acquiring or mutating Bundler leases.
+- [x] 3.3 Write RED tests for insert, delete, modify, and idempotent upsert validation, including invalid positions, duplicate IDs, and unknown components.
+- [x] 3.4 Implement direct checklist customization and stop operations with whole-candidate validation before atomic replacement.
+- [x] 3.5 Write RED tests for in-sequence and out-of-sequence checks, accepted matching result progress, ignored blocked/unrelated/read-only results, and optional observed bundle association.
+- [x] 3.6 Implement reminder comparison and accepted-result recording with structured `allowed`, `sequence_match`, expected-stage, unfinished-stage, and warning evidence.
 
 ## 4. Workflow Run CLI
 

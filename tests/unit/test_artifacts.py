@@ -23,7 +23,6 @@ from zpp.artifacts import (
     packaged_traits,
     packaged_workflow_hook,
     packaged_workflow_skills,
-    validate_workflow_stage_sequence,
 )
 from zpp.core.models import SourceKind
 
@@ -46,8 +45,7 @@ def test_packaged_assets_are_loaded_before_resource_lifetime_ends(
     (traits / "a.toml").write_bytes(b"a-content")
     role = tmp_path / "skills" / WORKFLOW_SKILL_ROLE
     for name in WORKFLOW_SKILL_NAMES:
-        body = _workflow_body() if name in COMPLETE_WORKFLOW_SKILL_NAMES else "Run it."
-        _write_skill(role / name, name, body)
+        _write_skill(role / name, name, "Run it.")
     monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
 
     loaded_skills = packaged_workflow_skills()
@@ -149,98 +147,10 @@ def test_packaged_workflow_family_rejects_mismatched_declared_name(
     role = tmp_path / "skills" / WORKFLOW_SKILL_ROLE
     for name in WORKFLOW_SKILL_NAMES:
         declared = "wrong-name" if name == REPOSITORY_EVIDENCE_SKILL_NAME else name
-        body = _workflow_body() if name in COMPLETE_WORKFLOW_SKILL_NAMES else "Run it."
-        _write_skill(role / name, declared, body)
+        _write_skill(role / name, declared, "Run it.")
     monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
 
     with pytest.raises(PackagedSkillError, match="declares name"):
-        packaged_workflow_skills()
-
-
-def _workflow_body(
-    stages: tuple[str, ...] = WORKFLOW_STAGE_SKILL_NAMES,
-    *,
-    collapse_utilities: bool = False,
-) -> str:
-    sections: list[str] = []
-    section = 1
-    index = 0
-    while index < len(stages):
-        stage = stages[index]
-        if collapse_utilities and stage == "zpps-planning-ponytail":
-            sections.append(
-                f"## {section}. Utilities\n\nUse `zpps-planning-ponytail`.\n"
-                "Use `zpps-mature-utilities`."
-            )
-            index += 2
-        else:
-            sections.append(f"## {section}. Stage\n\nUse `{stage}`.")
-            index += 1
-        section += 1
-    return "\n\n".join(sections)
-
-
-@pytest.mark.parametrize(
-    ("body", "error"),
-    [
-        (_workflow_body(), None),
-        (
-            _workflow_body(
-                tuple(
-                    stage
-                    for stage in WORKFLOW_STAGE_SKILL_NAMES
-                    if stage != "zpps-planning-ponytail"
-                )
-            ),
-            "zpps-planning-ponytail",
-        ),
-        (_workflow_body(collapse_utilities=True), "distinct"),
-        (
-            _workflow_body(
-                (
-                    *WORKFLOW_STAGE_SKILL_NAMES[:2],
-                    "zpps-mature-utilities",
-                    "zpps-planning-ponytail",
-                    *WORKFLOW_STAGE_SKILL_NAMES[4:],
-                )
-            ),
-            "order",
-        ),
-    ],
-    ids=("valid", "missing", "collapsed", "reversed"),
-)
-def test_complete_workflows_require_distinct_ordered_stage_sequence(
-    body: str,
-    error: str | None,
-) -> None:
-    if error is None:
-        validate_workflow_stage_sequence("zpp-fix-bug", body)
-    else:
-        with pytest.raises(PackagedSkillError, match=error):
-            validate_workflow_stage_sequence("zpp-fix-bug", body)
-
-
-def test_packaged_loader_rejects_an_invalid_complete_workflow(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    role = tmp_path / "skills" / WORKFLOW_SKILL_ROLE
-    missing_planning = tuple(
-        stage
-        for stage in WORKFLOW_STAGE_SKILL_NAMES
-        if stage != "zpps-planning-ponytail"
-    )
-    for name in WORKFLOW_SKILL_NAMES:
-        if name == "zpp-fix-bug":
-            body = _workflow_body(missing_planning)
-        elif name in COMPLETE_WORKFLOW_SKILL_NAMES:
-            body = _workflow_body()
-        else:
-            body = "Run it."
-        _write_skill(role / name, name, body)
-    monkeypatch.setattr(zpp.artifacts, "files", lambda _package: tmp_path)
-
-    with pytest.raises(PackagedSkillError, match="zpps-planning-ponytail"):
         packaged_workflow_skills()
 
 

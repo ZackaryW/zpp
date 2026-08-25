@@ -2,22 +2,38 @@
 
 from __future__ import annotations
 
-import re
+import json
 import tomllib
+from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib.resources import as_file, files
+from types import MappingProxyType
 from typing import Final
 
 from agent_router import Agent, Hook, Skill
 
 from zpp.core.application import BoundTraitDocument, BoundTraitSource
 from zpp.core.models import SourceKind
+from zpp.core.workflows import (
+    ComponentContract,
+    WorkflowContract,
+    WorkflowContractError,
+    decode_component_contract,
+    decode_workflow_contract,
+    validate_contract_inventory,
+)
 
 
 @dataclass(frozen=True, slots=True)
 class PackagedTrait:
     family: str
     content: bytes
+
+
+@dataclass(frozen=True, slots=True)
+class PackagedJsonSchema:
+    name: str
+    document: Mapping[str, object]
 
 
 WORKFLOW_SKILL_ROLE: Final[str] = "workflow"
@@ -70,62 +86,8 @@ WORKFLOW_SKILL_NAMES: Final[tuple[str, ...]] = (
 )
 
 _SKILL_DOCUMENT = "SKILL.md"
-_NUMBERED_WORKFLOW_SECTION = re.compile(r"(?m)^##\s+\d+\.\s+.+$")
-_EXPLICIT_COMPONENT_USE = re.compile(r"(?m)^Use `(zpps-[a-z0-9-]+)`(?:[.,;:\s]|$)")
-
-
 class PackagedSkillError(ValueError):
     pass
-
-
-def workflow_stage_sections(document: str) -> tuple[tuple[str, ...], ...]:
-    headings = tuple(_NUMBERED_WORKFLOW_SECTION.finditer(document))
-    sections: list[tuple[str, ...]] = []
-    for index, heading in enumerate(headings):
-        end = (
-            headings[index + 1].start() if index + 1 < len(headings) else len(document)
-        )
-        body = document[heading.end() : end]
-        stages = tuple(
-            match.group(1)
-            for match in _EXPLICIT_COMPONENT_USE.finditer(body)
-            if match.group(1) in WORKFLOW_STAGE_SKILL_NAMES
-        )
-        if stages:
-            sections.append(stages)
-    return tuple(sections)
-
-
-def validate_workflow_stage_sequence(name: str, document: str) -> None:
-    sections = workflow_stage_sections(document)
-    collapsed = tuple(stages for stages in sections if len(stages) != 1)
-    if collapsed:
-        raise PackagedSkillError(
-            f"complete workflow {name!r} must declare reusable stages in distinct "
-            "numbered sections"
-        )
-    actual = tuple(stages[0] for stages in sections)
-    missing = tuple(
-        stage for stage in WORKFLOW_STAGE_SKILL_NAMES if stage not in actual
-    )
-    if missing:
-        raise PackagedSkillError(
-            f"complete workflow {name!r} is missing reusable stage(s): "
-            f"{list(missing)!r}"
-        )
-    duplicates = tuple(
-        stage for stage in WORKFLOW_STAGE_SKILL_NAMES if actual.count(stage) != 1
-    )
-    if duplicates:
-        raise PackagedSkillError(
-            f"complete workflow {name!r} must declare each reusable stage once in "
-            "a distinct numbered section"
-        )
-    if actual != WORKFLOW_STAGE_SKILL_NAMES:
-        raise PackagedSkillError(
-            f"complete workflow {name!r} has invalid reusable stage order: "
-            f"expected={WORKFLOW_STAGE_SKILL_NAMES!r}, actual={actual!r}"
-        )
 
 
 def _skill_document(skill: Skill) -> str:
@@ -185,8 +147,6 @@ def packaged_workflow_skills() -> tuple[Skill, ...]:
             raise PackagedSkillError(
                 f"packaged workflow member {name!r} declares name {skill.name!r}"
             )
-        if name in COMPLETE_WORKFLOW_SKILL_NAMES:
-            validate_workflow_stage_sequence(name, _skill_document(skill))
         loaded.append(skill)
     return tuple(loaded)
 
@@ -208,6 +168,115 @@ def packaged_workflow_hook(agent: Agent) -> Hook:
     resource = files("zpp.artifacts").joinpath(*relative_paths[agent])
     with as_file(resource) as path:
         return Hook.from_path(path, source_agent=agent)
+
+
+def packaged_workflow_contracts() -> tuple[WorkflowContract, ...]:
+    root = files("zpp.artifacts").joinpath("workflow_contracts", "workflows")
+    discovered = _json_resource_names(root)
+    expected = tuple(f"{name}.json" for name in COMPLETE_WORKFLOW_SKILL_NAMES)
+    _require_resource_names(discovered, expected, "workflow contract")
+    workflows = tuple(
+        decode_workflow_contract(
+            _read_json_object(root.joinpath(name)),
+            source=f"workflow_contracts/workflows/{name}",
+        )
+        for name in expected
+    )
+    components = packaged_component_contracts()
+    skills = packaged_workflow_skills()
+    actual_workflows = tuple(
+        skill.name for skill in skills if skill.name in COMPLETE_WORKFLOW_SKILL_NAMES
+    )
+    validate_contract_inventory(
+        workflows,
+        components,
+        workflow_names=actual_workflows,
+        component_names=tuple(
+            skill.name for skill in skills if skill.name.startswith("zpps-")
+        ),
+    )
+    return workflows
+
+
+def packaged_component_contracts() -> tuple[ComponentContract, ...]:
+    root = files("zpp.artifacts").joinpath("workflow_contracts", "components")
+    names = _component_contract_names()
+    expected = tuple(f"{name}.json" for name in names)
+    discovered = _json_resource_names(root)
+    _require_resource_names(discovered, expected, "component contract")
+    components = tuple(
+        decode_component_contract(
+            _read_json_object(root.joinpath(name)),
+            source=f"workflow_contracts/components/{name}",
+        )
+        for name in expected
+    )
+    actual_components = tuple(
+        skill.name
+        for skill in packaged_workflow_skills()
+        if skill.name.startswith("zpps-")
+    )
+    validate_contract_inventory(
+        (),
+        components,
+        workflow_names=(),
+        component_names=actual_components,
+    )
+    return components
+
+
+def packaged_workflow_contract_schemas() -> tuple[PackagedJsonSchema, ...]:
+    root = files("zpp.artifacts").joinpath("workflow_contracts", "schemas")
+    expected = (
+        "component-contract.schema.json",
+        "workflow-contract.schema.json",
+    )
+    discovered = _json_resource_names(root)
+    _require_resource_names(discovered, expected, "workflow contract schema")
+    return tuple(
+        PackagedJsonSchema(
+            name,
+            MappingProxyType(_read_json_object(root.joinpath(name))),
+        )
+        for name in expected
+    )
+
+
+def _component_contract_names() -> tuple[str, ...]:
+    return tuple(name for name in WORKFLOW_SKILL_NAMES if name.startswith("zpps-"))
+
+
+def _json_resource_names(root) -> tuple[str, ...]:
+    if not root.is_dir():
+        raise WorkflowContractError(f"packaged JSON resource root is missing: {root}")
+    return tuple(
+        sorted(
+            (item.name for item in root.iterdir() if item.is_file()),
+            key=lambda name: (name.casefold(), name),
+        )
+    )
+
+
+def _require_resource_names(
+    discovered: tuple[str, ...], expected: tuple[str, ...], kind: str
+) -> None:
+    if set(discovered) != set(expected) or len(discovered) != len(expected):
+        missing = sorted(set(expected) - set(discovered))
+        unexpected = sorted(set(discovered) - set(expected))
+        raise WorkflowContractError(
+            f"packaged {kind} inventory is invalid: "
+            f"missing={missing!r}, unexpected={unexpected!r}"
+        )
+
+
+def _read_json_object(resource) -> dict[str, object]:
+    try:
+        value = json.loads(resource.read_text(encoding="utf-8"))
+    except (UnicodeError, json.JSONDecodeError, OSError) as error:
+        raise WorkflowContractError(f"{resource}: invalid JSON") from error
+    if not isinstance(value, dict):
+        raise WorkflowContractError(f"{resource}: JSON document must be an object")
+    return value
 
 
 def packaged_traits() -> tuple[PackagedTrait, ...]:
@@ -254,13 +323,15 @@ __all__ = [
     "WORKFLOW_SKILL_NAMES",
     "WORKFLOW_SKILL_ROLE",
     "WORKFLOW_STAGE_SKILL_NAMES",
+    "PackagedJsonSchema",
     "PackagedSkillError",
     "PackagedTrait",
     "packaged_companion_skills",
+    "packaged_component_contracts",
     "packaged_trait_source",
     "packaged_traits",
+    "packaged_workflow_contract_schemas",
+    "packaged_workflow_contracts",
     "packaged_workflow_hook",
     "packaged_workflow_skills",
-    "validate_workflow_stage_sequence",
-    "workflow_stage_sections",
 ]

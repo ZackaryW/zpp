@@ -1,0 +1,1 @@
+{"version":1,"name":"zpps-bulk-archive-change","kind":"operation","effect":"lifecycle","standalone":true,"results":["completed","partial","cancelled","blocked","coordination-conflict","failed","not-applicable","component-mismatch"]}

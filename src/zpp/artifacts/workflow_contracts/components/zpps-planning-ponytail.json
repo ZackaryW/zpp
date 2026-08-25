@@ -1,0 +1,1 @@
+{"version":1,"name":"zpps-planning-ponytail","kind":"stage","effect":"read-only","standalone":true,"results":["completed","skipped","blocked","kernel-assessment-required","coordination-conflict","component-mismatch"]}

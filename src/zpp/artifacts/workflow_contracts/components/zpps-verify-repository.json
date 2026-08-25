@@ -1,0 +1,1 @@
+{"version":1,"name":"zpps-verify-repository","kind":"evidence","effect":"read-only","standalone":true,"results":["completed","blocked","owner-choice-required","component-mismatch"]}

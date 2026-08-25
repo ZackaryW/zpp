@@ -1,0 +1,1 @@
+{"version":1,"name":"zpps-workflow-kernel","kind":"kernel","effect":"coordination","standalone":true,"results":["eligible","blocked","completed","accepted-not-applicable","accepted","checkpointed","lifecycle-complete","component-mismatch"]}

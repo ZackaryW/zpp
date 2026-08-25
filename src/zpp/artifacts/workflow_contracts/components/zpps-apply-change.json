@@ -1,0 +1,1 @@
+{"version":1,"name":"zpps-apply-change","kind":"operation","effect":"product","standalone":true,"results":["completed","blocked","coordination-conflict","failed","already-completed","component-mismatch"]}

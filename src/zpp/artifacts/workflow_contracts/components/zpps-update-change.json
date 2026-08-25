@@ -1,0 +1,1 @@
+{"version":1,"name":"zpps-update-change","kind":"operation","effect":"planning","standalone":true,"results":["completed","blocked","coordination-conflict","component-mismatch"]}

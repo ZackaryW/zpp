@@ -1,0 +1,1 @@
+{"version":1,"name":"zpps-sync-specs","kind":"operation","effect":"planning","standalone":true,"results":["completed","not-applicable","blocked","coordination-conflict","failed","component-mismatch"]}

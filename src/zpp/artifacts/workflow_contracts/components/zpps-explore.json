@@ -1,0 +1,1 @@
+{"version":1,"name":"zpps-explore","kind":"operation","effect":"read-only","standalone":true,"results":["completed","blocked","planning-operation-required","component-mismatch"]}
