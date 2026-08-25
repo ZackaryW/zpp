@@ -1,4 +1,0 @@
-interface:
-  display_name: "Audit ZPP Workflows"
-  short_description: "Simulate and compare every complete ZPP workflow"
-  default_prompt: "Use $zpp-audit-workflows to audit every complete workflow in this local ZPP checkout."

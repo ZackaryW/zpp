@@ -110,9 +110,6 @@ def test_lifecycle_projects_only_current_packaged_skills_and_no_openspec_assets(
     assert len(json.loads(detailed.stdout)) == expected
     for name in (skill.name for skill in (*workflow_skills, *companion_skills)):
         assert (user_home / ".codex/skills" / name / "SKILL.md").is_file()
-    projected_audit = user_home / ".codex/skills/zpp-audit-workflows"
-    assert (projected_audit / "references/audit-contract.md").is_file()
-    assert (projected_audit / "agents/openai.yaml").is_file()
     for name in (
         "zpp-workflow",
         "openspec-apply-change",
