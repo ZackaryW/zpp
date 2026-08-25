@@ -1,1 +1,1 @@
-{"version":1,"name":"zpps-archive-change","kind":"operation","effect":"lifecycle","standalone":true,"results":["completed","cancelled","blocked","coordination-conflict","failed","component-mismatch"]}
+{"version":1,"name":"zpps-archive-change","kind":"operation","effect":"lifecycle","standalone":true,"results":["completed","memory-folded","cancelled","blocked","coordination-conflict","failed","component-mismatch"]}

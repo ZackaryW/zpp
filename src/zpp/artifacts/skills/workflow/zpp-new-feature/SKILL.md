@@ -122,6 +122,9 @@ Use `zpps-finalize` with all accepted evidence. Follow its visible result:
 
 - `repository-evidence-required` -> use `zpps-verify-repository`, then re-enter;
 - `change-verification-required` -> use `zpps-verify-change`, then re-enter;
+- `memory-fold-required` -> require the owner's explicit selection for that exact
+  eligible change, use `zpps-archive-change` in memory-fold mode, assess its
+  `memory-folded` result through the kernel, then re-enter finalization;
 - `archive-required` -> use the exact `zpps-archive-change` or
   `zpps-bulk-archive-change`, which performs any selected specification sync
   synchronously and returns `completed`, `cancelled`, `blocked`, or `failed`; require

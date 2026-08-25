@@ -395,6 +395,48 @@ def test_packaged_checkpoints_exclude_active_openspec_changes() -> None:
     assert "git diff --cached --name-only" in authoring
 
 
+def test_packaged_memory_fold_is_conservative_and_recoverable() -> None:
+    workflows = {
+        skill.name: next(
+            item.content.decode("utf-8")
+            for item in skill.files
+            if item.relative_path == "SKILL.md"
+        )
+        for skill in packaged_workflow_skills()
+    }
+    finalization = workflows["zpps-finalize"]
+    preservation = workflows["zpps-archive-change"]
+    kernel = workflows[WORKFLOW_KERNEL_SKILL_NAME]
+
+    for non_foldable in (
+        "requirement",
+        "scenario",
+        "nested or branching logic",
+        "architecture or ownership",
+        "compatibility promise",
+        "security or safety",
+        "migration",
+    ):
+        assert non_foldable in finalization
+    assert "Uncertainty selects normal" in finalization
+    assert "explicitly selected memory folding" in finalization
+
+    assert "outside the Git worktree" in preservation
+    assert "restore the exact temporary change" in preservation
+    assert "intentional zmem-only commit" in preservation
+    assert "proof that no archive path was created" in preservation
+    assert "Never fall back from a failed memory fold" in " ".join(
+        preservation.split()
+    )
+
+    for name in COMPLETE_WORKFLOW_SKILL_NAMES:
+        assert "`memory-fold-required`" in workflows[name]
+        assert "`memory-folded`" in workflows[name]
+
+    assert "zpp lease abandon --bundle <bundle-uuid>" in kernel
+    assert "Record no member archive" in " ".join(kernel.split())
+
+
 def test_packaged_collection_has_contextual_execution_and_tool_facets() -> None:
     documents = {
         item.family: tomllib.loads(item.content.decode("utf-8"))

@@ -96,6 +96,16 @@ the bundle only after every declared member is archived and every required gate 
 path audit succeeds. For explicitly bypassed execution, retain structured bypass
 evidence and do not claim an audit or bundle transition occurred.
 
+For an observed `memory-folded` result, require the exact inspected zmem-bearing SHA,
+owner authority, removed active path, temporary recovery disposition, and proof that
+no archive path exists. Audit those paths through the retained bundle, then invoke
+`zpp lease abandon --bundle <bundle-uuid>` for that exact bundle under its durable
+owner identity. Accept only the structured successful abandonment result. Record no
+member archive and do not call bundle completion. A later completed finalization may
+yield `lifecycle-complete` only from that inspected fold and abandonment evidence;
+missing, mismatched, or failed evidence blocks without reacquiring or fabricating a
+bundle.
+
 At every material accepted result with a non-empty coherent stage-owned diff, require
 checkpoint authority and invoke the exact installed `zmem-author-commits` skill before
 returning stage completion. Supply the accepted contract revision, exact paths or

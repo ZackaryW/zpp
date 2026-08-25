@@ -27,19 +27,36 @@ assessment is read-only and does not require prior kernel delegation.
 
 Check that changed paths match the accepted scope and bundle membership. Require
 truthful repository command evidence for every relevant shaped obligation and build
-gate, semantic verification covering tasks, requirements, design, bindings, duplicate
-authority, and orphan authority, and archive results for every member when archival
-was authorized.
+gate and semantic verification covering tasks, requirements, design, bindings,
+duplicate authority, and orphan authority. Classify terminal preservation before
+requiring an archive result.
+
+Use memory folding only when all durable information fits one or more precise zmem
+entries and current normative authority is already complete without retaining the
+change. A change is not foldable when it introduces or revises a requirement,
+scenario, public contract, nested or branching logic, architecture or ownership
+boundary, compatibility promise, security or safety constraint, migration, or any
+decision whose full force depends on the planning artifacts. Simple wording,
+metadata, or flat variable additions may qualify only when implementation and
+verification are complete, no canonical specification effect remains, the proposed
+zmem entries preserve the complete durable decision and rationale, and the owner has
+explicitly selected memory folding for the exact change. Uncertainty selects normal
+archive.
 
 Return one of:
 
 - `repository-evidence-required` with exact missing targets and sufficiency criteria;
 - `change-verification-required` with the change identities and evidence to assess;
+- `memory-fold-required` with the exact eligible change, non-foldability audit,
+  proposed zmem content, and required explicit owner authority;
 - `archive-required` with the exact single or bulk archive scope;
 - `blocked` with failed or inconsistent evidence; or
 - `completed` with the assembled paths, verification, and archive identities.
 
 The caller explicitly invokes the signaled component and re-enters finalization with
-its result. Never invoke another `zpps-*` skill, convert insufficient evidence into
-success, expand a lease, complete a bundle, select continuation, authorize a commit,
-archive a change, or declare lifecycle completion.
+its result. Accept `memory-folded` evidence only when it identifies the inspected
+zmem-bearing commit, proves the active change was removed, proves no archive path was
+created, and carries the exact owner authority. Never invoke another `zpps-*` skill,
+convert insufficient evidence into success, expand a lease, complete a bundle,
+select continuation, authorize a commit, archive or fold a change, or declare
+lifecycle completion.

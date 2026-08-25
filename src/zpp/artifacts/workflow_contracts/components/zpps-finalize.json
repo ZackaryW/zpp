@@ -1,1 +1,1 @@
-{"version":1,"name":"zpps-finalize","kind":"stage","effect":"read-only","standalone":true,"results":["completed","blocked","repository-evidence-required","change-verification-required","archive-required","component-mismatch"]}
+{"version":1,"name":"zpps-finalize","kind":"stage","effect":"read-only","standalone":true,"results":["completed","blocked","repository-evidence-required","change-verification-required","memory-fold-required","archive-required","component-mismatch"]}

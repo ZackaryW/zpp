@@ -101,8 +101,10 @@ on incomplete tasks, unmet requirements, divergence, or insufficient evidence.
 ## Finalize and archive
 
 Use `zpps-finalize`. Explicitly satisfy and re-enter for each
-`repository-evidence-required` or `change-verification-required` signal. For
-`archive-required`, require explicit archive authority and use the selected single or
+`repository-evidence-required` or `change-verification-required` signal. For a
+`memory-fold-required` result, require the owner's explicit selection for the exact
+eligible change, use `zpps-archive-change` in memory-fold mode, assess
+`memory-folded` through the kernel, and re-enter. For `archive-required`, require explicit archive authority and use the selected single or
 bulk archive adapter; it performs any selected specification sync synchronously and
 returns `completed`, `cancelled`, `blocked`, or `failed`. Never infer archive
 authority, and pause on every non-completed result. Submit a `completed` finalization

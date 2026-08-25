@@ -168,3 +168,10 @@ def test_packaged_contract_schemas_are_typed_json_resources() -> None:
     )
     assert all(item.document["type"] == "object" for item in schemas)
     assert all(item.document["additionalProperties"] is False for item in schemas)
+
+
+def test_terminal_component_contracts_publish_memory_fold_results() -> None:
+    components = {item.name: item for item in packaged_component_contracts()}
+
+    assert "memory-fold-required" in components["zpps-finalize"].results
+    assert "memory-folded" in components["zpps-archive-change"].results

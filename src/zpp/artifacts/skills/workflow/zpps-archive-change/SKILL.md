@@ -1,26 +1,31 @@
 ---
 name: zpps-archive-change
-description: Archive one resolved OpenSpec change only with explicit archive intent or exact playbook configuration and ready completion evidence; never infer authority from completion.
+description: Preserve one resolved OpenSpec change by normal archive or an explicitly selected eligible memory fold; never infer terminal authority from completion.
 ---
 
-# Archive one OpenSpec change
+# Preserve one completed OpenSpec change
 
 Mechanical identity, effect, standalone eligibility, and result vocabulary come
 from this skill's validated packaged JSON contract. Apply the substantive
 readiness, procedure, failure, and stopping behavior below.
 
-## Admit single-change archival
+## Admit single-change preservation
 
-Admit this component only when an active playbook configures this exact archive or
-the caller explicitly requests the immediate mutation of archiving one identified
-OpenSpec change. Required readiness is the exact change, available completion and
-verification evidence, resolved specification-sync choice, and explicit archive
-intent; completed tasks, eventual cleanup, or a pending archive does not independently
-admit it. Missing factual evidence requires a separately admitted read-only operation.
+Admit this component only when an active playbook configures this exact terminal
+operation or the caller explicitly requests the immediate mutation of preserving one
+identified OpenSpec change by normal archive or memory fold. Required readiness is
+the exact change, available completion and verification evidence, a resolved
+preservation mode, and explicit authority for that mode. Normal archive also requires
+a resolved specification-sync choice and archive intent. Memory fold requires an
+accepted `zpps-finalize` eligibility result, exact proposed zmem content, checkpoint
+authority, and explicit owner authority to remove this active change without creating
+an archive. Completion, eventual cleanup, or a pending terminal operation does not
+independently admit either mode. Missing factual evidence requires a separately
+admitted read-only operation.
 
-Archive one selected change as a bounded playbook component or direct operation. This
-skill preserves the complete archive decision and safety procedure; it does not
-complete the Bundler bundle or the enclosing ZPP lifecycle.
+Preserve one selected change as a bounded playbook component or direct operation.
+This skill owns both terminal filesystem procedures; it does not complete Bundler or
+the enclosing ZPP lifecycle.
 
 ## Resolve target and authority
 
@@ -35,14 +40,15 @@ root for read-only discovery and as a valid `repo:` trace locator. Preserve the 
 capability path relative to `specs/`.
 
 After successful component admission, read-only inspection may occur before obtaining
-the mutation guard. Before any canonical-spec write or change move, require an
-eligible `zpps-workflow-kernel` assessment carrying explicit archive authority. Pass
+the mutation guard. Before any canonical-spec write, change move, removal, or
+memory-fold commit, require an eligible `zpps-workflow-kernel` assessment carrying
+explicit authority for the selected preservation mode. Pass
 the resolved root and change name; the kernel invokes ZPP runtime
 coordination and returns structured leased or explicitly authorized bypass evidence.
 Do not resolve registration, manifest UUID, owner, environment overrides, or bundle
-commands here. Canonical and archive paths are post-result audit evidence. A direct
-request may obtain this bounded guard. Block before mutation on missing archive
-authority or any runtime-reported coordination conflict.
+commands here. Canonical, temporary, archive, and committed paths are post-result
+audit evidence. A direct request may obtain this bounded guard. Block before mutation
+on missing mode-specific authority or any runtime-reported coordination conflict.
 
 Verify at invocation time that the installed CLI supports public list, structured
 status, archive/spec instructions where available, and spec validation. Never run
@@ -50,6 +56,11 @@ status, archive/spec instructions where available, and spec validation. Never ru
 lifecycle command.
 
 ## Procedure
+
+Select exactly one branch: normal archive or memory fold. Never fall back from a
+failed memory fold to archive, or from a failed archive to deletion.
+
+### Shared readiness
 
 1. After resolving the change/root, run
    `openspec instructions archive --change "<name>" --json`. This advisory lookup is
@@ -64,13 +75,18 @@ lifecycle command.
 2. Run `openspec status --change "<name>" --json`. Preserve `schemaName`,
    `planningHome`, `changeRoot`, `artifactPaths`, `actionContext`, and every artifact
    state. If any artifact is neither `done` nor `skipped`, list it and obtain explicit
-   confirmation before proceeding. A declared `skipped` artifact is satisfied.
+   confirmation before proceeding with normal archive. In memory-fold mode, return
+   `blocked` instead; incompleteness cannot be waived. A declared `skipped` artifact
+   is satisfied.
 
 3. Read only concrete paths under `artifactPaths.tasks.existingOutputPaths`. Count
    `- [ ]` and `- [x]`. If incomplete tasks exist, show the count and obtain explicit
-   confirmation before proceeding. With no concrete task artifact, continue without a
-   task warning. Cancellation at either confirmation returns `cancelled` without
+   confirmation before proceeding with normal archive. In memory-fold mode, return
+   `blocked` instead. With no concrete task artifact, continue without a task warning.
+   Cancellation at either normal-archive confirmation returns `cancelled` without
    mutation. Confirmed incompleteness remains a warning; never relabel it complete.
+
+### Normal archive
 
 4. Use only `artifactPaths.specs.existingOutputPaths` as the delta-spec set. If absent
    or empty, do not infer deltas or fetch spec instructions. Otherwise read each delta
@@ -115,16 +131,50 @@ lifecycle command.
    create the target directory before this collision check. Otherwise move the exact
    `changeRoot`, preserving its `.openspec.yaml`, to that exact target.
 
+### Memory fold
+
+For the memory-fold branch, require every artifact and task from shared readiness to
+be complete; unlike normal archive, no warning confirmation can waive incompleteness.
+Reperform the finalization eligibility audit and block if any canonical specification
+effect, public contract, nested or branching logic, architecture or ownership
+boundary, compatibility promise, security or safety constraint, migration, or other
+non-foldable decision remains. Validate the complete proposed commit message through
+the exact installed `zmem-author-commits` skill before moving the change.
+
+1. Audit `git diff --cached --name-only` and the proposed explicit source/test paths.
+   Block if any path under `changeRoot` is staged or would be committed. Active task
+   updates are evidence for the fold, never commit content.
+2. Create a unique temporary directory through the platform's safe temporary-file
+   facility outside the Git worktree. Resolve both the source and destination paths,
+   require the source to equal `changeRoot`, require the destination to remain inside
+   that temporary directory, and move the exact change root there without broad
+   globs or recursive deletion.
+3. Create the validated zmem-bearing checkpoint from only the explicit coherent
+   source/test paths. When prior checkpoints already contain all source work, create
+   an intentional zmem-only commit rather than reintroducing planning files. If
+   validation, staging, or commit creation fails, restore the exact temporary change
+   to its original `changeRoot` and return `failed`.
+4. Inspect the resulting SHA with `zmem show`. Require every proposed entry to be
+   valid and require both the original active `changeRoot` and the normal archive
+   target to be absent. On inspection failure, restore the change root when doing so
+   does not overwrite another path, report the commit as requiring owner repair, and
+   return `failed`; never silently discard the recoverable planning artifacts.
+5. Only after successful inspection, remove the temporary copy. Return
+   `memory-folded` with the commit SHA, annotation indexes, exact removed active path,
+   temporary recovery path disposition, explicit authority, source/test paths, and
+   proof that no archive path was created.
+
 ## Result and stopping boundary
 
-Return the selected root/store/change, schema, exact archive path and every exact
-canonical/archive path changed for kernel post-result audit, whether specs were
-absent/synced/skipped, validation and post-sync comparison evidence, confirmed
-incomplete-artifact/task warnings, and `completed`, `cancelled`, `blocked`,
-`coordination-conflict`, or `failed`. Claim specs were synced only when
-synchronous sync and independent comparison both passed.
+Return the selected root/store/change, schema, selected preservation mode, and every
+exact path changed for kernel post-result audit. Normal archive returns its exact
+archive/canonical paths, sync evidence, warnings, and `completed`, `cancelled`,
+`blocked`, `coordination-conflict`, or `failed`. Memory fold returns the evidence
+specified above and `memory-folded`, `blocked`, `coordination-conflict`, or `failed`.
+Claim specs were synced only when synchronous sync and independent comparison both
+passed.
 
-Do not archive another change, complete or expand the Bundler bundle, select or
-advance a stage, authorize or create a checkpoint/commit, invoke onboarding, or claim
-lifecycle completion. Return the bounded archive result to the direct caller or
-playbook for separate kernel result assessment.
+Do not preserve another change, complete or expand the Bundler bundle, select or
+advance a stage, invoke onboarding, or claim lifecycle completion. Outside the exact
+memory-fold branch, never authorize or create a checkpoint/commit. Return the bounded
+result to the direct caller or playbook for separate kernel result assessment.

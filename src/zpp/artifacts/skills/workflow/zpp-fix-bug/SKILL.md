@@ -109,7 +109,9 @@ explicit repository-verification use and re-entry.
 Use `zpps-finalize` with every accepted stage and verification result.
 
 Follow finalization signals visibly: obtain missing repository or change evidence.
-For `archive-required`, require explicit archive authority and use the exact single
+For `memory-fold-required`, require the owner's explicit selection for the exact
+eligible change, use `zpps-archive-change` in memory-fold mode, assess
+`memory-folded` through the kernel, and re-enter finalization. For `archive-required`, require explicit archive authority and use the exact single
 or bulk archive adapter, which performs any selected specification sync synchronously
 and returns `completed`, `cancelled`, `blocked`, or `failed`; never infer archive
 authority. Pause on every non-completed archive result. Submit completed evidence to

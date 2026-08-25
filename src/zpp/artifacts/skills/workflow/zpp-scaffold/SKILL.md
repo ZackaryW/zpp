@@ -100,8 +100,10 @@ repository evidence it signals.
 ## Finalize and archive
 
 Use `zpps-finalize` with all results. Explicitly satisfy
-`repository-evidence-required` or `change-verification-required` and re-enter. For
-`archive-required`, require explicit archive authority and use the exact single or
+`repository-evidence-required` or `change-verification-required` and re-enter. For a
+`memory-fold-required` result, require the owner's explicit selection for the exact
+eligible change, use `zpps-archive-change` in memory-fold mode, assess
+`memory-folded` through the kernel, and re-enter. For `archive-required`, require explicit archive authority and use the exact single or
 bulk archive adapter; it performs any selected specification sync synchronously and
 returns `completed`, `cancelled`, `blocked`, or `failed`. Never infer archive
 authority, and pause on every non-completed result. Submit completed final evidence
