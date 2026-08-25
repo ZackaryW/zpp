@@ -278,6 +278,7 @@ def test_packaged_skills_compose_compact_runtime_contract_guidance() -> None:
         )
         assert "## Registered execution" in document
         assert "## Visible stage progression invariant" not in document
+        assert all(f"\n## {number}." not in document for number in range(1, 10))
 
     for name in (
         WORKFLOW_KERNEL_SKILL_NAME,

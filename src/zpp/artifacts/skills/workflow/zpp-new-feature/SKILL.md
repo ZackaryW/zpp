@@ -29,7 +29,7 @@ Checkpoint each material accepted stage through the kernel and
 `zmem-author-commits`; preserve unrelated work. End-to-end mode never supplies an
 owner decision or missing mutation, archive, abandonment, or bypass authority.
 
-## 1. Establish the capability agreement
+## Establish the capability agreement
 
 Custom instruction: frame one public capability, its consumers, observable behavior,
 compatibility boundary, and acceptance conditions without choosing an implementation.
@@ -37,10 +37,10 @@ compatibility boundary, and acceptance conditions without choosing an implementa
 Use `zpps-clarify` with the request, exact roots, owner statements, and current
 contract evidence. On `exploration-required`, use `zpps-explore` with the returned
 question and re-enter clarification. On `planning-operation-required`, retain the
-signal until step 2. On `blocked`, pause. On `completed`, assess the result through
-the kernel and continue to step 2.
+signal for planning. On `blocked`, pause. On `completed`, assess the result through
+the kernel and return it to registered execution.
 
-## 2. Establish or reconcile the OpenSpec change
+## Establish or reconcile the OpenSpec change
 
 Custom instruction: preserve an explicitly selected change; otherwise create one
 whose name and scope reflect the accepted capability.
@@ -60,43 +60,43 @@ internal store, UUID, owner string, environment value, bundle, or lease command.
 - Existing scaffold without the next artifact -> use `zpps-continue-change` once and
   repeat this branch as explicitly required.
 - No change and intent is fully understood -> use `zpps-propose-change` to create the
-  complete planning set. In owner-authorized end-to-end mode, continue to step 3
-  after its accepted result without requesting fresh permission.
+  complete planning set. In owner-authorized end-to-end mode, return its accepted
+  result without requesting fresh permission.
 - Owner requested scaffold-only planning -> use `zpps-new-change` and stop after its
   published boundary unless the owner separately authorizes continuation.
 
 Apply pre/post kernel assessments to every mutating use. Pause on adapter blockers.
-When the planning set represents the accepted capability, continue to step 3.
+Return the accepted planning result to registered execution.
 
-## 3. Shape executable behavior
+## Shape executable behavior
 
 Use `zpps-shape-bdd` with the accepted agreement, exact OpenSpec root, capability
 owner, provisional examples, and binding inventory. Require transfer of every
 testable example to capability BDD and trace-only OpenSpec anchors. On
 `kernel-assessment-required`, obtain the named guard and re-enter. On `blocked`,
-pause. Assess `completed` through the kernel, then continue to step 4.
+pause. Assess `completed` through the kernel and return it.
 
-## 4. Plan utilities
+## Plan utilities
 
 Use `zpps-planning-ponytail` with shaped behavior and dependency evidence. If it
 returns `skipped: not applicable`, assess that planning result without treating it as
 a maturation result. If it returns a plan, assess its exact revision. Pause on any
-contradiction, and continue to step 5 only after this distinct stage is accepted.
+contradiction, and return only after this distinct stage is accepted.
 
-## 5. Mature utilities
+## Mature utilities
 
 Use `zpps-mature-utilities` with the exact planning result and relevant RED targets.
 For a planning skip, require this stage to independently confirm and return
 `skipped: not applicable`. Otherwise require verified utility GREEN. Assess the
 distinct maturation result before continuing.
 
-## 6. Wire the public capability
+## Wire the public capability
 
 Use `zpps-wire` with approved scenarios, bindings, proven utilities, and the actual
 public composition owner. Pause if wiring requires a new owner decision or revised
-plan. After focused public evidence is accepted, continue to step 7.
+plan. Return after focused public evidence is accepted.
 
-## 7. Form and synchronize specifications
+## Form and synchronize specifications
 
 Use `zpps-form-specs` with delta/canonical paths reported by OpenSpec, bindings, and
 mature evidence. On `sync-required`, explicitly use `zpps-sync-specs` with exactly
@@ -104,7 +104,7 @@ the returned delta set, then re-enter `zpps-form-specs` with its result. Never l
 either component invoke the other. Continue only after the canonical authority audit
 returns `completed` and the kernel accepts it.
 
-## 8. Verify repository and change
+## Verify repository and change
 
 Use `zpps-verify-repository` with scenario-selected BDD, focused and complete tests,
 interpreter/lock, lint, format, and clean-build targets. Resolve
@@ -113,7 +113,7 @@ planning artifacts, implementation, bindings, and supplied repository evidence. 
 `repository-evidence-required`, run only the newly requested evidence through
 `zpps-verify-repository` and re-enter verification. Pause on any failure.
 
-## 9. Finalize and archive
+## Finalize and archive
 
 Use `zpps-finalize` with all accepted evidence. Follow its visible result:
 

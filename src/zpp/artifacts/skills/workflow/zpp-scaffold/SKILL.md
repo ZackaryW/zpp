@@ -29,7 +29,7 @@ Checkpoint each material accepted stage through the kernel and
 `zmem-author-commits`; preserve unrelated work. End-to-end mode never supplies an
 owner decision or missing mutation, archive, abandonment, or bypass authority.
 
-## 1. Define the structural outcome
+## Define the structural outcome
 
 Custom instruction: distinguish structure required to host accepted product behavior
 from artifact-only maintenance, installation, or compatibility work. Identify the
@@ -40,7 +40,7 @@ Use `zpps-clarify` with the request, roots, conventions evidenced in the reposit
 and owner decisions. Satisfy `exploration-required` through one explicit
 `zpps-explore` use and re-enter. Pause on unresolved structure ownership.
 
-## 2. Establish the OpenSpec planning boundary
+## Establish the OpenSpec planning boundary
 
 Before the first governed mutation, pass the exact resolved repository roots and
 change names plus accepted mutation authority to `zpps-workflow-kernel`. Consume the
@@ -56,7 +56,7 @@ explicit `zpps-continue-change` action. Guard and assess every mutation. Continu
 when the plan names the product-bearing owner and excludes OpenSpec installation,
 generated skills, and backwards-compatibility aliases.
 
-## 3. Shape behavior when the scaffold is observable
+## Shape behavior when the scaffold is observable
 
 Use `zpps-shape-bdd` with the accepted scaffold effects. When the scaffold exposes or
 changes public behavior, resolve any `kernel-assessment-required` and require an
@@ -65,37 +65,37 @@ require the stage itself to return an evidence-backed `skipped: not applicable`;
 never let the playbook manufacture that outcome or fabricate BDD for filesystem
 wording or prompt policy.
 
-## 4. Plan reusable structure
+## Plan reusable structure
 
 Use `zpps-planning-ponytail` for any reusable bootstrap utility. Assess its plan or
 evidence-backed `skipped: not applicable` as the planning result only. Pause if the
 requested structure conflicts with the repository's real ownership model.
 
-## 5. Mature reusable structure
+## Mature reusable structure
 
 Use `zpps-mature-utilities` with the exact planning result. Require exact RED/GREEN
 targets for a plan, or require this stage to independently return
 `skipped: not applicable` when planning found no utility responsibility.
 
-## 6. Wire the owning surface
+## Wire the owning surface
 
 Use `zpps-wire` when the scaffold has an accepted public composition point. If the
 scaffold is structure-only, require the stage to return `skipped: not applicable` and
 preserve focused structural verification evidence. Assess either result through the
 kernel before continuing.
 
-## 7. Form and synchronize specifications
+## Form and synchronize specifications
 
 Use `zpps-form-specs`; on `sync-required`, explicitly use `zpps-sync-specs` and
 re-enter for canonical audit.
 
-## 8. Verify repository and change
+## Verify repository and change
 
 Use `zpps-verify-repository` for affected and complete tests plus interpreter/lock,
 lint, format, and clean build, then use `zpps-verify-change`, supplying any additional
 repository evidence it signals.
 
-## 9. Finalize and archive
+## Finalize and archive
 
 Use `zpps-finalize` with all results. Explicitly satisfy
 `repository-evidence-required` or `change-verification-required` and re-enter. For

@@ -29,7 +29,7 @@ Checkpoint each material accepted stage through the kernel and
 `zmem-author-commits`; preserve unrelated work. End-to-end mode never supplies an
 owner decision or missing mutation, archive, abandonment, or bypass authority.
 
-## 1. Clarify the mixed outcome
+## Clarify the mixed outcome
 
 Custom instruction: decompose the request only enough to form one accepted change
 agreement, preserving explicit relationships among capability, defect, scaffold, and
@@ -37,10 +37,10 @@ maintenance concerns. Do not silently split changes or select a specialized play
 after this generic playbook has begun.
 
 Use `zpps-clarify`. On `exploration-required`, explicitly use `zpps-explore` and
-re-enter. On `planning-operation-required`, carry the exact signal into step 2. Pause
+re-enter. On `planning-operation-required`, carry the exact signal into planning. Pause
 on unresolved owner boundaries; otherwise assess the agreement and continue.
 
-## 2. Establish or revise planning
+## Establish or revise planning
 
 Before the first governed mutation, pass the exact resolved repository roots and
 change names plus accepted mutation authority to `zpps-workflow-kernel`. Consume the
@@ -56,7 +56,7 @@ or `zpps-new-change` for scaffold-and-stop. Use `zpps-ff-change` only when the o
 explicitly requests fast-forward planning and the intent is already complete. Apply
 kernel guard and result assessment to every mutation.
 
-## 3. Shape accepted observable behavior
+## Shape accepted observable behavior
 
 Use `zpps-shape-bdd` across the accepted effects. For every public-system obligation,
 require independent RED and single executable authority. For non-observable policy,
@@ -64,39 +64,39 @@ require the stage to return an evidence-backed `skipped: not applicable` and kee
 obligation normative in OpenSpec. Resolve missing guards and re-enter; pause on
 binding or agreement failures.
 
-## 4. Plan utilities
+## Plan utilities
 
 Use `zpps-planning-ponytail` across all accepted responsibilities. Assess its plan or
 evidence-backed `skipped: not applicable` as the planning result only. A plan
 contradiction returns through an explicit clarification or update action, never
 through kernel dispatch.
 
-## 5. Mature utilities
+## Mature utilities
 
 Use `zpps-mature-utilities` with the exact planning result. Require relevant RED and
 complete GREEN for every plan, or require this stage to independently return
 `skipped: not applicable`. Assess this result separately before wiring.
 
-## 6. Wire applicable public behavior
+## Wire applicable public behavior
 
 Use `zpps-wire` for accepted public composition. Take an explicit not-applicable
 branch for work with no public composition change. Require the kernel to assess the
 observed result without naming a next step.
 
-## 7. Form and synchronize specifications
+## Form and synchronize specifications
 
 Use `zpps-form-specs`. For `sync-required`, explicitly use `zpps-sync-specs` with the
 returned delta selection and re-enter form-specs for canonical audit. Pause on
 duplicate or orphan authority.
 
-## 8. Verify repository and change
+## Verify repository and change
 
 Use `zpps-verify-repository` for shaped scenarios and every relevant repository gate.
 Then use `zpps-verify-change` with the returned evidence. On
 `repository-evidence-required`, explicitly run the named evidence and re-enter. Pause
 on incomplete tasks, unmet requirements, divergence, or insufficient evidence.
 
-## 9. Finalize and archive
+## Finalize and archive
 
 Use `zpps-finalize`. Explicitly satisfy and re-enter for each
 `repository-evidence-required` or `change-verification-required` signal. For
