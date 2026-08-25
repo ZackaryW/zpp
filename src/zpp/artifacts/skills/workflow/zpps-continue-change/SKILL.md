@@ -5,6 +5,10 @@ description: Create exactly the next eligible artifact of one resolved OpenSpec 
 
 # Continue one OpenSpec change
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit one-artifact continuation
 
 Admit this component only when an active playbook configures this exact continuation
@@ -14,12 +18,6 @@ identifiable change, accepted artifact intent, and resolved facts needed to auth
 that next artifact. An active change, pending artifact, or eventual implementation
 does not independently admit continuation; unresolved evidence belongs to
 `zpps-explore`.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-continue-change`, the
-`observed_immediate_operation`, `missing_readiness`, and the
-`separately_eligible_operation`. Stop before the normal procedure and never invoke
-the separately eligible component.
 
 Accept a repository or store, optional change name, accepted artifact intent, and any
 current kernel guard and Bundler lease from a playbook or direct partial caller. Ask

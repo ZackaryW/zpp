@@ -170,6 +170,19 @@ def packaged_workflow_hook(agent: Agent) -> Hook:
         return Hook.from_path(path, source_agent=agent)
 
 
+def packaged_workflow_reminder_hook(agent: Agent) -> Hook | None:
+    relative_paths = {
+        Agent.CODEX: ("hooks", "codex", "zpp-workflow-reminder.json"),
+        Agent.CLAUDE: ("hooks", "claude", "zpp-workflow-reminder.json"),
+    }
+    relative_path = relative_paths.get(agent)
+    if relative_path is None:
+        return None
+    resource = files("zpp.artifacts").joinpath(*relative_path)
+    with as_file(resource) as path:
+        return Hook.from_path(path, source_agent=agent)
+
+
 def packaged_workflow_contracts() -> tuple[WorkflowContract, ...]:
     root = files("zpp.artifacts").joinpath("workflow_contracts", "workflows")
     discovered = _json_resource_names(root)
@@ -333,5 +346,6 @@ __all__ = [
     "packaged_workflow_contract_schemas",
     "packaged_workflow_contracts",
     "packaged_workflow_hook",
+    "packaged_workflow_reminder_hook",
     "packaged_workflow_skills",
 ]

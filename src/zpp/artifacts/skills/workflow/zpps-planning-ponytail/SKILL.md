@@ -5,6 +5,10 @@ description: Plan resolved utility responsibilities with the Ponytail ladder, re
 
 # Plan utilities with Ponytail
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit utility planning
 
 Admit this component only when an active playbook configures this exact utility plan
@@ -14,12 +18,6 @@ dependency evidence needed to apply the ladder. A read-only plan needs no mutati
 intent; writing a planning artifact additionally requires explicit intent for that
 exact write or exact playbook configuration. Unknown package, API, repository, or
 integration facts belong to `zpps-explore` before utility planning.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-planning-ponytail`, the
-`observed_immediate_operation`, `missing_readiness`, and the
-`separately_eligible_operation`. Stop before the normal procedure and never invoke
-the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots, shaped behavior and binding

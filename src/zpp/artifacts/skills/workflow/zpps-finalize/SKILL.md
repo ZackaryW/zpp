@@ -5,6 +5,10 @@ description: Assemble and assess already supplied phase, verification, and archi
 
 # Assemble final change evidence
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit finalization assessment
 
 Admit this component only when an active playbook configures this exact assessment or
@@ -13,11 +17,6 @@ known change bundle. Required readiness is an identified bundle or change set an
 the evidence currently available for finalization. Discovery, repository execution,
 semantic verification, archive mutation, and bundle completion remain separately
 admitted operations even when this assessment later reports they are required.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-finalize`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
-procedure and never invoke the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository and store roots, every change member,

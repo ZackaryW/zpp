@@ -5,6 +5,10 @@ description: Archive one resolved OpenSpec change only with explicit archive int
 
 # Archive one OpenSpec change
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit single-change archival
 
 Admit this component only when an active playbook configures this exact archive or
@@ -13,12 +17,6 @@ OpenSpec change. Required readiness is the exact change, available completion an
 verification evidence, resolved specification-sync choice, and explicit archive
 intent; completed tasks, eventual cleanup, or a pending archive does not independently
 admit it. Missing factual evidence requires a separately admitted read-only operation.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-archive-change`, the
-`observed_immediate_operation`, `missing_readiness`, and the
-`separately_eligible_operation`. Stop before the normal procedure and never invoke
-the separately eligible component.
 
 Archive one selected change as a bounded playbook component or direct operation. This
 skill preserves the complete archive decision and safety procedure; it does not

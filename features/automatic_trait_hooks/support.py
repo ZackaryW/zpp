@@ -15,7 +15,11 @@ from features.support.lifecycle import (
     hook_ownership_states,
     replace_current_hook_with_former,
 )
-from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skills
+from zpp.artifacts import (
+    packaged_workflow_hook,
+    packaged_workflow_reminder_hook,
+    packaged_workflow_skills,
+)
 from zpp.cli import app
 from zpp.utils.bundler import BundlerDocuments
 
@@ -63,10 +67,14 @@ def post_compaction_strategies(hooks: dict[Agent, object]) -> dict[str, str]:
 
 
 def packaged_integration_inventory(agent: Agent) -> tuple[tuple[str, str], ...]:
-    return (
+    inventory = [
         *(("skill", skill.name) for skill in packaged_workflow_skills()),
         ("hook", packaged_workflow_hook(agent).name),
-    )
+    ]
+    reminder = packaged_workflow_reminder_hook(agent)
+    if reminder is not None:
+        inventory.append(("hook", reminder.name))
+    return tuple(inventory)
 
 
 def lifecycle_inventory(records: list[dict]) -> tuple[tuple[str, str], ...]:

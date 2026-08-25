@@ -5,6 +5,10 @@ description: Discover or compare unresolved package, version, API, remote, repos
 
 # Explore OpenSpec context without mutation
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit evidence discovery
 
 Admit this component only when an active playbook configures this exact exploration
@@ -14,11 +18,6 @@ availability, published versions, APIs, remote sources, repository changes, and
 integration boundaries even when the eventual intent is to mutate dependencies,
 planning, implementation, specifications, or archives. It does not admit an already
 resolved mutation or grant mutation authority.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-explore`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
-procedure and never invoke the separately eligible component.
 
 Use this component for open-ended discovery, architecture investigation, requirement
 clarification, and comparison of alternatives. It may be selected by a configured

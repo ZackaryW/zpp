@@ -22,22 +22,22 @@
 
 ## 4. Workflow Run CLI
 
-- [ ] 4.1 Add the nested `zpp workflow run` and `zpp workflow run stage` Typer groups without changing existing workflow install, update, or remove behavior.
-- [ ] 4.2 Implement structured `start`, `status`, and `stop` commands over the selected product home and exact repository/change targets.
-- [ ] 4.3 Implement the prompt-facing read-only `remind` command with exact repository resolution, compact active output, silent inactive output, and no state creation or transition.
-- [ ] 4.4 Implement structured `check` and `record` commands for kernel consumption, including `workflow-start-required`, untracked direct invocation, and warning-only mismatch results.
-- [ ] 4.5 Implement structured stage `insert`, `delete`, `modify`, and `upsert` commands with stable IDs and explicit before/after positioning.
-- [ ] 4.6 Complete the public CLI Behave bindings and focused integration tests for cross-process persistence and unchanged lease state.
+- [x] 4.1 Add the nested `zpp workflow run` and `zpp workflow run stage` Typer groups without changing existing workflow install, update, or remove behavior.
+- [x] 4.2 Implement structured `start`, `status`, and `stop` commands over the selected product home and exact repository/change targets.
+- [x] 4.3 Implement the prompt-facing read-only `remind` command with exact repository resolution, compact active output, silent inactive output, and no state creation or transition.
+- [x] 4.4 Implement structured `check` and `record` commands for kernel consumption, including `workflow-start-required`, untracked direct invocation, and warning-only mismatch results.
+- [x] 4.5 Implement structured stage `insert`, `delete`, `modify`, and `upsert` commands with stable IDs and explicit before/after positioning.
+- [x] 4.6 Complete the public CLI Behave bindings and focused integration tests for cross-process persistence and unchanged lease state.
 
 ## 5. Kernel and Skill Integration
 
-- [ ] 5.1 Update `zpps-workflow-kernel` to require registration for identified complete playbooks, surface reminder checks for active targets, and record only accepted matching stage results without selecting continuation.
-- [ ] 5.2 Update each complete current `zpp-*` skill to start its registered workflow before lifecycle work and retain only its custom agreement, stage configuration, and branch conditions.
-- [ ] 5.3 Update each packaged `zpps-*` skill to retain substantive readiness, procedure, failure, and stopping behavior while removing mechanical metadata now owned by its JSON contract and shared kernel behavior.
-- [ ] 5.4 Update `zpp-auto` and compatibility coverage so handoff enters the selected playbook's registration and genuine no-handoff/direct artifact routes create no reminder state.
-- [ ] 5.5 Verify every installed skill projection contains the compact composed contract guidance and that packaging rejects missing, mismatched, or extra JSON/Markdown identities.
-- [ ] 5.6 Add the separate `zpp-workflow-reminder` hook artifact for adapters with an explicitly confirmed prompt-submission context event, and compose its Agent Router-owned projection, inspection, update, and removal into the shared lifecycle inventory without changing `zpp-traits`.
-- [ ] 5.7 Add focused artifact and lifecycle tests proving unsupported adapters omit the hook, supported adapters use their declared event form, inactive invocation is silent, active output is compact, and invocation changes no reminder or lease state.
+- [x] 5.1 Update `zpps-workflow-kernel` to require registration for identified complete playbooks, surface reminder checks for active targets, and record only accepted matching stage results without selecting continuation.
+- [x] 5.2 Update each complete current `zpp-*` skill to start its registered workflow before lifecycle work and retain only its custom agreement, stage configuration, and branch conditions.
+- [x] 5.3 Update each packaged `zpps-*` skill to retain substantive readiness, procedure, failure, and stopping behavior while removing mechanical metadata now owned by its JSON contract and shared kernel behavior.
+- [x] 5.4 Update `zpp-auto` and compatibility coverage so handoff enters the selected playbook's registration and genuine no-handoff/direct artifact routes create no reminder state.
+- [x] 5.5 Verify every installed skill projection contains the compact composed contract guidance and that packaging rejects missing, mismatched, or extra JSON/Markdown identities.
+- [x] 5.6 Add the separate `zpp-workflow-reminder` hook artifact for adapters with an explicitly confirmed prompt-submission context event, and compose its Agent Router-owned projection, inspection, update, and removal into the shared lifecycle inventory without changing `zpp-traits`.
+- [x] 5.7 Add focused artifact and lifecycle tests proving unsupported adapters omit the hook, supported adapters use their declared event form, inactive invocation is silent, active output is compact, and invocation changes no reminder or lease state.
 
 ## 6. Repository Verification
 

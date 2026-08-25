@@ -5,6 +5,10 @@ description: Guard an exact caller-selected ZPP action and its result; never cho
 
 # Guard one selected workflow action
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the readiness and
+procedure below; reminder evidence is advisory and never dispatch authority.
+
 ## Admit one selected guard assessment
 
 Admit this component only when an active playbook configures a guard for an exact
@@ -13,12 +17,6 @@ of an already selected component. Required readiness includes the selected actio
 component, targets, effect class, predecessor evidence, and relevant authority facts.
 Requests to choose a component, discover missing facts, perform the selected action,
 or continue a workflow do not admit the kernel.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-workflow-kernel`, the
-`observed_immediate_operation`, `missing_readiness`, and the
-`separately_eligible_operation`. Stop before the normal guard procedure and never
-invoke the separately eligible component.
 
 Act as a lifecycle guard, never as a workflow or stage dispatcher. Accept either a
 pre-action assessment request or a post-action result assessment. The caller, not
@@ -32,6 +30,15 @@ revision, whether the action mutates governed state, complete ordered predecesso
 outcomes, invalid or stale evidence, accepted effects, stage-owned output, and
 owner-granted mutation, checkpoint, archive, abandonment, and bypass authority.
 Assess only that selected action.
+
+Before assessing it, run `zpp workflow run check` for the exact root, change, and
+selected component. Include `--workflow` when the caller identifies a complete
+playbook. A complete playbook without matching active registration returns
+`workflow-start-required`; stop that assessment until the playbook starts its
+reminder. A direct standalone component with no active reminder remains eligible as
+`untracked`. For an active reminder, carry the complete structured check into the
+assessment. A sequence mismatch remains allowed in reminder mode, but prominently
+report its expected stage, expected component, unfinished stages, and warning.
 
 For a workflow stage, require every declared predecessor to have a distinct actual
 result for the same accepted-input revision. Block on the earliest missing, stale,
@@ -73,6 +80,13 @@ Require the original assessed action, its guard when mutation occurred, the comp
 status, changed paths, unresolved questions, and verification evidence. Return
 `accepted`, `blocked`, `checkpointed`, or `lifecycle-complete`, with reasons and
 observed authority facts. Again return no next-step field.
+
+When the result matches the reminder's first pending component and the component
+result is an accepted completion or not-applicable result in its packaged contract,
+run `zpp workflow run record` for the exact root, change, component, and result. Pass
+an observed bundle only when one already exists. Never record blocked, failed,
+unrelated, exploratory, or mismatched results. Recording is reminder progress only;
+it supplies no authority and selects no continuation.
 
 For leased execution, submit the component's complete changed-path inventory to ZPP's
 runtime audit operation. Accept held OpenSpec paths as audited and repository-local

@@ -13,6 +13,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from agent_router import Agent
 from typer.testing import CliRunner
 
 from zpp.artifacts import (
@@ -20,6 +21,8 @@ from zpp.artifacts import (
     REPOSITORY_EVIDENCE_SKILL_NAME,
     WORKFLOW_SKILL_NAMES,
     packaged_companion_skills,
+    packaged_workflow_hook,
+    packaged_workflow_reminder_hook,
     packaged_workflow_skills,
 )
 from zpp.cli import app
@@ -203,7 +206,11 @@ def workflow_names() -> tuple[str, ...]:
 
 
 def expected_asset_count() -> int:
-    return len(packaged_skill_names()) + 1
+    hooks = (
+        packaged_workflow_hook(Agent.CODEX),
+        packaged_workflow_reminder_hook(Agent.CODEX),
+    )
+    return len(packaged_skill_names()) + sum(hook is not None for hook in hooks)
 
 
 class Home:

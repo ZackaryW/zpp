@@ -5,6 +5,10 @@ description: Fast-forward one fully understood new OpenSpec change through all a
 
 # Fast-forward OpenSpec planning
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit fast-forward planning
 
 Admit this component only when an active playbook configures this exact fast-forward
@@ -13,11 +17,6 @@ change and creating its complete apply-required planning set. Required readiness
 complete accepted intent, a target root, and resolved evidence sufficient for every
 required artifact. A vague eventual outcome, existing change, or unresolved product,
 package, API, repository, or integration fact does not admit fast-forward planning.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-ff-change`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
-procedure and never invoke the separately eligible component.
 
 Use this component when the intended change is sufficiently understood to create all
 planning artifacts required by the schema's apply phase. It accepts playbook-supplied

@@ -12,6 +12,7 @@ from agent_router import Agent, Hook, Scope, Skill
 from zpp.artifacts import (
     packaged_companion_skills,
     packaged_workflow_hook,
+    packaged_workflow_reminder_hook,
     packaged_workflow_skills,
 )
 from zpp.cli.shared import agent_router
@@ -130,11 +131,12 @@ def _hook_entry(
     scope: Scope,
     project_root: Path | None,
     migrate_former_hook: bool,
+    kind: str = "hook",
 ) -> LifecycleEntry:
     if not migrate_former_hook:
         return LifecycleEntry(
             agent=agent,
-            kind="hook",
+            kind=kind,
             inspect=lambda: inspect_workflow_hook(router, hook, scope, project_root),
             project=lambda: project_workflow_hook(router, hook, scope, project_root),
             remove=lambda: remove_workflow_hook(router, hook.name, scope, project_root),
@@ -151,7 +153,7 @@ def _hook_entry(
 
     return LifecycleEntry(
         agent=agent,
-        kind="hook",
+        kind=kind,
         inspect=lambda: inspect_migratable_workflow_hook(
             router, hook, scope, project_root
         ),
@@ -185,6 +187,7 @@ def packaged_entries(
     for agent in agents:
         router = agent_router(agent, resolved)
         hook = packaged_workflow_hook(agent)
+        reminder_hook = packaged_workflow_reminder_hook(agent)
         entries.extend(
             _skill_entry(
                 router,
@@ -207,6 +210,18 @@ def packaged_entries(
                 migrate_former_hooks,
             )
         )
+        if reminder_hook is not None:
+            entries.append(
+                _hook_entry(
+                    router,
+                    reminder_hook,
+                    agent.value,
+                    scope,
+                    project_root,
+                    False,
+                    kind=f"hook:{reminder_hook.name}",
+                )
+            )
         entries.extend(
             _skill_entry(
                 router,

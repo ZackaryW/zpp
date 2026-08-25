@@ -124,6 +124,26 @@ def test_inventory_validation_rejects_missing_and_unknown_references() -> None:
         )
 
 
+def test_inventory_validation_rejects_extra_contract_identities() -> None:
+    workflow = decode_workflow_contract(_workflow_payload(), source="workflow.json")
+    extra_payload = _workflow_payload()
+    extra_payload["name"] = "zpp-fix-bug"
+    extra_workflow = decode_workflow_contract(
+        extra_payload, source="extra-workflow.json"
+    )
+    component = decode_component_contract(
+        _component_payload(), source="component.json"
+    )
+
+    with pytest.raises(WorkflowContractError, match="unexpected workflow contract"):
+        validate_contract_inventory(
+            (workflow, extra_workflow),
+            (component,),
+            workflow_names=("zpp-new-feature",),
+            component_names=("zpps-clarify",),
+        )
+
+
 def test_packaged_contract_inventory_is_complete_and_cross_referenced() -> None:
     workflows = packaged_workflow_contracts()
     components = packaged_component_contracts()

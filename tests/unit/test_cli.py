@@ -60,7 +60,8 @@ def test_public_cli_preserves_grouped_shape() -> None:
         for option in ("COMMAND", "--all", "--target", "--gate", "--base", "--head")
     )
     assert all(
-        command in workflow.stdout for command in ("install", "update", "remove")
+        command in workflow.stdout
+        for command in ("install", "update", "remove", "run")
     )
     assert "init" in trait.stdout
     assert "install-workflow" not in root.stdout
@@ -539,6 +540,15 @@ def test_reset_catalog_contains_current_inventory_before_obsolete_tombstones(
     )
     monkeypatch.setattr(
         lifecycle_cli,
+        "packaged_workflow_reminder_hook",
+        lambda agent: (
+            SimpleNamespace(name="zpp-workflow-reminder", agent=agent)
+            if agent in (Agent.CODEX, Agent.CLAUDE)
+            else None
+        ),
+    )
+    monkeypatch.setattr(
+        lifecycle_cli,
         "packaged_companion_skills",
         lambda: (
             SimpleNamespace(name="zpp-configure-behave"),
@@ -548,14 +558,24 @@ def test_reset_catalog_contains_current_inventory_before_obsolete_tombstones(
 
     projections = reset_cli.reset_projections()
 
-    for position, agent in enumerate(reset_cli.SUPPORTED_AGENTS):
-        per_agent = 2 + 1 + 2 + len(lifecycle_cli.OBSOLETE_WORKFLOW_SKILL_NAMES)
-        selected = projections[position * per_agent : (position + 1) * per_agent]
+    offset = 0
+    for agent in reset_cli.SUPPORTED_AGENTS:
+        has_reminder = agent in (Agent.CODEX, Agent.CLAUDE)
+        per_agent = (
+            2
+            + 1
+            + int(has_reminder)
+            + 2
+            + len(lifecycle_cli.OBSOLETE_WORKFLOW_SKILL_NAMES)
+        )
+        selected = projections[offset : offset + per_agent]
+        offset += per_agent
         assert [item.agent for item in selected] == [agent.value] * per_agent
         assert [item.kind for item in selected] == [
             "skill:zpp-auto",
             "skill:zpps-workflow-kernel",
             "hook",
+            *(["hook:zpp-workflow-reminder"] if has_reminder else []),
             "skill:zpp-configure-behave",
             "skill:zpp-author-trait",
             *(
@@ -564,7 +584,10 @@ def test_reset_catalog_contains_current_inventory_before_obsolete_tombstones(
             ),
         ]
         assert all(item.inspect is not None for item in selected)
-        assert all(item.project is None for item in selected[5:])
+        tombstone_start = 5 + int(has_reminder)
+        assert all(item.project is None for item in selected[tombstone_start:])
+
+    assert offset == len(projections)
 
 
 def test_prompt_uses_exact_agent_router_agent_order(monkeypatch) -> None:

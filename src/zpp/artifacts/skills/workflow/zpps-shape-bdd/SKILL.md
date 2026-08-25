@@ -5,6 +5,10 @@ description: Mutate BDD and trace artifacts for already accepted public behavior
 
 # Shape behavior and BDD authority
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit behavior shaping
 
 Admit this component only when an active playbook configures this exact shaping or
@@ -15,11 +19,6 @@ readiness includes the accepted contract, capability owner, provisional examples
 and current binding evidence. Unresolved behavior, ownership, repository, or
 integration facts require separate exploration or clarification; an eventual
 testable feature alone does not admit shaping.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-shape-bdd`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
-procedure and never invoke the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots and capability owner, resolved

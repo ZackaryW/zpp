@@ -5,6 +5,10 @@ description: Implement exact tasks of one existing OpenSpec change only after pr
 
 # Apply one OpenSpec change
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit resolved implementation
 
 Admit this component only when an active playbook configures this exact apply action
@@ -15,11 +19,6 @@ integration evidence needed for the implementation. An active change, pending ta
 an imperative verb, or eventual adoption intent does not independently admit apply.
 When any prerequisite fact still needs discovery, the separately eligible operation
 is `zpps-explore`, not apply.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-apply-change`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before task-order,
-status, or repository work and never invoke the separately eligible component.
 
 Implement the selected change until its tasks are complete or a real blocker requires
 owner input. This is a substantive operation, not a workflow router: it never chooses

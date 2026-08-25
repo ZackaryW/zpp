@@ -5,6 +5,10 @@ description: Archive an explicitly selected ready set of OpenSpec changes only w
 
 # Bulk archive OpenSpec changes
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit batch archival
 
 Admit this component only when an active playbook configures this exact batch archive
@@ -14,12 +18,6 @@ available completion evidence, and explicit batch archive intent; the owner sele
 and existing archive authority checks remain mandatory. Multiple active or completed
 changes, eventual cleanup, or unresolved cross-change facts do not independently
 admit bulk archive.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-bulk-archive-change`, the
-`observed_immediate_operation`, `missing_readiness`, and the
-`separately_eligible_operation`. Stop before the normal procedure and never invoke
-the separately eligible component.
 
 Coordinate one selected-root batch. This is a substantive archive operation usable
 from a playbook or directly; it never decides what the enclosing workflow does next.

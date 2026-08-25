@@ -5,6 +5,10 @@ description: Run already selected repository verification targets read-only; do 
 
 # Verify repository evidence
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit repository verification
 
 Admit this component only when an active playbook configures this exact verification
@@ -13,12 +17,6 @@ an identified scope. Required readiness is a repository or capability target plu
 declared command source or an explicit need to resolve only command authority. Use
 exploration for unresolved product, dependency, API, or integration evidence, and a
 separate mutating component to repair any observed failure.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-verify-repository`, the
-`observed_immediate_operation`, `missing_readiness`, and the
-`separately_eligible_operation`. Stop before the normal procedure and never invoke
-the separately eligible component.
 
 Accept playbook configuration or a direct partial invocation. Require exact repository
 roots, changed-path or capability scope, shaped BDD obligations, and either commands

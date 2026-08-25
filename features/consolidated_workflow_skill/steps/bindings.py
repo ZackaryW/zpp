@@ -136,7 +136,8 @@ def genuine_non_match_is_unregistered(context) -> None:
 def handoff_is_not_completion(context) -> None:
     document = context.documents["zpp-auto"]
     assert "selected playbook" in document
-    assert "start" in document
+    assert "mandatory workflow registration" in document
+    assert "same workflow invocation" in document
 
 
 @then("the obsolete generic workflow identity has no contract")

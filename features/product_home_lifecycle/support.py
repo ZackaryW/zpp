@@ -17,7 +17,12 @@ from features.support.lifecycle import (
     hook_ownership_states,
     replace_current_hook_with_former,
 )
-from zpp.artifacts import packaged_companion_skills, packaged_workflow_skills
+from zpp.artifacts import (
+    packaged_companion_skills,
+    packaged_workflow_hook,
+    packaged_workflow_reminder_hook,
+    packaged_workflow_skills,
+)
 from zpp.cli import app
 from zpp.cli.shared import agent_router
 from zpp.utils.bundler import BundlerLeaseService
@@ -29,8 +34,16 @@ WORKFLOW_SKILL = "zpp-auto"
 
 
 def expected_entry_count() -> int:
-    """The workflow family, hook, and every current companion skill."""
-    return len(packaged_workflow_skills()) + len(packaged_companion_skills()) + 1
+    """The workflow family, eligible hooks, and every companion skill."""
+    hooks = (
+        packaged_workflow_hook(Agent.CODEX),
+        packaged_workflow_reminder_hook(Agent.CODEX),
+    )
+    return (
+        len(packaged_workflow_skills())
+        + len(packaged_companion_skills())
+        + sum(hook is not None for hook in hooks)
+    )
 
 
 class Environment:

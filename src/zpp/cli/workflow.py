@@ -6,7 +6,11 @@ from typing import Annotated, Literal
 import typer
 from agent_router import Agent, Scope
 
-from zpp.artifacts import packaged_workflow_hook, packaged_workflow_skills
+from zpp.artifacts import (
+    packaged_workflow_hook,
+    packaged_workflow_reminder_hook,
+    packaged_workflow_skills,
+)
 from zpp.cli.lifecycle import (
     inspect_installations,
     preflight_first_install,
@@ -20,6 +24,7 @@ from zpp.cli.shared import (
     prompt_agent_selection,
     user_action,
 )
+from zpp.cli.workflow_run import app as run_app
 from zpp.utils.agent_router import (
     remove_workflow_hook,
     remove_workflow_skill,
@@ -30,6 +35,7 @@ app = typer.Typer(
     help="Manage the packaged workflow family and hook through Agent Router.",
     no_args_is_help=True,
 )
+app.add_typer(run_app, name="run")
 
 
 def _manage(
@@ -96,12 +102,23 @@ def _manage(
     else:
         for agent in selection.agents:
             router = agent_router(agent, project)
-            hook = packaged_workflow_hook(agent)
-            hook_result = user_action(
-                lambda selected_router=router, selected_hook=hook: remove_workflow_hook(
-                    selected_router, selected_hook.name, scope, project_root
+            hooks = [packaged_workflow_hook(agent)]
+            reminder_hook = packaged_workflow_reminder_hook(agent)
+            if reminder_hook is not None:
+                hooks.append(reminder_hook)
+            hook_results = []
+            for hook in reversed(hooks):
+                hook_result = user_action(
+                    lambda selected_router=router, selected_hook=hook: (
+                        remove_workflow_hook(
+                            selected_router,
+                            selected_hook.name,
+                            scope,
+                            project_root,
+                        )
+                    )
                 )
-            )
+                hook_results.insert(0, (hook.name, hook_result))
             skill_results = [
                 user_action(
                     lambda selected_router=router, selected_skill=skill: (
@@ -116,13 +133,22 @@ def _manage(
                 for skill in reversed(skills)
             ]
             skill_results.reverse()
-            for result in (*skill_results, hook_result):
+            for result in skill_results:
                 results.append(result.to_dict())
+            for hook_name, result in hook_results:
+                record = result.to_dict()
+                record["asset"] = (
+                    "hook" if hook_name == "zpp-traits" else f"hook:{hook_name}"
+                )
+                results.append(record)
     for item in results:
         asset = str(item.get("asset", ""))
         if asset == "hook":
             item.setdefault("kind", "hook")
             item.setdefault("name", "zpp-traits")
+        elif asset.startswith("hook:"):
+            item.setdefault("kind", "hook")
+            item.setdefault("name", asset.removeprefix("hook:"))
         elif asset.startswith("skill:"):
             item.setdefault("kind", "skill")
             item.setdefault("name", asset.removeprefix("skill:"))

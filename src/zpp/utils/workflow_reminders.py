@@ -53,6 +53,23 @@ class WorkflowReminderRepository:
             raise WorkflowReminderError(f"{path}: workflow target does not match key")
         return StoredWorkflowRun(run, _token(raw))
 
+    def list_for_root(self, *, root: Path) -> tuple[StoredWorkflowRun, ...]:
+        normalized = _normalized_root(root)
+        directory = self._home.workflow_reminder_root
+        if not directory.is_dir():
+            return ()
+        selected: list[StoredWorkflowRun] = []
+        for path in sorted(directory.glob("*.json"), key=lambda item: item.name):
+            raw = path.read_bytes()
+            run = _decode_run(
+                raw,
+                source=path,
+                known_components=self._known_components,
+            )
+            if run.root == normalized:
+                selected.append(StoredWorkflowRun(run, _token(raw)))
+        return tuple(sorted(selected, key=lambda item: item.run.change))
+
     def start(
         self,
         contract: WorkflowContract,

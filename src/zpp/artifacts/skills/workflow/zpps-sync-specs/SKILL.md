@@ -5,6 +5,10 @@ description: Merge a resolved delta-spec selection into canonical specifications
 
 # Synchronize one change's specifications
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit canonical specification synchronization
 
 Admit this component only when an active playbook configures this exact sync or the
@@ -14,11 +18,6 @@ identifiable change, a resolved delta/capability selection, accepted semantics, 
 resolved binding evidence. Unknown product, repository, or authority facts require
 separate exploration or specification formation; a future archive does not itself
 admit synchronization.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-sync-specs`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
-procedure and never invoke the separately eligible component.
 
 Read delta specs and edit canonical specs directly. Merge semantically rather than
 copying delta documents. Stop after validation; this operation never archives or

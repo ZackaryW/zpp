@@ -5,6 +5,10 @@ description: Scaffold one resolved new OpenSpec change only when that exact plan
 
 # Scaffold one OpenSpec change
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit change scaffolding
 
 Admit this component only when an active playbook configures this exact scaffold or
@@ -14,11 +18,6 @@ an active repository, imperative verb, eventual implementation, or pending work 
 not sufficient. Discover unresolved product or repository facts first, and use a
 different planning component when the immediate operation includes creating
 artifacts rather than scaffold-and-stop.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-new-change`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
-procedure and never invoke the separately eligible component.
 
 Accept configuration from a playbook or a direct partial invocation: the intended
 change, repository or registered store, optional proposed name, optional schema, and

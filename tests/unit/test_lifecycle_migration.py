@@ -75,10 +75,14 @@ def test_inventory_propagates_exact_project_scope_and_root(
     calls: list[tuple[str, Scope, Path | None]] = []
     skill = SimpleNamespace(name="zpp-auto")
     hook = SimpleNamespace(name="zpp-traits")
+    reminder = SimpleNamespace(name="zpp-workflow-reminder")
     monkeypatch.setattr(lifecycle, "agent_router", lambda agent, root: object())
     monkeypatch.setattr(lifecycle, "packaged_workflow_skills", lambda: (skill,))
     monkeypatch.setattr(lifecycle, "packaged_companion_skills", lambda: ())
     monkeypatch.setattr(lifecycle, "packaged_workflow_hook", lambda agent: hook)
+    monkeypatch.setattr(
+        lifecycle, "packaged_workflow_reminder_hook", lambda agent: reminder
+    )
     monkeypatch.setattr(
         lifecycle,
         "inspect_workflow_skill",
@@ -108,6 +112,7 @@ def test_inventory_propagates_exact_project_scope_and_root(
     assert calls == [
         ("zpp-auto", Scope.PROJECT, tmp_path),
         ("zpp-traits", Scope.PROJECT, tmp_path),
+        ("zpp-workflow-reminder", Scope.PROJECT, tmp_path),
     ]
 
 
@@ -134,7 +139,8 @@ def test_shared_lifecycle_inventory_projects_generic_before_explicit_legacy(
         "skill:zpp-generic-workflow",
         "skill:zpp-legacy-workflow",
     )
-    assert entries[-1].kind == "hook"
+    assert entries[-2].kind == "hook"
+    assert entries[-1].kind == "hook:zpp-workflow-reminder"
 
 
 def test_obsolete_inventory_propagates_scope_to_inspection_and_retirement(

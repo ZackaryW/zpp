@@ -22,6 +22,7 @@ from zpp.artifacts import (
     packaged_trait_source,
     packaged_traits,
     packaged_workflow_hook,
+    packaged_workflow_reminder_hook,
     packaged_workflow_skills,
 )
 from zpp.core.models import SourceKind
@@ -260,6 +261,38 @@ def test_packaged_assets_have_exact_workflow_and_trait_inventories() -> None:
     } & set(WORKFLOW_SKILL_NAMES)
 
 
+def test_packaged_skills_compose_compact_runtime_contract_guidance() -> None:
+    documents = {
+        skill.name: next(
+            item.content.decode("utf-8")
+            for item in skill.files
+            if item.relative_path == "SKILL.md"
+        )
+        for skill in packaged_workflow_skills()
+    }
+
+    for name in COMPLETE_WORKFLOW_SKILL_NAMES:
+        document = documents[name]
+        assert (
+            f"zpp workflow run start {name} --root <root> --change <change>"
+            in document
+        )
+        assert "## Registered execution" in document
+        assert "## Visible stage progression invariant" not in document
+
+    for name in (WORKFLOW_KERNEL_SKILL_NAME, *WORKFLOW_STAGE_SKILL_NAMES,
+                 *OPENSPEC_ADAPTER_SKILL_NAMES, REPOSITORY_EVIDENCE_SKILL_NAME):
+        document = documents[name]
+        assert document.count("validated packaged JSON contract") == 1
+        assert "On any mismatch, return `component-mismatch`" not in document
+
+    assert "mandatory workflow registration" in documents["zpp-auto"]
+    assert "without creating workflow reminder state" in documents["zpp-auto"]
+    assert "Invoke `zpp-generic-workflow` exactly once" in documents[
+        "zpp-legacy-workflow"
+    ]
+
+
 def test_packaged_collection_has_contextual_execution_and_tool_facets() -> None:
     documents = {
         item.family: tomllib.loads(item.content.decode("utf-8"))
@@ -327,3 +360,25 @@ def test_packaged_hooks_cover_post_compaction_without_duplicate_paths() -> None:
 
     assert pi_source.count('pi.on("before_agent_start"') == 1
     assert 'pi.on("session_compact"' not in pi_source
+
+
+@pytest.mark.parametrize("agent", (Agent.CODEX, Agent.CLAUDE))
+def test_packaged_prompt_reminder_hook_is_separate_and_read_only(
+    agent: Agent,
+) -> None:
+    hook = packaged_workflow_reminder_hook(agent)
+
+    assert hook is not None
+    assert hook.name == "zpp-workflow-reminder"
+    assert hook.compatible_agents == frozenset({agent})
+    assert list(hook.fragment) == ["UserPromptSubmit"]
+    payload = repr(hook.fragment)
+    assert "zpp workflow run remind ." in payload
+    assert "record" not in payload
+
+
+@pytest.mark.parametrize("agent", (Agent.KIMI, Agent.PI))
+def test_packaged_prompt_reminder_hook_omits_unconfirmed_adapters(
+    agent: Agent,
+) -> None:
+    assert packaged_workflow_reminder_hook(agent) is None

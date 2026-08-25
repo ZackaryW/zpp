@@ -5,6 +5,10 @@ description: Implement already planned utility seams from relevant RED to GREEN 
 
 # Mature planned utilities
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit utility implementation
 
 Admit this component only when an active playbook configures this exact maturation or
@@ -14,12 +18,6 @@ evidence-backed same-revision planning skip. A plan additionally requires releva
 RED evidence, resolved dependencies, and explicit utility implementation intent.
 Unknown package, API, repository, or integration evidence belongs to exploration;
 missing utility boundaries belong to planning; public composition belongs to wiring.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-mature-utilities`, the
-`observed_immediate_operation`, `missing_readiness`, and the
-`separately_eligible_operation`. Stop before the normal procedure and never invoke
-the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots, current planning result, and

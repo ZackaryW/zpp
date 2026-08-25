@@ -5,6 +5,10 @@ description: Mutate a resolved public composition boundary to connect accepted b
 
 # Wire public behavior
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit public composition wiring
 
 Admit this component only when an active playbook configures this exact wiring or the
@@ -15,11 +19,6 @@ accepted behavior, approved feature bindings, proven utilities, and composition-
 evidence. Unknown integration owners, APIs, repositories, or composition choices
 require separate exploration; unproven utilities and unaccepted design changes do
 not admit wiring.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-wire`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
-procedure and never invoke the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository roots, approved feature and binding

@@ -63,6 +63,8 @@ not a recommendation or route report. Pass the original request, exact roots,
 accepted classification evidence, accepted owner input, owner-authorized end-to-end
 mode when explicitly granted, and only authority the owner supplied. Do not select
 `zpp-legacy-workflow`; that entry is eligible only through explicit owner invocation.
+The selected complete playbook performs its mandatory workflow registration as its
+first lifecycle action; triage neither pre-registers it nor bypasses that boundary.
 
 After a playbook invocation, transfer control and do not return to triage. Remain in
 the same workflow invocation until the selected playbook returns an actual blocked or
@@ -70,9 +72,10 @@ completed lifecycle result. Naming, recommending, or acknowledging the route is 
 a result and cannot terminate automatic execution.
 
 For an accepted direct artifact route, invoke only its owning artifact guidance and
-return that operation's actual result without creating workflow-stage outcomes. For
-`no-handoff`, report that the request did not establish a ZPP product workflow and
-perform no workflow invocation or governed mutation.
+return that operation's actual result without creating workflow reminder state or
+workflow-stage outcomes. For `no-handoff`, report that the request did not establish
+a ZPP product workflow and perform no registration, workflow invocation, or governed
+mutation.
 
 Never invoke the kernel directly, mutate governed artifacts during triage, add
 authority, or claim completion on a selected playbook's behalf.

@@ -5,6 +5,10 @@ description: Audit resolved OpenSpec-to-BDD authority and optionally write exact
 
 # Form specifications without duplicate acceptance authority
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit specification formation
 
 Admit this component only when an active playbook configures this exact formation or
@@ -15,11 +19,6 @@ authority audit needs no mutation intent; any trace-form edit additionally requi
 explicit intent for that exact write or exact playbook configuration. Unresolved
 behavior or integration evidence belongs to exploration, and canonical merging is a
 separate synchronization operation.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-form-specs`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
-procedure and never invoke the separately eligible component.
 
 Accept either playbook configuration or a direct partial invocation. Require the
 accepted contract revision, exact repository and OpenSpec roots, resolved store and

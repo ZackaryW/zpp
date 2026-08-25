@@ -5,6 +5,10 @@ description: Assess one identified OpenSpec change read-only against existing im
 
 # Verify one OpenSpec change
 
+Mechanical identity, effect, standalone eligibility, and result vocabulary come
+from this skill's validated packaged JSON contract. Apply the substantive
+readiness, procedure, failure, and stopping behavior below.
+
 ## Admit change verification
 
 Admit this component only when an active playbook configures this exact semantic
@@ -13,11 +17,6 @@ change against already available implementation and executable evidence. Require
 readiness is an identifiable change and a verification question. Discovery of
 unknown external or repository facts belongs to `zpps-explore`; executing missing
 repository gates and correcting findings are separately admitted operations.
-
-On any mismatch, return `component-mismatch` immediately with
-`selected_component: zpps-verify-change`, the `observed_immediate_operation`,
-`missing_readiness`, and the `separately_eligible_operation`. Stop before the normal
-procedure and never invoke the separately eligible component.
 
 Produce an evidence-backed completeness, correctness, and coherence assessment. This
 component is read-only and may be invoked by a playbook or directly. It never repairs
