@@ -6,6 +6,7 @@ import pytest
 
 from zpp.artifacts import (
     COMPLETE_WORKFLOW_SKILL_NAMES,
+    REPOSITORY_EVIDENCE_SKILL_NAME,
     WORKFLOW_SKILL_NAMES,
     WORKFLOW_STAGE_SKILL_NAMES,
     packaged_component_contracts,
@@ -153,9 +154,15 @@ def test_packaged_contract_inventory_is_complete_and_cross_referenced() -> None:
         name for name in WORKFLOW_SKILL_NAMES if name.startswith("zpps-")
     )
     assert tuple(item.name for item in components) == expected_components
+    expected_stages = (
+        *WORKFLOW_STAGE_SKILL_NAMES[:-1],
+        REPOSITORY_EVIDENCE_SKILL_NAME,
+        "zpps-verify-change",
+        WORKFLOW_STAGE_SKILL_NAMES[-1],
+    )
     assert all(
         tuple(stage.component for stage in workflow.stages)
-        == WORKFLOW_STAGE_SKILL_NAMES
+        == expected_stages
         for workflow in workflows
     )
     assert "zpp-workflow" not in {item.name for item in workflows}
