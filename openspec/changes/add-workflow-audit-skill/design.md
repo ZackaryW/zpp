@@ -7,9 +7,10 @@ Complete workflow ordering now lives in packaged JSON contracts, while custom de
 **Goals:**
 
 - Give maintainers one explicit local audit entry point.
-- Drive a synthetic OpenSpec change through every complete packaged workflow.
+- Drive one synthetic OpenSpec change through one complete packaged workflow at a time.
 - Make omissions, contradictions, and untested branches visible with reproducible evidence.
-- Support owner-guided gap closeout and fresh targeted reruns.
+- Stop between workflow assignments for owner-guided gap closeout and fresh targeted reruns.
+- Bootstrap Git and OpenSpec once in a temporary base project and clone it for each isolated run.
 
 **Non-Goals:**
 
@@ -32,13 +33,15 @@ The coordinator will enumerate `src/zpp/artifacts/workflow_contracts/workflows/*
 
 Alternative: list workflows in the skill for simpler prompts. Rejected because the audit list would drift from the artifact inventory it is meant to inspect.
 
-### Use a distinct subagent and empty Git/OpenSpec workspace per workflow
+### Bootstrap once and clone for each serial assignment
 
-The coordinator will create one bounded assignment per workflow. Each assignment uses a unique temporary directory, runs `git init`, runs `openspec init <root> --tools none --no-animation`, creates a synthetic OpenSpec change, and selects a unique global `zpp --path <temporary-home>` product home. It never registers the disposable root as a persistent OpenSpec store. Limited delegation slots cause queuing, not assignment or workspace reuse.
+The coordinator will create one temporary base project before the first assignment. A deterministic helper initializes Git, runs `openspec init <base> --tools none --no-animation`, verifies the exact Git/OpenSpec root, and commits only that neutral bootstrap state. The base is immutable audit infrastructure, is never registered as a persistent OpenSpec store, and contains no workflow-specific change.
 
-The subagent receives only its workflow identity, source root, evidence checklist, isolation requirement, and report schema. It may mutate its disposable repository to satisfy mock prerequisites, but it must preserve each initial failure and remain read-only in the ZPP source checkout until an interactive source correction is accepted. The coordinator records live `git status`, workflow reminder status, and lease status before and after simulations to detect contamination.
+For the next workflow only, the coordinator creates a no-hardlink clone of the base and a distinct temporary `zpp --path <temporary-home>` product home. The subagent receives that clone, its workflow identity, source root, evidence checklist, isolation requirement, and report schema. It must not initialize another project or select another workflow. It may mutate its clone to satisfy mock prerequisites, but it must preserve each initial failure and remain read-only in the ZPP source checkout.
 
-Alternative: one subagent audits all workflows. Rejected because cross-workflow assumptions and shared simulation state would hide precisely the continuity and specialization failures under audit.
+The coordinator waits for the result, compares live `git status`, workflow reminder status, and lease status with the baseline, and reviews the gap ledger before creating another assignment. No other workflow subagent is active during that checkpoint. A fresh rerun is another clone of the same immutable base unless an accepted correction changes the bootstrap contract, in which case the coordinator rebuilds the base first.
+
+Alternative: create every repository inside its subagent and run assignments concurrently. Rejected because repeated initialization wastes work, concurrent results duplicate cross-cutting findings, and recommendations arrive too late to influence later workflow audits.
 
 ### Drive the playbook sequence, not only reminder operations
 
@@ -54,27 +57,29 @@ The audit skill will keep coordination and safety instructions in `SKILL.md` and
 
 Alternative: add a deterministic source-text linter. Rejected because playbook branches and implementation semantics require judgment, while wording checks would create brittle false confidence.
 
-### Maintain a gap ledger through interactive closeout
+### Maintain a serial gap ledger through full-phase closeout
 
 Each subagent records fixture gaps and source gaps separately. It may close a fixture gap inside its temporary repository and continue, while retaining the original failure and repair evidence. Source gaps return to the coordinator with the exact authority layer, transition, expected/observed behavior, and proposed closeout.
 
-The coordinator presents source gaps interactively. Each becomes `accepted-fix`, `deferred`, `rejected`, or `blocked`; no gap disappears merely because the sequence continued under a mock assumption. An accepted fix is applied only within the current repository change's authority and updates design, implementation, and exact verification together. The affected workflow then receives a fresh subagent, Git repository, OpenSpec root, product home, and audit revision. Completion requires a closed mock sequence for every workflow and an explicit closeout state for every gap.
+The coordinator presents source gaps immediately after the owning workflow returns. Each becomes `accepted-fix`, `deferred`, `rejected`, or `blocked`; no gap disappears merely because the sequence continued under a mock assumption. An accepted fix is applied only within the current repository change's authority and re-enters the applicable full workflow phases: planning agreement, executable behavior, utility planning/maturation, wiring, specification synchronization, and verification. Inapplicable phases remain visible as independently assessed skips.
+
+The same workflow then receives a fresh subagent, base clone, product home, synthetic change, and audit revision. The next workflow is not assigned until that rerun closes or all recommendations have explicit non-open states. Completion requires a closed mock sequence for every workflow in serial inventory order and an explicit closeout state for every gap.
 
 ## Risks / Trade-offs
 
 - **Agent judgment can vary** → Require a fixed evidence matrix, typed finding categories, reproducible commands, and explicit unexecuted checks.
-- **Subagent availability may be lower than workflow count** → Queue assignments while preserving one distinct agent invocation per workflow.
+- **Serial auditing takes longer than parallel dispatch** → Reuse one bootstrapped base, run focused verification, and let each resolved finding improve later workflow audits.
 - **Simulations could contaminate live state** → Use a unique temporary Git/OpenSpec repository and product home, avoid persistent store registration, capture pre/post Git/reminder/lease snapshots, and treat any difference as a failed audit invariant.
 - **Mock results could conceal unusable component instructions** → Require each mock input/result to satisfy the actual component contract and skill boundary, record every assumption, and exercise every playbook-owned branch.
 - **Closing gaps could expand mutation authority** → Keep source read-only until the maintainer accepts a specific closeout and apply it only inside the current repository change or a separately authorized repair.
-- **The audit can become expensive** → Prefer targeted Behave scenarios and focused pytest selectors; reserve full-suite execution for a separately requested audit depth.
+- **The audit can become expensive** → Bootstrap once, clone locally, prefer targeted Behave scenarios and focused pytest selectors, and reserve full-suite execution for a separately requested audit depth.
 - **A source checkout may be incomplete** → Report missing layers as blocking evidence gaps instead of downgrading the audit silently.
 
 ## Migration Plan
 
 1. Add the companion skill, reference contract, and UI metadata.
-2. Add capability BDD and focused tests for disposable Git/OpenSpec initialization, per-workflow full-sequence closeout, isolation, gap classification, and interactive reruns.
+2. Add capability BDD and focused tests for one reusable base bootstrap, serial per-workflow full-sequence closeout, isolation checkpoints, gap classification, and full-phase reruns.
 3. Verify lifecycle projection includes the new companion through existing Agent Router composition.
-4. Run an independent forward audit with one fresh subagent and disposable Git/OpenSpec workspace per complete workflow, close accepted gaps, and rerun affected workflows from scratch.
+4. Run one independent workflow audit at a time from a fresh clone, close its accepted gaps through the full phases, rerun it, and only then advance to the next workflow.
 
 Rollback removes the companion skill and its capability-specific evidence without changing runtime workflow contracts or stored reminder formats.
