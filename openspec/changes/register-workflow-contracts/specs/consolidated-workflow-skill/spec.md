@@ -35,25 +35,25 @@ route. A playbook SHALL preserve only authority explicitly supplied by the owner
 SHALL NOT grant mutation or checkpoint-commit authority by selecting or registering a
 route.
 
-#### Scenario: Route a clear defect correction
-- **WHEN** `zpp-auto` receives an unambiguous request to correct a defect
-- **THEN** it invokes `zpp-fix-bug` exactly once with the original request and supplied authority, and that playbook starts its packaged reminder before continuing
+#### Scenario: Conformance trace for clear defect routing
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Outcome workflow entry family","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Route a clear defect correction"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Route a clear defect correction`
 
-#### Scenario: Route a mixed product workflow to the generic entry
-- **WHEN** a request remains product-workflow-shaped but no specialized outcome exclusively owns it
-- **THEN** `zpp-auto` invokes `zpp-generic-workflow` at clarification instead of using compatibility or inventing a specialized outcome
+#### Scenario: Conformance trace for mixed workflow routing
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Outcome workflow entry family","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Route a mixed product workflow to the generic entry"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Route a mixed product workflow to the generic entry`
 
-#### Scenario: Return a genuine non-match without handoff
-- **WHEN** bounded triage establishes that a request is not a ZPP product workflow or an accepted direct artifact-maintenance route
-- **THEN** `zpp-auto` returns a no-handoff result without registering or invoking a workflow or mutating governed state
+#### Scenario: Conformance trace for genuine non-match
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Outcome workflow entry family","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Return a genuine non-match without handoff"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Return a genuine non-match without handoff`
 
-#### Scenario: Reject a terminal handoff acknowledgement
-- **WHEN** automatic triage selects a playbook but that playbook neither starts its packaged reminder nor produces a selected-playbook result
-- **THEN** the workflow remains incomplete and does not treat the handoff itself as a successful outcome
+#### Scenario: Conformance trace for terminal handoff rejection
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Outcome workflow entry family","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Reject a terminal handoff acknowledgement"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Reject a terminal handoff acknowledgement`
 
-#### Scenario: Keep the removed generic identity obsolete
-- **WHEN** a projected integration is inspected after migration
-- **THEN** no `zpp-workflow` skill, contract, or alias is present
+#### Scenario: Conformance trace for obsolete generic identity
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Outcome workflow entry family","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Keep the removed generic identity obsolete"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Keep the removed generic identity obsolete`
 
 ### Requirement: Explicit stage actions
 Each complete `zpp-*` playbook's packaged JSON contract SHALL declare its ordered
@@ -70,10 +70,10 @@ mutation, checkpoint-commit, archive, or bypass authority. Triage components, tr
 the kernel, phase skills, operation skills, and workflow contracts SHALL NOT select
 or dispatch the playbook continuation.
 
-#### Scenario: Default an entry to clarification
-- **WHEN** a complete workflow registration starts without accepted evidence for a later custom branch
-- **THEN** its first pending registered reminder is `clarify` rather than an action inferred from current artifacts
+#### Scenario: Conformance trace for clarification default
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Explicit stage actions","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Default an entry to clarification"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Default an entry to clarification`
 
-#### Scenario: Continue through visible stage actions
-- **WHEN** an authorized end-to-end workflow completes or truthfully skips one registered conditional stage and continues
-- **THEN** the kernel records that matching result and the active playbook applies its custom branch with the following registered stage visible as a reminder
+#### Scenario: Conformance trace for visible stage continuation
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"consolidated-workflow-skill","requirement":"Explicit stage actions","feature":"features/consolidated_workflow_skill/consolidated_workflow_skill.feature","scenario":"Continue through visible stage actions"}`
+- **THEN** executable acceptance authority is `features/consolidated_workflow_skill/consolidated_workflow_skill.feature::Continue through visible stage actions`

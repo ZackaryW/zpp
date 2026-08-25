@@ -1,7 +1,7 @@
 ## 1. Executable Workflow Contract
 
-- [ ] 1.1 Add capability-owned Behave scenarios and direct CLI bindings for strict contract inventory loading, idempotent workflow start/resume, stage customization, sequence reminders, accepted-result progress, stop behavior, standalone untracked component use, and prompt-submission reminder-hook silence/read-only behavior.
-- [ ] 1.2 Add trace-only conformance anchors for the new `workflow-registration` scenarios and the modified consolidated workflow scenarios without duplicating executable GIVEN/WHEN/THEN behavior in OpenSpec.
+- [x] 1.1 Add capability-owned Behave scenarios and direct CLI bindings for strict contract inventory loading, idempotent workflow start/resume, stage customization, sequence reminders, accepted-result progress, stop behavior, standalone untracked component use, and prompt-submission reminder-hook silence/read-only behavior.
+- [x] 1.2 Add trace-only conformance anchors for the new `workflow-registration` scenarios and the modified consolidated workflow scenarios without duplicating executable GIVEN/WHEN/THEN behavior in OpenSpec.
 
 ## 2. Packaged JSON Contract Utilities
 

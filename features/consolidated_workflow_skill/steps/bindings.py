@@ -103,3 +103,54 @@ def execution_modes_remain(context) -> None:
 @then("the workflow family has the exact canonical identity sequence")
 def canonical_identity_sequence(context) -> None:
     assert context.names == WORKFLOW_SKILL_NAMES, context.names
+
+
+@when("the registered playbook guidance is inspected")
+def inspect_registered_playbooks(context) -> None:
+    context.documents = support.skill_documents(context.family)
+    context.contracts = support.load_workflow_contracts()
+
+
+@then("clear defect triage enters the registered fix-bug playbook")
+def clear_defect_enters_fix_bug(context) -> None:
+    document = context.documents["zpp-auto"]
+    assert "zpp-fix-bug" in document
+    assert any(item.name == "zpp-fix-bug" for item in context.contracts)
+
+
+@then("mixed product triage enters the registered generic playbook")
+def mixed_triage_enters_generic(context) -> None:
+    document = context.documents["zpp-auto"]
+    assert "zpp-generic-workflow" in document
+    assert any(item.name == "zpp-generic-workflow" for item in context.contracts)
+
+
+@then("a genuine non-match declares no reminder start")
+def genuine_non_match_is_unregistered(context) -> None:
+    document = context.documents["zpp-auto"]
+    assert "no-handoff" in document
+    assert all(item.name != "zpp-auto" for item in context.contracts)
+
+
+@then("handoff alone is not accepted as selected-playbook completion")
+def handoff_is_not_completion(context) -> None:
+    document = context.documents["zpp-auto"]
+    assert "selected playbook" in document
+    assert "start" in document
+
+
+@then("the obsolete generic workflow identity has no contract")
+def obsolete_identity_has_no_contract(context) -> None:
+    assert all(item.name != "zpp-workflow" for item in context.contracts)
+
+
+@then("each complete entry contract begins with clarify")
+def complete_entries_begin_with_clarify(context) -> None:
+    assert all(item.stages[0].component == "zpps-clarify" for item in context.contracts)
+
+
+@then("each declared stage remains a distinct registered component action")
+def stages_are_distinct_actions(context) -> None:
+    for contract in context.contracts:
+        components = [stage.component for stage in contract.stages]
+        assert len(components) == len(set(components)), contract

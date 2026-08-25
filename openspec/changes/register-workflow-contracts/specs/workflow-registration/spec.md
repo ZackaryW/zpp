@@ -15,13 +15,13 @@ result vocabulary. Contract loading SHALL reject unknown fields, unsupported
 versions, duplicate identities or stage IDs, missing referenced skills, and invalid
 typed values.
 
-#### Scenario: Load a complete contract inventory
-- **WHEN** the packaged workflow and component contract inventory is inspected
-- **THEN** every complete current playbook and packaged component resolves to exactly one valid JSON contract and every registered stage references an existing component
+#### Scenario: Conformance trace for complete contract inventory
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Strict packaged workflow contracts","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Load a complete contract inventory"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Load a complete contract inventory`
 
-#### Scenario: Reject malformed contract metadata
-- **WHEN** a contract contains an unknown field, invalid type, duplicate stage ID, unsupported version, or missing component reference
-- **THEN** ZPP rejects the packaged inventory with a diagnostic identifying the exact contract and field
+#### Scenario: Conformance trace for malformed contract rejection
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Strict packaged workflow contracts","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Reject malformed contract metadata"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Reject malformed contract metadata`
 
 ### Requirement: Start or resume a reminder workflow
 ZPP SHALL expose `zpp workflow run start <workflow>` for exact repository/change
@@ -34,17 +34,17 @@ and require an explicit stop or replacement request rather than silently overwri
 it. Starting reminder state alone SHALL NOT acquire a Bundler lease or grant mutation,
 checkpoint, archive, or bypass authority.
 
-#### Scenario: Start a packaged workflow reminder
-- **WHEN** a playbook starts its packaged workflow for exact repository/change targets with no matching reminder
-- **THEN** ZPP persists an active checklist containing the contract's ordered pending stages and returns its workflow identity, targets, and first pending stage
+#### Scenario: Conformance trace for workflow reminder start
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Start or resume a reminder workflow","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Start a packaged workflow reminder"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Start a packaged workflow reminder`
 
-#### Scenario: Resume without resetting progress
-- **WHEN** the same workflow and targets are started after one or more stages were completed or skipped
-- **THEN** ZPP returns the existing checklist with the observed progress unchanged
+#### Scenario: Conformance trace for idempotent workflow resume
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Start or resume a reminder workflow","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Resume without resetting progress"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Resume without resetting progress`
 
-#### Scenario: Preserve an existing different workflow
-- **WHEN** start targets already governed by a different active reminder workflow
-- **THEN** ZPP reports the existing workflow and does not replace its checklist without an explicit replacement operation
+#### Scenario: Conformance trace for different workflow preservation
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Start or resume a reminder workflow","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Preserve an existing different workflow"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Preserve an existing different workflow`
 
 ### Requirement: Require registration only for complete playbooks
 Every complete packaged `zpp-*` playbook SHALL start its declared workflow reminder
@@ -54,13 +54,13 @@ complete playbook without matching active registration SHALL return
 eligible without starting a workflow when no active reminder governs the exact
 targets.
 
-#### Scenario: Remind an unregistered playbook to start
-- **WHEN** a caller identifies a complete packaged playbook but requests a lifecycle action before starting its workflow reminder
-- **THEN** the kernel reports `workflow-start-required` with the exact start command and performs no stage update
+#### Scenario: Conformance trace for unregistered playbook reminder
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Require registration only for complete playbooks","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Remind an unregistered playbook to start"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Remind an unregistered playbook to start`
 
-#### Scenario: Preserve standalone component use
-- **WHEN** a caller directly invokes an otherwise eligible `zpps-*` component for targets with no active reminder workflow
-- **THEN** ZPP reports the invocation as untracked and preserves the component's existing standalone behavior
+#### Scenario: Conformance trace for standalone component use
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Require registration only for complete playbooks","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Preserve standalone component use"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Preserve standalone component use`
 
 ### Requirement: Inspect and directly customize reminder stages
 ZPP SHALL expose structured status and stop operations plus direct `insert`, `delete`,
@@ -71,21 +71,21 @@ revision history, approval workflow, or implicit authority. Stopping SHALL remov
 active reminder association without releasing, completing, or abandoning any Bundler
 lease.
 
-#### Scenario: Insert a custom reminder stage
-- **WHEN** a user inserts a valid uniquely identified component stage before or after an existing stage
-- **THEN** subsequent status and sequence checks expose that stage at the requested position
+#### Scenario: Conformance trace for custom stage insertion
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Inspect and directly customize reminder stages","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Insert a custom reminder stage"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Insert a custom reminder stage`
 
-#### Scenario: Upsert a reminder stage idempotently
-- **WHEN** a user upserts a stage that is absent and then repeats the same upsert
-- **THEN** ZPP creates one stage on the first request and returns the same single stage configuration on the repeated request
+#### Scenario: Conformance trace for idempotent stage upsert
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Inspect and directly customize reminder stages","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Upsert a reminder stage idempotently"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Upsert a reminder stage idempotently`
 
-#### Scenario: Reject an invalid checklist edit
-- **WHEN** a user edit would create a duplicate stage ID, reference an unknown component, or name an unavailable position
-- **THEN** ZPP rejects that edit without changing the persisted checklist
+#### Scenario: Conformance trace for invalid checklist edit
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Inspect and directly customize reminder stages","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Reject an invalid checklist edit"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Reject an invalid checklist edit`
 
-#### Scenario: Stop reminder state independently of leases
-- **WHEN** a user stops an active reminder workflow
-- **THEN** ZPP removes that workflow reminder while leaving all Bundler lease state unchanged
+#### Scenario: Conformance trace for independent reminder stop
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Inspect and directly customize reminder stages","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Stop reminder state independently of leases"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Stop reminder state independently of leases`
 
 ### Requirement: Return strong non-blocking sequence reminders
 For an active workflow reminder, the kernel SHALL compare each requested component
@@ -96,13 +96,13 @@ stages, and a prominent warning while retaining `allowed: true`. Reminder compar
 SHALL NOT dispatch a component, infer an outcome, or convert the warning into
 mutation or checkpoint authority.
 
-#### Scenario: Confirm an in-sequence request
-- **WHEN** the requested component matches the first pending registered stage
-- **THEN** the kernel returns `allowed: true`, `sequence_match: true`, and the matching workflow and stage identities
+#### Scenario: Conformance trace for in-sequence reminder
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Return strong non-blocking sequence reminders","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Confirm an in-sequence request"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Confirm an in-sequence request`
 
-#### Scenario: Warn about an out-of-sequence request
-- **WHEN** a requested component differs from the first pending registered stage
-- **THEN** the kernel returns `allowed: true`, `sequence_match: false`, the expected stage, the unfinished checklist, and a visible warning without selecting or invoking another component
+#### Scenario: Conformance trace for out-of-sequence warning
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Return strong non-blocking sequence reminders","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Warn about an out-of-sequence request"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Warn about an out-of-sequence request`
 
 ### Requirement: Conditional prompt-submission reminder hook
 ZPP SHALL package a separate native hook identity named `zpp-workflow-reminder` for
@@ -121,21 +121,21 @@ SHALL NOT infer event support from an agent name or write a native destination
 directly. When an adapter does not confirm a suitable event, ZPP SHALL omit the hook
 for that agent and retain kernel sequence reminders as the portable path.
 
-#### Scenario: Inject compact active workflow status on prompt submission
-- **WHEN** a supported agent with a confirmed prompt-submission context event receives a user prompt in a repository with an active workflow reminder
-- **THEN** `zpp-workflow-reminder` injects only the workflow identity, next stage and component, and remaining-stage count without changing reminder or lease state
+#### Scenario: Conformance trace for active prompt reminder
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Conditional prompt-submission reminder hook","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Inject compact active workflow status on prompt submission"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Inject compact active workflow status on prompt submission`
 
-#### Scenario: Stay silent without an active workflow
-- **WHEN** the prompt-submission reminder hook runs in a repository without an active workflow reminder
-- **THEN** it emits no prompt context and creates no workflow, product-home, or lease state
+#### Scenario: Conformance trace for silent inactive prompt reminder
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Conditional prompt-submission reminder hook","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Stay silent without an active workflow"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Stay silent without an active workflow`
 
-#### Scenario: Omit an unsupported native reminder hook
-- **WHEN** Agent Router does not confirm a prompt-submission context event for a selected agent
-- **THEN** ZPP projects no `zpp-workflow-reminder` hook for that agent and kernel reminder behavior remains available
+#### Scenario: Conformance trace for unsupported adapter omission
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Conditional prompt-submission reminder hook","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Omit an unsupported native reminder hook"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Omit an unsupported native reminder hook`
 
-#### Scenario: Reconcile the reminder hook through Agent Router
-- **WHEN** a lifecycle operation projects or removes an eligible agent's current ZPP integration
-- **THEN** it reconciles `zpp-workflow-reminder` through Agent Router in the selected scope without changing the separately packaged `zpp-traits` hook behavior
+#### Scenario: Conformance trace for Agent Router reminder lifecycle
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Conditional prompt-submission reminder hook","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Reconcile the reminder hook through Agent Router"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Reconcile the reminder hook through Agent Router`
 
 ### Requirement: Advance reminders only from accepted matching results
 After kernel result assessment, ZPP SHALL mark a registered stage completed or
@@ -145,17 +145,17 @@ component result, a warning acknowledgement, or a failed or blocked result SHALL
 advance the checklist. Checklist progress SHALL survive later CLI processes and
 agent turns until explicitly changed or stopped.
 
-#### Scenario: Record an accepted matching stage
-- **WHEN** the first pending stage's configured component returns an accepted completed or not-applicable result
-- **THEN** ZPP records that stage outcome and exposes the following pending stage as the next reminder
+#### Scenario: Conformance trace for accepted matching result
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Advance reminders only from accepted matching results","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Record an accepted matching stage"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Record an accepted matching stage`
 
-#### Scenario: Preserve progress across processes
-- **WHEN** a later CLI process inspects the same exact targets after accepted stage progress
-- **THEN** it observes the persisted outcomes and the same next pending reminder
+#### Scenario: Conformance trace for cross-process reminder progress
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Advance reminders only from accepted matching results","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Preserve progress across processes"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Preserve progress across processes`
 
-#### Scenario: Ignore unrelated read-only evidence
-- **WHEN** read-only exploration runs while a workflow reminder is active
-- **THEN** its result does not complete, skip, delete, or reorder any registered stage
+#### Scenario: Conformance trace for unrelated read-only evidence
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Advance reminders only from accepted matching results","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Ignore unrelated read-only evidence"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Ignore unrelated read-only evidence`
 
 ### Requirement: Keep reminder state separate from lease authority
 Workflow reminder state SHALL be stored and managed by ZPP independently of Bundler
@@ -165,10 +165,10 @@ progress, or removal SHALL NOT acquire, expand, complete, abandon, or authorize 
 lease. Lease operations SHALL continue to govern only exact OpenSpec store/change
 ownership.
 
-#### Scenario: Start before governed mutation
-- **WHEN** a playbook starts its reminder before any governed mutation requires a lease
-- **THEN** the checklist is available without creating or acquiring a Bundler bundle
+#### Scenario: Conformance trace for pre-mutation reminder start
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Keep reminder state separate from lease authority","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Start before governed mutation"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Start before governed mutation`
 
-#### Scenario: Associate an observed bundle without changing it
-- **WHEN** a later kernel guard acquires a bundle for the workflow's exact targets
-- **THEN** ZPP may expose that bundle identity with reminder status while preserving the existing Bundler members and authority semantics
+#### Scenario: Conformance trace for observed bundle association
+- **WHEN** conformance is evaluated for `{"root":"repo:openspec","capability":"workflow-registration","requirement":"Keep reminder state separate from lease authority","feature":"features/workflow_registration/workflow_registration.feature","scenario":"Associate an observed bundle without changing it"}`
+- **THEN** executable acceptance authority is `features/workflow_registration/workflow_registration.feature::Associate an observed bundle without changing it`
