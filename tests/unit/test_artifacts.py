@@ -297,6 +297,69 @@ def test_packaged_skills_compose_compact_runtime_contract_guidance() -> None:
     )
 
 
+def test_packaged_bdd_authority_rejects_non_behavioral_evidence() -> None:
+    documents = {
+        skill.name: next(
+            item.content.decode("utf-8")
+            for item in skill.files
+            if item.relative_path == "SKILL.md"
+        )
+        for skill in packaged_workflow_skills()
+    }
+    shaping = documents["zpps-shape-bdd"]
+    verification = documents["zpps-verify-change"]
+
+    for rejected in (
+        "Literal-text matching",
+        "self-recording steps",
+        "execution-only checks",
+        "pure occurrence or collection counts",
+        "shared capability-wide assertions",
+    ):
+        assert rejected in shaping
+    assert "cannot be the scenario's sole public-system observation" in shaping
+    assert "counts only as supplemental constraints" in verification
+
+
+def test_packaged_bdd_authority_keeps_trace_on_feature_side_only() -> None:
+    workflows = {
+        skill.name: next(
+            item.content.decode("utf-8")
+            for item in skill.files
+            if item.relative_path == "SKILL.md"
+        )
+        for skill in packaged_workflow_skills()
+    }
+    companions = {
+        skill.name: {
+            item.relative_path: item.content.decode("utf-8") for item in skill.files
+        }
+        for skill in packaged_companion_skills()
+    }
+
+    assert "feature-side declaration is the complete trace" in workflows[
+        "zpps-form-specs"
+    ]
+    assert "no scenario corresponding to that BDD example" in workflows[
+        "zpps-sync-specs"
+    ]
+    assert "no corresponding OpenSpec scenario" in workflows["zpps-verify-change"]
+    assert "no corresponding OpenSpec scenario" in workflows["zpps-archive-change"]
+    assert "no corresponding OpenSpec scenario" in workflows[
+        "zpps-bulk-archive-change"
+    ]
+    assert "no corresponding OpenSpec scenario" in workflows["zpps-apply-change"]
+
+    maintenance = companions["zpp-maintain-openspec"]
+    assert "OpenSpec retains no surrogate" in maintenance["SKILL.md"]
+    assert "Preserve every full OpenSpec WHEN/THEN scenario" in maintenance[
+        "SKILL.md"
+    ]
+    assert "do not retain a target-form surrogate" in maintenance[
+        "references/maintenance-contract.md"
+    ]
+
+
 def test_packaged_collection_has_contextual_execution_and_tool_facets() -> None:
     documents = {
         item.family: tomllib.loads(item.content.decode("utf-8"))

@@ -22,7 +22,7 @@ Classify each accepted archive item by what it represents:
 | --- | --- |
 | Current behavior or constraint | Canonical OpenSpec requirement |
 | Current scenario without qualifying BDD coverage, or current serialization | Complete canonical OpenSpec scenario or clause |
-| Current scenario with qualifying BDD coverage | Canonical target-form scenario plus its exact feature-owned executable behavior |
+| Current scenario with qualifying BDD coverage | Canonical requirement plus its exact bound feature-owned executable behavior; no OpenSpec scenario |
 | Current owner boundary | Canonical OpenSpec requirement |
 | Historical rationale | Traceable zmem decision or lesson |
 | Fully superseded decision | Traceable zmem decision, followed by exact `CANCEL` |
@@ -31,28 +31,22 @@ The appropriate destination is sufficient. Do not require every proposal sentenc
 
 Never use zmem as the only home of current normative behavior. Partial preservation, unresolved policy, contradictory destinations, and ambiguous ownership block removal.
 
-## BDD-target preservation
+## BDD-owned scenario preservation
 
-An OpenSpec scenario may omit duplicated executable steps only when it retains an
-exact target of this form:
-
-```markdown
-#### Scenario: BDD target — <scenario name>
-- **WHEN** executable behavior is covered by `features/<capability>/<capability>.feature::<scenario name>`
-- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
-```
-
-Verify the exact feature and scenario exist, share the capability owner, trace to
+An OpenSpec scenario is removed completely when its executable behavior is owned by
+a qualifying BDD scenario. Verify the exact feature and scenario exist, share the capability owner, trace to
 the requirement, use scenario-selected bindings that exercise the named behavior
 through the public system, and pass relevant verification. A recorder, wording
-assertion, shared capability-wide assertion, semantic guess, stale path, or failed
-verification provides no coverage.
+assertion, execution-only check, pure count, shared capability-wide assertion,
+semantic guess, stale path, or failed verification provides no coverage. Counts may
+only supplement an independently observed behavioral result.
 
-Preservation for covered behavior is the pair: canonical requirement and target,
-plus the exact feature-owned executable scenario. Preserve a complete canonical
-WHEN/THEN scenario whenever that pair cannot be proven. If either half of an
-existing pair is stale or insufficient, mark consolidation and archive removal
-blocked until the full scenario is restored or valid coverage is established.
+Preservation for covered behavior is the canonical requirement plus the exact bound
+feature-owned executable scenario. The feature-side binding is the complete trace;
+do not retain a target-form surrogate in OpenSpec. Preserve a complete canonical
+WHEN/THEN scenario whenever that pairing cannot be proven. If the binding or evidence
+is stale or insufficient, mark consolidation and archive removal blocked until the
+full scenario is restored or valid coverage is established.
 
 ## Same-behavior consolidation
 
@@ -101,7 +95,7 @@ Record each exact archived path with:
 
 - affected capabilities;
 - item-level canonical or zmem preservation destinations;
-- exact BDD targets and scenario-selected verification when executable behavior is feature-owned;
+- exact feature-side BDD bindings and scenario-selected verification when executable behavior is feature-owned;
 - required canonical merges;
 - superseded items and capability-version counts;
 - required zmem effects;

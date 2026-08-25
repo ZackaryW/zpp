@@ -97,10 +97,10 @@ For every conflict:
 4. record every inclusion/exclusion keyed by change and capability, merge order, and
    evidence-based rationale.
 
-Do not mistake an OpenSpec checkbox, a trace anchor, or descriptive prose for
-implementation evidence. Preserve ZPP's single acceptance authority: executable
-public-system behavior stays in capability feature scenarios, while canonical specs
-retain identical five-field trace-only anchors without concrete acceptance duplicates.
+Do not mistake an OpenSpec checkbox or descriptive prose for implementation evidence.
+Preserve ZPP's single acceptance authority: executable public-system behavior and its
+five-field trace stay in capability feature scenarios, while canonical specs retain
+the normative requirement and no corresponding OpenSpec scenario.
 
 ## Present and confirm once
 
@@ -155,7 +155,7 @@ Process changes in the resolved dependency/chronological order:
    - REMOVED requirements absent, including safe file deletion for a retired
      capability rather than an empty Requirements section;
    - RENAMED target present and source absent;
-   - exact trace-only bindings preserved and no duplicated executable acceptance.
+   - exact feature-side bindings preserved and no corresponding OpenSpec scenario.
 
    Do not verify excluded deltas. If sync, validation, comparison, or binding audit
    fails, record that change as `Failed`, leave its `changeRoot` intact, and continue

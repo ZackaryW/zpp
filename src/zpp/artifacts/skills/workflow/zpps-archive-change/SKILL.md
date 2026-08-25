@@ -101,9 +101,9 @@ lifecycle command.
    changed paths—with its canonical spec. Require ADDED requirements present,
    MODIFIED descriptions/scenarios applied with unaffected scenarios intact, REMOVED
    requirements gone (including verified capability retirement), and RENAMED targets
-   present with sources absent. Also require all executable BDD obligations to retain
-   their exact trace-only OpenSpec anchors without duplicated concrete acceptance
-   behavior. If sync failed or any comparison/binding does not match, return `failed`
+   present with sources absent. Also require every executable BDD obligation to retain
+   its exact feature-side binding and no corresponding OpenSpec scenario. If sync
+   failed or any comparison/binding does not match, return `failed`
    without moving `changeRoot`; it remains available for repair and retry.
 
 6. Ensure only the parent directory `<planningHome.changesDir>/archive` exists. Derive

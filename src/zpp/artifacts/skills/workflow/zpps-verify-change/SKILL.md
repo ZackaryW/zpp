@@ -80,16 +80,21 @@ or normative specification content.
 For a BDD-backed public-system obligation:
 
 - parse the compact JSON in the feature-side `# zpp-spec:` declaration immediately
-  above the scenario and the OpenSpec trace-only conformance scenario;
-- require exactly the same five values, in order: `root`, `capability`, `requirement`,
+  above the scenario;
+- require exactly five values, in order: `root`, `capability`, `requirement`,
   `feature`, and `scenario`;
 - resolve `store:<uuid>` only through `openspec store list --json`, or resolve
   `repo:<git-root-relative-path-to-openspec-root>` inside the current worktree;
 - require the exact capability directory identity, exact requirement heading,
   normalized Git-root-relative feature path, and exactly one matching scenario title;
-- require the feature declaration to be immediately adjacent to its scenario and the
-  OpenSpec target to resolve back to the identical tuple;
-- reject missing, malformed, guessed, stale, ambiguous, one-way, or orphaned bindings;
+- require the feature declaration to be immediately adjacent to its scenario and to
+  resolve to the exact OpenSpec requirement;
+- require no corresponding OpenSpec scenario, whether concrete, trace-only, or
+  target-form;
+- reject missing, malformed, guessed, stale, ambiguous, or orphaned bindings;
+- reject literal-text-only, self-recording, execution-only, pure-counting, or shared
+  capability-wide evidence; accept counts only as supplemental constraints on an
+  independently observed behavioral outcome;
 - reject a BDD-backed requirement without an executable feature scenario and reject a
   concrete OpenSpec GIVEN/WHEN/THEN duplicate of that feature scenario.
 
@@ -102,7 +107,8 @@ Map each requirement to implementation evidence and compare behavior with the
 requirement's intent. A demonstrated divergence is a `WARNING`; an absent required
 implementation is `CRITICAL`. For each executable scenario, consume supplied native
 repository evidence that identifies the exact scenario/target and command result.
-Do not treat a trace-only conformance anchor as executable evidence.
+Do not treat descriptive OpenSpec prose or a removed legacy trace-only scenario as
+executable evidence.
 
 If required executable evidence is absent, stale, failed, or does not cover the
 resolved scenario, return `repository-evidence-required` and identify the exact

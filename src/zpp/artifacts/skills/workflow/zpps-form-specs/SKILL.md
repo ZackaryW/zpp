@@ -1,6 +1,6 @@
 ---
 name: zpps-form-specs
-description: Audit resolved OpenSpec-to-BDD authority and optionally write exact trace-only form; do not discover missing behavior evidence or synchronize canonical specs.
+description: Audit resolved OpenSpec-to-BDD authority and optionally remove BDD-owned OpenSpec scenarios; do not discover missing behavior evidence or synchronize canonical specs.
 ---
 
 # Form specifications without duplicate acceptance authority
@@ -13,9 +13,9 @@ readiness, procedure, failure, and stopping behavior below.
 
 Admit this component only when an active playbook configures this exact formation or
 the caller's immediate operation is to audit resolved OpenSpec/BDD authority and
-prepare its trace-only specification form. Required readiness includes an accepted
+prepare its single-authority specification form. Required readiness includes an accepted
 contract, identified change, binding inventory, and mature evidence. A read-only
-authority audit needs no mutation intent; any trace-form edit additionally requires
+authority audit needs no mutation intent; any scenario-removal edit additionally requires
 explicit intent for that exact write or exact playbook configuration. Unresolved
 behavior or integration evidence belongs to exploration, and canonical merging is a
 separate synchronization operation.
@@ -36,19 +36,20 @@ canonical specification reconciliation, return `skipped: not applicable` with th
 evidence. A governed prose or declarative delta is applicable even without BDD and
 therefore cannot use this skip.
 
-Resolve every OpenSpec-to-feature binding in both directions. Each executable
+Resolve every feature-side binding to its exact OpenSpec requirement. Each executable
 obligation must have one or more scenario-selected public-system feature authorities
-and no semantically equivalent concrete OpenSpec example. A specification-only
+and no corresponding OpenSpec scenario of any form. A specification-only
 obligation must have no feature claiming executable authority. Reject stale,
-cross-capability, unverified, recorder-only, wording-only, or orphaned bindings.
+cross-capability, unverified, self-recording, execution-only, literal-text-only,
+pure-counting, capability-wide, or orphaned bindings. Counts are acceptable only as
+supplemental constraints on an independently observed behavior.
 
-Require the feature-side `# zpp-spec:` declaration and the OpenSpec trace-only
-conformance scenario to contain identical compact JSON with ordered `root`,
-`capability`, `requirement`, `feature`, and `scenario` keys. Use `store:<uuid>` only
+Require the feature-side `# zpp-spec:` declaration to contain compact JSON with
+ordered `root`, `capability`, `requirement`, `feature`, and `scenario` keys. Use `store:<uuid>` only
 for an exact discovered registered-store UUID; otherwise use a normalized
 `repo:<git-root-relative-path-to-openspec-root>`. Require the feature path and
-scenario title to resolve uniquely, and name the exact `<feature>::<scenario>` target
-without restating executable steps in OpenSpec.
+scenario title to resolve uniquely to the named requirement. Require the corresponding
+OpenSpec scenario to be absent; the feature-side declaration is the complete trace.
 
 On the first pass, make only the allowed delta-spec authority corrections and perform
 the semantic duplicate/orphan audit. If canonical deltas remain, return

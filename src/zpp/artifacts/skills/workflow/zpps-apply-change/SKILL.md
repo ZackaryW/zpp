@@ -94,12 +94,13 @@ invoke a ZPP lifecycle command on the owner's behalf.
      after, the behavior is fully implemented and the focused evidence passes;
    - continue to the next pending task.
 
-   Preserve ZPP's single acceptance authority. A public-system BDD scenario belongs
-   only in its capability-owned feature root; OpenSpec retains only the identical
-   five-field trace-only conformance anchor. Do not recreate concrete GIVEN/WHEN/THEN
-   acceptance behavior in OpenSpec, remove or guess a `# zpp-spec:` binding, or claim
-   a spec-only obligation from a feature. Pure-function case matrices belong in unit
-   tests, with public BDD retained only where it observes the public system.
+   Preserve ZPP's single acceptance authority. A public-system BDD scenario and its
+   five-field `# zpp-spec:` trace belong only in the capability-owned feature root;
+   OpenSpec retains the normative requirement and no corresponding OpenSpec scenario. Do not
+   recreate concrete, trace-only, or target-form acceptance scenarios in OpenSpec,
+   remove or guess a feature-side binding, or claim a spec-only obligation from a
+   feature. Pure-function case matrices belong in unit tests, with public BDD retained
+   only where it observes the public system.
 
 5. Pause and return `blocked` when a task is ambiguous, implementation exposes a
    design contradiction, required work exceeds the accepted artifacts, a proposed

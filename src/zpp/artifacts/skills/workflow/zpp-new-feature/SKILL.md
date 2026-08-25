@@ -72,7 +72,8 @@ Return the accepted planning result to registered execution.
 
 Use `zpps-shape-bdd` with the accepted agreement, exact OpenSpec root, capability
 owner, provisional examples, and binding inventory. Require transfer of every
-testable example to capability BDD and trace-only OpenSpec anchors. On
+testable example and its trace to capability BDD, leaving no corresponding OpenSpec
+scenario. On
 `kernel-assessment-required`, obtain the named guard and re-enter. On `blocked`,
 pause. Assess `completed` through the kernel and return it.
 

@@ -105,12 +105,13 @@ Canonical documents must have one `## Purpose`, one `## Requirements`, and ordin
 never copy a delta file wholesale.
 
 Preserve ZPP's single acceptance authority during every merge. A public-system
-executable example remains only in its capability feature file. Canonical OpenSpec
-retains the identical five-field trace-only conformance anchor (`root`, `capability`,
-`requirement`, `feature`, `scenario`) and no duplicate concrete behavior steps. Do not
-invent or rewrite either side of a binding to make it resolve. Preserve exact
-trace-only anchors through modification and rename; block and report any ambiguous,
-orphaned, one-way, or duplicate acceptance authority rather than canonizing it.
+executable example and its five-field trace (`root`, `capability`, `requirement`,
+`feature`, `scenario`) remain only in the capability feature file. Canonical OpenSpec
+retains the normative requirement and no scenario corresponding to that BDD example.
+Do not invent or rewrite a feature-side binding to make it resolve. Preserve the
+binding through modification and rename while removing any BDD-owned OpenSpec
+scenario; block and report ambiguous, orphaned, or duplicate acceptance authority
+rather than canonizing it.
 
 ### Capability retirement
 

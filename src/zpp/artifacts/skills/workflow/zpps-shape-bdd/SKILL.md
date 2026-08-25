@@ -51,13 +51,17 @@ above each scenario, write compact JSON with exactly these ordered keys:
 
 Use `store:<uuid>` only for the exact UUID returned by the public registered-store
 list. Otherwise use `repo:<git-root-relative-path-to-openspec-root>` with forward
-slashes. Never mint or infer a UUID. Replace the OpenSpec concrete example with a
-trace-only conformance scenario carrying the identical five values and naming the
-exact `<feature>::<scenario>` target; do not repeat executable steps there.
+slashes. Never mint or infer a UUID. After creating the bound feature scenario,
+remove its corresponding OpenSpec scenario completely. Retain the normative OpenSpec
+requirement, but do not create a concrete, trace-only, target-form, or other
+surrogate scenario for behavior now owned by BDD.
 
-Require every binding to resolve uniquely in both directions and every scenario to
-exercise the named behavior through the public system. Recorder-only steps, wording
-assertions, and a shared capability-wide assertion block are not acceptance evidence.
+Require every feature-side binding to resolve uniquely to its OpenSpec root,
+capability, and requirement and every scenario to exercise the named behavior through
+the public system. Literal-text matching, self-recording steps, execution-only checks,
+pure occurrence or collection counts, and shared capability-wide assertions are not
+acceptance evidence. A count may constrain an already observed behavioral outcome,
+but it cannot be the scenario's sole public-system observation.
 Run the capability feature root independently and preserve relevant RED. After every
 required edit and that evidence succeed, update only supplied OpenSpec tasks whose
 text and scope are each fully satisfied by this shaping result. Never mark a partial,

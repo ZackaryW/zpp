@@ -39,8 +39,8 @@ Report the counts and exact next actions first. Put per-path evidence and mappin
 ## Reconcile scenarios with BDD authority
 
 Before merging or removing any scenario content, determine whether an established
-BDD scenario owns its executable behavior. Replace duplicated OpenSpec steps with
-an exact target-form scenario only when all of these facts are observed:
+BDD scenario owns its executable behavior. Remove the corresponding OpenSpec scenario
+completely only when all of these facts are observed:
 
 - `features/<capability>/<capability>.feature::<scenario name>` exists under the
   same capability owner and traces to the canonical requirement;
@@ -48,18 +48,12 @@ an exact target-form scenario only when all of these facts are observed:
   public system; and
 - relevant verification for that exact scenario passes.
 
-Retain the canonical scenario in this form:
-
-```markdown
-#### Scenario: BDD target — <scenario name>
-- **WHEN** executable behavior is covered by `features/<capability>/<capability>.feature::<scenario name>`
-- **THEN** that exact feature scenario is the executable authority and this specification does not repeat its steps
-```
-
-Treat the canonical target and feature-owned behavior together as preservation.
-Neither is complete alone. Preserve every full OpenSpec WHEN/THEN scenario that
+Treat the canonical requirement and feature-owned behavior together as preservation;
+the feature-side binding is the complete trace and OpenSpec retains no surrogate
+scenario. Preserve every full OpenSpec WHEN/THEN scenario that
 lacks qualifying BDD coverage. Missing, stale, cross-capability, untraced,
-recorder-only, capability-wide, wording-only, or unverified targets block
+recorder-only, execution-only, capability-wide, literal-text-only, pure-counting, or
+unverified targets block
 consolidation or removal; similar names and prose never establish coverage.
 
 ## Preserve operation owners
