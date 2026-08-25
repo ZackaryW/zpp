@@ -95,7 +95,7 @@ def supported_prompt_adapter(context) -> None:
 @given("an adapter without a confirmed prompt-submission context event")
 def unsupported_prompt_adapter(context) -> None:
     _environment(context)
-    context.agent = Agent.CODEX
+    context.agent = Agent.KIMI
 
 
 @given("an active reminder under a confirmed prompt-submission adapter")
