@@ -22,4 +22,4 @@
 ## 5. Release Version Synchronization
 
 - [x] 5.1 Set the project, public module, and locked editable-distribution versions to `2.1.4` without changing dependency resolution.
-- [ ] 5.2 Verify project, module, CLI, and built-distribution version agreement, then rerun the complete repository release gates.
+- [x] 5.2 Verify project, module, CLI, and built-distribution version agreement, then rerun the complete repository release gates.
