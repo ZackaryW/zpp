@@ -337,27 +337,24 @@ def test_packaged_bdd_authority_keeps_trace_on_feature_side_only() -> None:
         for skill in packaged_companion_skills()
     }
 
-    assert "feature-side declaration is the complete trace" in workflows[
-        "zpps-form-specs"
-    ]
-    assert "no scenario corresponding to that BDD example" in workflows[
-        "zpps-sync-specs"
-    ]
+    assert (
+        "feature-side declaration is the complete trace" in workflows["zpps-form-specs"]
+    )
+    assert (
+        "no scenario corresponding to that BDD example" in workflows["zpps-sync-specs"]
+    )
     assert "no corresponding OpenSpec scenario" in workflows["zpps-verify-change"]
     assert "no corresponding OpenSpec scenario" in workflows["zpps-archive-change"]
-    assert "no corresponding OpenSpec scenario" in workflows[
-        "zpps-bulk-archive-change"
-    ]
+    assert "no corresponding OpenSpec scenario" in workflows["zpps-bulk-archive-change"]
     assert "no corresponding OpenSpec scenario" in workflows["zpps-apply-change"]
 
     maintenance = companions["zpp-maintain-openspec"]
     assert "OpenSpec retains no surrogate" in maintenance["SKILL.md"]
-    assert "Preserve every full OpenSpec WHEN/THEN scenario" in maintenance[
-        "SKILL.md"
-    ]
-    assert "do not retain a target-form surrogate" in maintenance[
-        "references/maintenance-contract.md"
-    ]
+    assert "Preserve every full OpenSpec WHEN/THEN scenario" in maintenance["SKILL.md"]
+    assert (
+        "do not retain a target-form surrogate"
+        in maintenance["references/maintenance-contract.md"]
+    )
     assert "Recognize memory-fold provenance" in maintenance["SKILL.md"]
     assert "no archive path was created" in " ".join(
         maintenance["references/maintenance-contract.md"].split()
@@ -429,9 +426,7 @@ def test_packaged_memory_fold_is_conservative_and_recoverable() -> None:
     assert "restore the exact temporary change" in preservation
     assert "intentional zmem-only commit" in preservation
     assert "proof that no archive path was created" in preservation
-    assert "Never fall back from a failed memory fold" in " ".join(
-        preservation.split()
-    )
+    assert "Never fall back from a failed memory fold" in " ".join(preservation.split())
 
     for name in COMPLETE_WORKFLOW_SKILL_NAMES:
         assert "`memory-fold-required`" in workflows[name]
