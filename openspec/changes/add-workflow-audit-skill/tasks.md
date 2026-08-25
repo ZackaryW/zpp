@@ -6,15 +6,15 @@
 
 ## 2. Packaged audit skill
 
-- [ ] 2.1 Add focused RED artifact tests requiring the `zpp-audit-workflows` companion skill, concise discriminating metadata, automatic discoverability, and its referenced audit contract.
-- [ ] 2.2 Author `zpp-audit-workflows/SKILL.md` with complete-workflow JSON discovery, distinct queued subagents, empty Git/OpenSpec workspaces, complete mock sequence execution, contamination checks, and interactive gap closeout.
-- [ ] 2.3 Add `references/audit-contract.md` with workflow-specific synthetic requests, full stage/branch simulation, typed gap and closeout schemas, and aggregate result contract.
-- [ ] 2.4 Add consistent `agents/openai.yaml` metadata and validate the completed skill with the skill-creator quick validator.
+- [x] 2.1 Add focused RED artifact tests requiring the `zpp-audit-workflows` companion skill, concise discriminating metadata, automatic discoverability, and its referenced audit contract.
+- [x] 2.2 Author `zpp-audit-workflows/SKILL.md` with complete-workflow JSON discovery, distinct queued subagents, empty Git/OpenSpec workspaces, complete mock sequence execution, contamination checks, and interactive gap closeout.
+- [x] 2.3 Add `references/audit-contract.md` with workflow-specific synthetic requests, full stage/branch simulation, typed gap and closeout schemas, and aggregate result contract.
+- [x] 2.4 Add consistent `agents/openai.yaml` metadata and validate the completed skill with the skill-creator quick validator.
 
 ## 3. Projection and conformance verification
 
 - [x] 3.1 Update focused companion inventory and lifecycle expectations so Agent Router projects the new skill in deterministic companion order.
-- [ ] 3.2 Run targeted workflow-auditing Behave scenarios and focused artifact, lifecycle, and integration pytest selectors.
+- [x] 3.2 Run targeted workflow-auditing Behave scenarios and focused artifact, lifecycle, and integration pytest selectors.
 - [ ] 3.3 Forward-test the installed audit skill with one fresh subagent and disposable Git/OpenSpec workspace per complete workflow, queuing assignments when concurrency is exhausted.
 - [ ] 3.4 Confirm forward simulations close their synthetic changes, leave source Git, live reminder state, and retained lease state unchanged, and classify every unresolved transition truthfully.
 - [ ] 3.5 Interactively close every accepted source gap and rerun the affected workflow from a fresh workspace until it closes or retains an explicit deferred, rejected, or blocked result.

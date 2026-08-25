@@ -172,10 +172,30 @@ def test_packaged_companion_inventory_binds_the_vendored_zmem_skills() -> None:
     assert tuple(skill.name for skill in packaged_companion_skills()) == (
         "zmem-author-commits",
         "zmem-query-memory",
+        "zpp-audit-workflows",
         "zpp-author-trait",
         "zpp-configure-behave",
         "zpp-maintain-openspec",
     )
+
+
+def test_packaged_workflow_audit_skill_has_progressive_disclosure() -> None:
+    companions = {skill.name: skill for skill in packaged_companion_skills()}
+    audit = companions["zpp-audit-workflows"]
+    files = {item.relative_path: item.content for item in audit.files}
+
+    assert set(files) == {
+        "SKILL.md",
+        "agents/openai.yaml",
+        "references/audit-contract.md",
+    }
+    assert b"references/audit-contract.md" in files["SKILL.md"]
+    assert b"one distinct bounded subagent" in files["SKILL.md"]
+    assert b"git init" in files["references/audit-contract.md"]
+    assert b"openspec init" in files["references/audit-contract.md"]
+    assert b"closed-in-fixture" in files["references/audit-contract.md"]
+    assert b"accepted-fix" in files["references/audit-contract.md"]
+    assert b"$zpp-audit-workflows" in files["agents/openai.yaml"]
 
 
 def test_packaged_authoring_skills_are_valid_cross_agent_assets() -> None:
