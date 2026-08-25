@@ -9,120 +9,118 @@ def _audit(context) -> support.Audit:
     return context.audit
 
 
-@given("disposable audit workspaces for every complete workflow")
-def disposable_workspaces(context) -> None:
+@given("one reusable mock base project")
+def reusable_mock_base(context) -> None:
     _audit(context)
 
 
-@given("completed mock results for every workflow")
-def completed_results(context) -> None:
-    audit = _audit(context)
-    context.results = {
-        assignment.workflow: audit.run_mock(assignment)
-        for assignment in audit.assignments
-    }
+@when("the coordinator assigns the next workflow")
+def assign_next_workflow(context) -> None:
+    context.assignment = context.audit.assign_next()
 
 
-@when("a maintainer prepares disposable workflow audit repositories")
-def prepare_repositories(context) -> None:
-    audit = _audit(context)
-    context.results = tuple(
-        audit.run_mock(assignment) for assignment in audit.assignments
-    )
+@then("one fresh clone has exact Git and OpenSpec identities")
+def exact_clone_identities(context) -> None:
+    assignment = context.assignment
+    assert assignment.repository != context.audit.base_repository
+    assert (assignment.repository / ".git").is_dir()
+    assert (assignment.repository / "openspec").is_dir()
+    context.audit.assert_repository_scope(assignment.repository)
 
 
-@when("every synthetic change follows its complete workflow sequence")
-def run_complete_sequences(context) -> None:
-    context.results = tuple(
-        context.audit.run_mock(assignment) for assignment in context.audit.assignments
-    )
+@then("the base was initialized only once")
+def one_base_initialization(context) -> None:
+    assert context.audit.base_initializations == 1
 
 
-@when("incomplete mock fixtures are reconciled through closeout")
-def reconcile_fixtures(context) -> None:
-    context.results = tuple(
-        context.audit.run_mock(assignment) for assignment in context.audit.assignments
-    )
-
-
-@when("an accepted workflow gap is rerun")
-def rerun_gap(context) -> None:
-    assignment = context.audit.assignments[0]
-    context.selected = assignment.workflow
-    context.before = dict(context.results)
-    context.results[assignment.workflow] = context.audit.run_mock(
-        assignment, revision=2
-    )
-
-
-@then("one fresh Git and OpenSpec workspace exists per complete workflow")
-def fresh_workspaces(context) -> None:
-    assert len(context.results) == len(context.audit.assignments)
-    repositories = {result.repository for result in context.results}
-    assert len(repositories) == len(context.results)
-    for result in context.results:
-        assert (result.repository / ".git").is_dir()
-        assert (result.repository / "openspec").is_dir()
-
-
-@then("every workspace has a unique isolated ZPP product home")
-def isolated_homes(context) -> None:
-    homes = {result.product_home for result in context.results}
-    assert len(homes) == len(context.results)
-    assert all(context.audit.base in home.parents for home in homes)
+@when("one synthetic change follows its complete workflow sequence")
+def run_one_complete_sequence(context) -> None:
+    context.assignment = context.audit.assign_next()
+    context.result = context.audit.run_active()
 
 
 @then("every declared stage and required branch is observed")
 def complete_stage_evidence(context) -> None:
-    for result in context.results:
-        assert result.recorded_stages == result.declared_stages
-        assert set(result.branches) == {
-            "planning-operation",
-            "sync",
-            "repository-verification",
-            "change-verification",
-            "finalization",
-            "archive",
-        }
+    result = context.result
+    assert result.recorded_stages == result.declared_stages
+    assert all(event.input and event.result and event.decision for event in result.branches)
+    assert {event.name for event in result.branches} == {
+        "planning-operation",
+        "sync",
+        "repository-verification",
+        "change-verification",
+        "finalization",
+        "archive",
+    }
 
 
-@then("every synthetic change is validated archived and reminder-closed")
-def closed_changes(context) -> None:
-    for result in context.results:
-        assert result.archive_path.is_dir()
-        assert "scope-preflight" in result.operations
-        assert "strict-validation" in result.operations
-        assert "reminder-stop" in result.operations
+@then("its result and contamination status are checked before another assignment")
+def review_before_advance(context) -> None:
+    try:
+        context.audit.assign_next()
+    except RuntimeError as error:
+        assert "review" in str(error)
+    else:
+        raise AssertionError("another workflow was assigned before result review")
+    context.audit.review_active()
+    assert context.audit.can_advance
+    assert context.result.archive_path.is_dir()
+    assert context.result.sentinels_unchanged
+
+
+@when("one synthetic sequence encounters fixture gaps")
+def reconcile_one_sequence(context) -> None:
+    context.audit.assign_next()
+    context.result = context.audit.run_active()
 
 
 @then("every initial failure remains in a typed gap ledger")
 def gap_ledger(context) -> None:
-    for result in context.results:
-        assert result.gaps
-        assert all(gap.kind == "fixture-gap" for gap in result.gaps)
-        assert all(gap.observed for gap in result.gaps)
+    assert context.result.gaps
+    assert all(gap.kind and gap.observed for gap in context.result.gaps)
 
 
 @then("fixture repairs are distinguished from unresolved source gaps")
 def fixture_closeout(context) -> None:
-    for result in context.results:
-        assert all(gap.closeout == "closed-in-fixture" for gap in result.gaps)
-        assert not any(gap.kind == "source-gap" for gap in result.gaps)
+    assert all(
+        gap.closeout == "closed-in-fixture"
+        for gap in context.result.gaps
+        if gap.kind == "fixture-gap"
+    )
 
 
-@then("the selected workflow uses a fresh Git OpenSpec and product-home workspace")
-def fresh_rerun(context) -> None:
-    before = context.before[context.selected]
-    after = context.results[context.selected]
-    assert before.revision == 1 and after.revision == 2
-    assert before.repository != after.repository
-    assert before.product_home != after.product_home
-    assert before.archive_path != after.archive_path
+@given("one completed workflow result with accepted feedback")
+def completed_result_with_feedback(context) -> None:
+    audit = _audit(context)
+    audit.assign_next()
+    context.before = audit.run_active()
+    audit.review_active()
+    audit.accept_feedback("verification-drift")
 
 
-@then("all other workflow results and superseded evidence remain available")
-def preserve_results(context) -> None:
-    assert context.before[context.selected].revision == 1
-    for workflow, result in context.before.items():
-        if workflow != context.selected:
-            assert context.results[workflow] is result
+@when("the coordinator re-enters the full phases and reruns it")
+def rerun_after_full_phases(context) -> None:
+    context.after = context.audit.rerun_active()
+
+
+@then("the same workflow uses a fresh clone and product home")
+def fresh_same_workflow_rerun(context) -> None:
+    assert context.before.workflow == context.after.workflow
+    assert context.before.repository != context.after.repository
+    assert context.before.product_home != context.after.product_home
+    assert context.after.full_phase_reentry == (
+        "planning",
+        "shape-bdd",
+        "plan-utilities",
+        "mature-utilities",
+        "wire",
+        "form-specs",
+        "verify-repository",
+        "verify-change",
+    )
+
+
+@then("no later workflow is assigned before its feedback closes")
+def no_later_assignment(context) -> None:
+    assert set(context.audit.assigned_workflows) == {context.before.workflow}
+    assert context.audit.awaiting_review
