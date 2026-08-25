@@ -1,8 +1,8 @@
 ## 1. Executable audit behavior
 
-- [ ] 1.1 Add capability-owned Behave scenarios for disposable Git/OpenSpec initialization, one distinct subagent assignment per workflow, complete mock sequence closeout, typed gap ledgers, and fresh interactive reruns.
-- [ ] 1.2 Add shared Python lifecycle support in the capability support package and bindings in the established steps module without embedding reusable lifecycle logic in feature text.
-- [ ] 1.3 Add trace-only OpenSpec anchors for every executable workflow-auditing scenario.
+- [x] 1.1 Add capability-owned Behave scenarios for disposable Git/OpenSpec initialization, one distinct subagent assignment per workflow, complete mock sequence closeout, typed gap ledgers, and fresh interactive reruns.
+- [x] 1.2 Add shared Python lifecycle support in the capability support package and bindings in the established steps module without embedding reusable lifecycle logic in feature text.
+- [x] 1.3 Add trace-only OpenSpec anchors for every executable workflow-auditing scenario.
 
 ## 2. Packaged audit skill
 
