@@ -26,7 +26,9 @@ dispatcher.
 Owner-authorized end-to-end mode may follow these declared branches after accepted
 results and carries checkpoint authority only for new coherent stage-owned diffs.
 Checkpoint each material accepted stage through the kernel and
-`zmem-author-commits`; preserve unrelated work. End-to-end mode never supplies an
+`zmem-author-commits`; preserve unrelated work and keep every path under the active
+OpenSpec `changeRoot` out of checkpoint commits while continuing to update its tasks
+in the working tree. End-to-end mode never supplies an
 owner decision or missing mutation, archive, abandonment, or bypass authority.
 
 ## Reconcile the failure contract

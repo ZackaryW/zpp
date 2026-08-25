@@ -99,10 +99,15 @@ evidence and do not claim an audit or bundle transition occurred.
 At every material accepted result with a non-empty coherent stage-owned diff, require
 checkpoint authority and invoke the exact installed `zmem-author-commits` skill before
 returning stage completion. Supply the accepted contract revision, exact paths or
-hunks, passing stage verification, and authority. Require dependency-ordered commits,
-zmem validation of each complete message, preservation of unrelated work, and
-`zmem show` inspection of every resulting SHA. Return `checkpointed` only after all
-required checkpoint evidence succeeds. Without authority, return `blocked` with
+hunks, passing stage verification, and authority. Resolve every active OpenSpec
+`changeRoot` from current structured status before staging. Require dependency-ordered
+commits that stage explicit coherent source, test, and non-change artifacts while
+excluding every path under each active `changeRoot`; task updates remain in the
+working tree. Audit `git diff --cached --name-only` before message validation and
+block if an active-change path is present. An OpenSpec change becomes checkpoint
+eligible only at its observed archive path after archival. Require zmem validation of
+each complete message, preservation of unrelated work, and `zmem show` inspection of
+every resulting SHA. Return `checkpointed` only after all required checkpoint evidence succeeds. Without authority, return `blocked` with
 `checkpoint-authority-required`; do not call the gate accepted or defer its diff to
 finalization. A skipped action or empty diff returns `accepted` without an empty
 commit.

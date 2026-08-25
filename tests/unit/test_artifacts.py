@@ -360,6 +360,41 @@ def test_packaged_bdd_authority_keeps_trace_on_feature_side_only() -> None:
     ]
 
 
+def test_packaged_checkpoints_exclude_active_openspec_changes() -> None:
+    workflows = {
+        skill.name: next(
+            item.content.decode("utf-8")
+            for item in skill.files
+            if item.relative_path == "SKILL.md"
+        )
+        for skill in packaged_workflow_skills()
+    }
+    companions = {
+        skill.name: next(
+            item.content.decode("utf-8")
+            for item in skill.files
+            if item.relative_path == "SKILL.md"
+        )
+        for skill in packaged_companion_skills()
+    }
+
+    for name in COMPLETE_WORKFLOW_SKILL_NAMES:
+        document = workflows[name]
+        assert "keep every path under the active" in document
+        assert "continuing to update its tasks" in document
+
+    kernel = workflows[WORKFLOW_KERNEL_SKILL_NAME]
+    assert "stage explicit coherent source, test, and non-change artifacts" in kernel
+    assert "excluding every path under each active `changeRoot`" in kernel
+    assert "git diff --cached --name-only" in kernel
+    assert "only at its observed archive path after archival" in kernel
+
+    authoring = companions["zmem-author-commits"]
+    assert "active planning and task updates stay in the working" in authoring
+    assert "Before validating a message or creating a commit" in authoring
+    assert "git diff --cached --name-only" in authoring
+
+
 def test_packaged_collection_has_contextual_execution_and_tool_facets() -> None:
     documents = {
         item.family: tomllib.loads(item.content.decode("utf-8"))

@@ -11,10 +11,19 @@ Read [references/annotation-vocabulary.md](references/annotation-vocabulary.md) 
 
 ## Workflow
 
-1. Inspect the repository's commit conventions, working tree, staged diff, and relevant tests or specifications. Do not infer intent from filenames alone.
+1. Inspect the repository's commit conventions, working tree, staged diff, active
+   OpenSpec changes, and relevant tests or specifications. Resolve each active
+   `changeRoot` from structured OpenSpec status rather than guessing paths. Do not
+   infer intent from filenames alone.
 2. When the work spans multiple responsibilities, plan dependency-ordered incremental commits. Make every commit independently coherent and verifiable, stage only its explicit paths or hunks, and preserve unrelated working-tree changes. Do not split a change where an intermediate commit would knowingly break the repository.
 3. Decide whether each commit contains durable memory or an intentional metadata effect. Ordinary implementation detail, changelog prose, and diff narration need no annotation.
-4. Preserve a normal subject and optional explanatory body. Place each zmem annotation on its own unwrapped body line; annotated and unannotated prose may coexist.
+4. Before validating a message or creating a commit, audit
+   `git diff --cached --name-only`. Remove and report every staged path beneath an
+   active OpenSpec `changeRoot`; active planning and task updates stay in the working
+   tree. An OpenSpec change is committable only at its observed archive path after
+   normal archival. Preserve a normal subject and optional explanatory body. Place
+   each zmem annotation on its own unwrapped body line; annotated and unannotated
+   prose may coexist.
 5. Select the narrowest built-in type:
    - `DECISION` for an adopted architecture, policy, constraint, or tradeoff and its reason.
    - `LESSON_LEARNT` for a verified, reusable lesson rather than a guess.
