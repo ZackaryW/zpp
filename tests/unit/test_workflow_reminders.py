@@ -75,9 +75,7 @@ def test_start_preserves_a_different_active_workflow(tmp_path: Path) -> None:
     repository.start(_contract(), root=root, change="sample-change")
 
     with pytest.raises(WorkflowReminderError, match="zpp-new-feature"):
-        repository.start(
-            _contract("zpp-fix-bug"), root=root, change="sample-change"
-        )
+        repository.start(_contract("zpp-fix-bug"), root=root, change="sample-change")
 
 
 def test_repository_rejects_a_stale_replacement(tmp_path: Path) -> None:
@@ -111,9 +109,11 @@ def test_stop_removes_only_the_targeted_reminder(tmp_path: Path) -> None:
 
 
 def test_stage_edits_validate_and_preserve_stable_identifiers(tmp_path: Path) -> None:
-    run = _repository(tmp_path).start(
-        _contract(), root=tmp_path / "repository", change="sample-change"
-    ).run
+    run = (
+        _repository(tmp_path)
+        .start(_contract(), root=tmp_path / "repository", change="sample-change")
+        .run
+    )
 
     inserted = insert_workflow_stage(
         run,
@@ -147,9 +147,11 @@ def test_stage_edits_validate_and_preserve_stable_identifiers(tmp_path: Path) ->
 
 
 def test_invalid_stage_edit_changes_nothing(tmp_path: Path) -> None:
-    run = _repository(tmp_path).start(
-        _contract(), root=tmp_path / "repository", change="sample-change"
-    ).run
+    run = (
+        _repository(tmp_path)
+        .start(_contract(), root=tmp_path / "repository", change="sample-change")
+        .run
+    )
 
     with pytest.raises(WorkflowContractError, match="duplicate"):
         insert_workflow_stage(
@@ -170,9 +172,11 @@ def test_invalid_stage_edit_changes_nothing(tmp_path: Path) -> None:
 
 
 def test_sequence_checks_are_strong_but_non_blocking(tmp_path: Path) -> None:
-    run = _repository(tmp_path).start(
-        _contract(), root=tmp_path / "repository", change="sample-change"
-    ).run
+    run = (
+        _repository(tmp_path)
+        .start(_contract(), root=tmp_path / "repository", change="sample-change")
+        .run
+    )
 
     matching = check_workflow_run(run, component="zpps-clarify")
     warning = check_workflow_run(run, component="zpps-shape-bdd")
@@ -193,9 +197,11 @@ def test_sequence_checks_are_strong_but_non_blocking(tmp_path: Path) -> None:
 
 
 def test_only_an_accepted_matching_result_advances(tmp_path: Path) -> None:
-    run = _repository(tmp_path).start(
-        _contract(), root=tmp_path / "repository", change="sample-change"
-    ).run
+    run = (
+        _repository(tmp_path)
+        .start(_contract(), root=tmp_path / "repository", change="sample-change")
+        .run
+    )
 
     unrelated = record_workflow_result(
         run,
@@ -221,6 +227,4 @@ def test_only_an_accepted_matching_result_advances(tmp_path: Path) -> None:
     assert blocked == run
     assert completed.stages[0].status == "completed"
     assert completed.stages[1].status == "pending"
-    assert completed.observed_bundle == UUID(
-        "00000000-0000-0000-0000-000000000001"
-    )
+    assert completed.observed_bundle == UUID("00000000-0000-0000-0000-000000000001")

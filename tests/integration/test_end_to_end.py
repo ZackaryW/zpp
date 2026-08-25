@@ -4,12 +4,13 @@ import json
 import subprocess
 from pathlib import Path
 
-from agent_router import AgentEnvironment, AgentRouter, Scope
+from agent_router import Agent, AgentEnvironment, AgentRouter, Scope
 from typer.testing import CliRunner
 
 from zpp.artifacts import (
     packaged_companion_skills,
     packaged_workflow_hook,
+    packaged_workflow_reminder_hook,
     packaged_workflow_skills,
 )
 from zpp.cli import app
@@ -94,7 +95,12 @@ def test_lifecycle_projects_only_current_packaged_skills_and_no_openspec_assets(
     assert synced.exit_code == detailed.exit_code == 0, synced.output
     companion_skills = packaged_companion_skills()
     workflow_skills = packaged_workflow_skills()
-    expected = len(workflow_skills) + len(companion_skills) + 1
+    expected = (
+        len(workflow_skills)
+        + len(companion_skills)
+        + 1
+        + int(packaged_workflow_reminder_hook(Agent.CODEX) is not None)
+    )
     assert first.stdout == f"Initialized 1 agent: {expected} installed.\n"
     assert "already initialized" in second.stdout
     assert "zpp sync" in second.stdout

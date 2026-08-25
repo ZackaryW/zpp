@@ -274,23 +274,26 @@ def test_packaged_skills_compose_compact_runtime_contract_guidance() -> None:
     for name in COMPLETE_WORKFLOW_SKILL_NAMES:
         document = documents[name]
         assert (
-            f"zpp workflow run start {name} --root <root> --change <change>"
-            in document
+            f"zpp workflow run start {name} --root <root> --change <change>" in document
         )
         assert "## Registered execution" in document
         assert "## Visible stage progression invariant" not in document
 
-    for name in (WORKFLOW_KERNEL_SKILL_NAME, *WORKFLOW_STAGE_SKILL_NAMES,
-                 *OPENSPEC_ADAPTER_SKILL_NAMES, REPOSITORY_EVIDENCE_SKILL_NAME):
+    for name in (
+        WORKFLOW_KERNEL_SKILL_NAME,
+        *WORKFLOW_STAGE_SKILL_NAMES,
+        *OPENSPEC_ADAPTER_SKILL_NAMES,
+        REPOSITORY_EVIDENCE_SKILL_NAME,
+    ):
         document = documents[name]
         assert document.count("validated packaged JSON contract") == 1
         assert "On any mismatch, return `component-mismatch`" not in document
 
     assert "mandatory workflow registration" in documents["zpp-auto"]
     assert "without creating workflow reminder state" in documents["zpp-auto"]
-    assert "Invoke `zpp-generic-workflow` exactly once" in documents[
-        "zpp-legacy-workflow"
-    ]
+    assert (
+        "Invoke `zpp-generic-workflow` exactly once" in documents["zpp-legacy-workflow"]
+    )
 
 
 def test_packaged_collection_has_contextual_execution_and_tool_facets() -> None:

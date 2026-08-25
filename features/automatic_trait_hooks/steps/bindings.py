@@ -169,9 +169,7 @@ def project_migrated(context) -> None:
     assert migration[0]["status"] == "complete"
     assert migration[0]["origin"] == "old-only"
     assert migration[0]["current"] == [
-        f"{kind}:{name}"
-        if kind == "skill" or name != "zpp-traits"
-        else "hook"
+        f"{kind}:{name}" if kind == "skill" or name != "zpp-traits" else "hook"
         for kind, name in support.packaged_integration_inventory(Agent.CODEX)
     ]
     assert migration[0]["surviving_obsolete"] == []

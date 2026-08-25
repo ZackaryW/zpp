@@ -14,9 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 NonEmptyString = Annotated[str, Field(min_length=1)]
 WorkflowMode = Literal["reminder"]
 ComponentKind = Literal["kernel", "stage", "operation", "evidence"]
-EffectClass = Literal[
-    "read-only", "planning", "product", "coordination", "lifecycle"
-]
+EffectClass = Literal["read-only", "planning", "product", "coordination", "lifecycle"]
 StageStatus = Literal["pending", "completed", "skipped"]
 
 
@@ -124,8 +122,7 @@ def decode_workflow_contract(
             raw.name,
             raw.mode,
             tuple(
-                WorkflowStageContract(stage.id, stage.component)
-                for stage in raw.stages
+                WorkflowStageContract(stage.id, stage.component) for stage in raw.stages
             ),
         )
     except (ValidationError, TypeError, ValueError) as error:
@@ -220,8 +217,7 @@ def new_workflow_run(
         root,
         change,
         tuple(
-            WorkflowStageState(stage.id, stage.component)
-            for stage in contract.stages
+            WorkflowStageState(stage.id, stage.component) for stage in contract.stages
         ),
     )
 
@@ -394,9 +390,7 @@ def _stage_index(run: WorkflowRun, stage_id: str) -> int:
         raise WorkflowContractError(f"unknown stage id: {stage_id}") from error
 
 
-def _insertion_index(
-    run: WorkflowRun, *, before: str | None, after: str | None
-) -> int:
+def _insertion_index(run: WorkflowRun, *, before: str | None, after: str | None) -> int:
     if (before is None) == (after is None):
         raise WorkflowContractError("exactly one of before or after is required")
     if before is not None:

@@ -45,12 +45,8 @@ def _component_payload() -> dict[str, object]:
 
 
 def test_strict_contract_decoders_return_frozen_typed_models() -> None:
-    workflow = decode_workflow_contract(
-        _workflow_payload(), source="workflow.json"
-    )
-    component = decode_component_contract(
-        _component_payload(), source="component.json"
-    )
+    workflow = decode_workflow_contract(_workflow_payload(), source="workflow.json")
+    component = decode_component_contract(_component_payload(), source="component.json")
 
     assert workflow.stages[0].component == "zpps-clarify"
     assert component.effect == "read-only"
@@ -104,9 +100,7 @@ def test_component_decoder_rejects_unknown_fields_and_duplicate_results() -> Non
 
 def test_inventory_validation_rejects_missing_and_unknown_references() -> None:
     workflow = decode_workflow_contract(_workflow_payload(), source="workflow.json")
-    component = decode_component_contract(
-        _component_payload(), source="component.json"
-    )
+    component = decode_component_contract(_component_payload(), source="component.json")
 
     with pytest.raises(WorkflowContractError, match="missing workflow contract"):
         validate_contract_inventory(
@@ -132,9 +126,7 @@ def test_inventory_validation_rejects_extra_contract_identities() -> None:
     extra_workflow = decode_workflow_contract(
         extra_payload, source="extra-workflow.json"
     )
-    component = decode_component_contract(
-        _component_payload(), source="component.json"
-    )
+    component = decode_component_contract(_component_payload(), source="component.json")
 
     with pytest.raises(WorkflowContractError, match="unexpected workflow contract"):
         validate_contract_inventory(
@@ -161,8 +153,7 @@ def test_packaged_contract_inventory_is_complete_and_cross_referenced() -> None:
         WORKFLOW_STAGE_SKILL_NAMES[-1],
     )
     assert all(
-        tuple(stage.component for stage in workflow.stages)
-        == expected_stages
+        tuple(stage.component for stage in workflow.stages) == expected_stages
         for workflow in workflows
     )
     assert "zpp-workflow" not in {item.name for item in workflows}

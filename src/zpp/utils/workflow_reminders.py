@@ -135,9 +135,7 @@ class WorkflowReminderRepository:
     def _path(self, root: Path, change: str) -> Path:
         if not change:
             raise WorkflowReminderError("change must be non-empty")
-        digest = sha256(
-            (str(root) + "\0" + change).encode("utf-8")
-        ).hexdigest()
+        digest = sha256((str(root) + "\0" + change).encode("utf-8")).hexdigest()
         return self._home.workflow_reminder_root / f"{digest}.json"
 
 

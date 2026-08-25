@@ -60,8 +60,7 @@ def test_public_cli_preserves_grouped_shape() -> None:
         for option in ("COMMAND", "--all", "--target", "--gate", "--base", "--head")
     )
     assert all(
-        command in workflow.stdout
-        for command in ("install", "update", "remove", "run")
+        command in workflow.stdout for command in ("install", "update", "remove", "run")
     )
     assert "init" in trait.stdout
     assert "install-workflow" not in root.stdout
