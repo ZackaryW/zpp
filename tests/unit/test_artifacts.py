@@ -358,6 +358,10 @@ def test_packaged_bdd_authority_keeps_trace_on_feature_side_only() -> None:
     assert "do not retain a target-form surrogate" in maintenance[
         "references/maintenance-contract.md"
     ]
+    assert "Recognize memory-fold provenance" in maintenance["SKILL.md"]
+    assert "no archive path was created" in " ".join(
+        maintenance["references/maintenance-contract.md"].split()
+    )
 
 
 def test_packaged_checkpoints_exclude_active_openspec_changes() -> None:

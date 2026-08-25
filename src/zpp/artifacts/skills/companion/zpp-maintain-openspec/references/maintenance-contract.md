@@ -31,6 +31,16 @@ The appropriate destination is sufficient. Do not require every proposal sentenc
 
 Never use zmem as the only home of current normative behavior. Partial preservation, unresolved policy, contradictory destinations, and ambiguous ownership block removal.
 
+## Memory-fold provenance
+
+A terminal `memory-folded` result is complete provenance only when its exact Git
+commit contains valid inspected zmem entries that fully preserve the eligible simple
+decision, the owner explicitly authorized the fold, the active change is absent, no
+archive path was created, and no current normative behavior or nested contract was
+discarded. Treat a missing archive as intentional only with all of this evidence.
+Any partial fit, missing commit, invalid memory, or discarded behavior is loss and
+blocks maintenance from treating the lifecycle as complete.
+
 ## BDD-owned scenario preservation
 
 An OpenSpec scenario is removed completely when its executable behavior is owned by

@@ -56,6 +56,17 @@ recorder-only, execution-only, capability-wide, literal-text-only, pure-counting
 unverified targets block
 consolidation or removal; similar names and prose never establish coverage.
 
+## Recognize memory-fold provenance
+
+When workflow history records `memory-folded`, do not treat the missing OpenSpec
+archive as loss merely because no archive path exists. Verify the exact terminal Git
+commit and zmem entries, the conservative eligibility audit, explicit owner
+authority, removal of the active change, and absence of any current normative
+behavior, branching, serialization, compatibility, ownership, safety, or migration
+contract that required canonical OpenSpec. Accept Git plus zmem as complete provenance
+only when all facts are proven. Otherwise report the missing archive or canonical
+authority as loss; never use memory as a substitute for current normative behavior.
+
 ## Preserve operation owners
 
 Use only the already installed skill that owns each OpenSpec operation:

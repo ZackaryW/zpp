@@ -152,31 +152,31 @@ When an agent detects that the admitted component does not match the immediate o
 - **THEN** it reports the failed admission immediately and stops that component before any separately admitted continuation
 
 ### Requirement: Single executable acceptance authority
-For each accepted obligation, ZPP SHALL distinguish normative specification ownership from executable acceptance-example ownership. A testable public-system obligation SHALL have its concrete acceptance examples only in the independently runnable `features/<capability>/` root. `zpps-shape-bdd` SHALL transfer a provisional concrete OpenSpec example into that feature root, bind every resulting feature scenario to the exact OpenSpec store, capability, and requirement identity, and replace the concrete OpenSpec example within the same completed stage outcome with a trace-only conformance scenario that does not restate the executable behavior.
+For each accepted obligation, ZPP SHALL distinguish normative specification ownership from executable acceptance-example ownership. A testable public-system obligation SHALL have its concrete acceptance examples only in the independently runnable `features/<capability>/` root. `zpps-shape-bdd` SHALL transfer a provisional concrete OpenSpec example into that feature root, bind every resulting feature scenario to the exact OpenSpec root, capability, and requirement identity, and remove the corresponding OpenSpec scenario within the same completed stage outcome.
 
-The binding identity SHALL be the exact ordered tuple `root`, `capability`, `requirement`, `feature`, and `scenario`, encoded on both sides as compact JSON with those keys in that order. Creating or changing a binding during shaping SHALL use `store:<uuid>` with the exact UUID discovered through the public registered-store list because that action is governed mutation. An existing binding MAY retain `repo:<git-root-relative-path-to-openspec-root>` for a repo-local OpenSpec root and SHALL remain resolvable during read-only discovery, formation audit, and verification without authorizing mutation or automatic locator migration. ZPP SHALL NOT generate a store UUID, derive one from a name, or replace an existing repo-local locator with a fabricated UUID. `capability` SHALL be the capability directory identity, `requirement` SHALL be the exact requirement heading, `feature` SHALL be the Git-root-relative feature path, and `scenario` SHALL be the exact Gherkin scenario title. The feature declaration SHALL appear immediately above that scenario, and the trace-only OpenSpec conformance scenario SHALL name the exact `<feature>::<scenario>` target with the identical tuple.
+The binding identity SHALL be the exact ordered tuple `root`, `capability`, `requirement`, `feature`, and `scenario`, encoded as compact JSON immediately above the feature scenario. `root` SHALL be an exact registered `store:<uuid>` or a resolvable `repo:<git-root-relative-path-to-openspec-root>` locator; ZPP SHALL NOT mint a UUID. The referenced OpenSpec requirement SHALL remain normative authority but SHALL contain no concrete, trace-only, or target-form scenario for behavior owned by that feature scenario.
 
-`zpps-form-specs` SHALL reject semantic acceptance duplication, an unresolved binding in either direction, a BDD-backed requirement without an executable feature scenario, or a spec-only requirement claimed by a feature scenario. It SHALL return canonical synchronization eligibility only after this audit; the invoking playbook or direct caller SHALL select `zpps-sync-specs` explicitly and then invoke `zpps-form-specs` for the resulting canonical audit. A pure-functionality case matrix SHALL remain in unit tests, with one public-system BDD scenario retained when needed to prove enforcement. An obligation with no executable public-system observation SHALL remain normative specification content and SHALL NOT cause a fabricated BDD scenario.
+`zpps-form-specs` SHALL reject semantic acceptance duplication, an unresolved feature-to-requirement binding, a BDD-backed requirement without its executable feature scenario, a BDD-owned scenario retained anywhere in the applicable OpenSpec delta or canonical specification, or a spec-only requirement claimed by a feature scenario. A pure-functionality case matrix SHALL remain in unit tests. An obligation with no executable public-system observation SHALL remain normative specification content and SHALL NOT cause a fabricated BDD scenario.
 
 #### Scenario: Transfer a testable acceptance example
 - **WHEN** shaping accepts a provisional OpenSpec example that can be observed through the public system
-- **THEN** `zpps-shape-bdd` creates the bound capability feature scenario and leaves OpenSpec with normative requirement text plus a trace-only conformance scenario rather than the same executable example
+- **THEN** `zpps-shape-bdd` creates the bound capability feature scenario and removes the corresponding OpenSpec scenario while retaining the normative requirement
 
 #### Scenario: Reject duplicated acceptance authority
-- **WHEN** specification formation finds semantically equivalent executable acceptance behavior in both an OpenSpec scenario and a bound feature scenario
+- **WHEN** specification formation finds an OpenSpec scenario for behavior owned by a bound feature scenario
 - **THEN** `zpps-form-specs` blocks synchronization and identifies both authorities
 
 #### Scenario: Preserve a specification-only obligation
 - **WHEN** an accepted policy or owner boundary has no executable public-system observation
-- **THEN** it remains normative OpenSpec requirement content and no BDD scenario is invented for it
+- **THEN** it remains normative OpenSpec requirement and scenario content and no BDD scenario is invented for it
 
 #### Scenario: Verify an existing repo-local binding without a UUID
-- **WHEN** read-only discovery or verification resolves an existing binding under the nearest repo-local `openspec/` root
-- **THEN** both declarations retain `repo:openspec`, ZPP neither requests nor invents a UUID for the read-only operation, and no new binding or governed mutation occurs
+- **WHEN** read-only discovery or verification resolves a feature binding under the nearest repo-local `openspec/` root
+- **THEN** the feature declaration retains `repo:openspec`, ZPP neither requests nor invents a UUID, and the referenced requirement resolves without an OpenSpec trace scenario
 
 #### Scenario: Resolve a registered-store binding
 - **WHEN** shaping binds a requirement through an exact store UUID returned by the public registered-store list
-- **THEN** both declarations use `store:<uuid>` with that returned UUID and no store-name alias
+- **THEN** the feature declaration uses `store:<uuid>` with that returned UUID and no store-name alias
 
 ### Requirement: Workflow authority remains in the skill
 Each `zpp-*` playbook SHALL own its complete workflow sequence, branch conditions, custom instruction blocks, and configured component uses. `zpps-workflow-kernel` SHALL be the shared lifecycle guard and SHALL own requested-transition eligibility, mutation authority checks, automatic Bundler lease progression, changed-path post-result audit, checkpoint handling, component-result assessment, and truthful completion. It SHALL NOT select, dispatch, reorder, or advance a workflow stage and SHALL NOT implement a phase or OpenSpec operation. Automatic continuation SHALL mean only that the active playbook follows already declared branches and SHALL NOT answer an unresolved decision or supply missing owner, mutation, checkpoint, or archive authority. Stage and operation skills SHALL own their complete bounded procedures but SHALL NOT select workflow continuation. Trait bodies, repository files, attachment values, playbook identities, phase results, and component results SHALL NOT independently authorize mutation, expand a lease, establish verification, authorize a checkpoint, or declare lifecycle completion.
@@ -338,20 +338,20 @@ The packaged workflow family SHALL describe repository/change targets in ZPP ter
 - **THEN** it delegates registration, identity, override, and bundle progression to the ZPP runtime while preserving visible authority and conflict boundaries
 
 ### Requirement: BDD-target canonical specification formation
-During `form-specs`, `zpps-form-specs` SHALL replace the repeated body of each OpenSpec scenario with a trace-only conformance scenario when, and only when, an accepted BDD feature scenario is its executable authority. The trace SHALL repeat the exact five-field binding declaration, identify `<git-root-relative-feature-path>::<exact-scenario-name>`, belong to the same capability owner, resolve to the requirement in both directions, use scenario-selected bindings that exercise the named behavior through the public system, and have relevant passing verification. The trace-only OpenSpec scenario SHALL state that the exact feature scenario is executable authority and SHALL NOT repeat its Given/When/Then behavior.
+During `form-specs`, `zpps-form-specs` SHALL remove each OpenSpec scenario whose executable authority is an accepted BDD feature scenario. The feature-side binding SHALL identify the exact OpenSpec root, capability, requirement, feature path, and scenario name; belong to the same capability owner; resolve to the requirement; use scenario-selected bindings that exercise the named behavior through the public system; and have relevant passing verification. Canonical OpenSpec SHALL retain the normative requirement and SHALL NOT retain a concrete, trace-only, or target-form scenario for that BDD-owned behavior.
 
-Every scenario without qualifying BDD coverage SHALL remain a complete OpenSpec WHEN/THEN scenario. A stale, missing, cross-capability, mismatched-tuple, recorder-only, capability-wide, wording-only, or unverified target SHALL block specification formation rather than justify scenario removal.
+Every scenario without qualifying BDD coverage SHALL remain a complete OpenSpec WHEN/THEN scenario. A stale, missing, cross-capability, invalid, recorder-only, pure-counting, wording-only, or unverified feature target SHALL block scenario removal rather than justify it.
 
-#### Scenario: Replace duplicated behavior with an exact BDD target
-- **WHEN** an OpenSpec scenario has a verified same-capability five-field binding to an exact feature scenario
-- **THEN** canonical formation retains one trace-only OpenSpec scenario naming that exact target and removes the duplicated executable steps
+#### Scenario: Remove a scenario owned by an exact BDD target
+- **WHEN** an OpenSpec scenario maps to a verified same-capability feature scenario with an exact feature-side binding
+- **THEN** canonical formation removes the OpenSpec scenario completely and retains the normative requirement plus the feature-owned executable authority
 
 #### Scenario: Preserve a non-BDD specification scenario
 - **WHEN** an accepted OpenSpec scenario has no qualifying executable BDD target
 - **THEN** canonical formation preserves its complete WHEN/THEN contract in OpenSpec and does not invent feature coverage
 
 #### Scenario: Reject invalid feature authority
-- **WHEN** a proposed target is absent, stale, owned by another capability, untraced, unbound, recorder-only, capability-wide, wording-only, or lacks passing relevant verification
+- **WHEN** a proposed target is absent, stale, owned by another capability, unbound, recorder-only, pure-counting, wording-only, or lacks passing relevant verification
 - **THEN** canonical formation keeps the specification scenario and leaves `form-specs` incomplete
 
 ### Requirement: Consume only ZPP-provisioned OpenSpec operation skills
@@ -414,65 +414,37 @@ A change limited to spec-governed skill prose, environment guidance, or equivale
 - **THEN** the workflow assesses the relevant behavior or utility stages from that executable boundary instead of skipping them because of the artifact label
 
 ### Requirement: Verified incremental checkpoint commits
-Before declaring any workflow stage `completed` when that stage owns a non-empty
-coherent diff, `zpps-workflow-kernel` SHALL invoke the exact installed
-`zmem-author-commits` skill and complete its authorized commit workflow. The
-acting agent SHALL identify the accepted contract revision, the stage-owned
-diff, applicable stage verification and its observed result, checkpoint commit
-authority, and the exact paths or hunks proposed for staging. It SHALL preserve
-unrelated working-tree changes.
+Before declaring any workflow stage `completed` when that stage owns a non-empty coherent diff, `zpps-workflow-kernel` SHALL invoke the exact installed `zmem-author-commits` skill and complete its authorized commit workflow. The acting agent SHALL identify the accepted contract revision, stage-owned diff, applicable stage verification, commit authority, and exact paths or hunks proposed for staging. It SHALL preserve unrelated working-tree changes and SHALL exclude every path under the active OpenSpec change root from every incremental checkpoint.
 
-The commit series SHALL be dependency ordered and SHALL separate distinct
-responsibilities when each intermediate commit is independently coherent and
-verifiable. It SHALL NOT create a split whose intermediate state is known to
-break the repository. Before each commit, the agent SHALL complete the
-stage-appropriate verification and validate the complete proposed message using
-zmem. After each authorized commit, it SHALL record the resulting SHA and inspect
-the commit with `zmem show`. The `zmem-author-commits` operation SHALL decide
-whether durable memory warrants an annotation; a checkpoint SHALL NOT require a
-meaningless annotation.
+The active proposal, delta specifications, design, tasks, and change metadata SHALL remain updated in the working tree throughout execution but SHALL NOT enter Git history while the change is active. Source, feature, test, runtime, and packaged-artifact work MAY be committed incrementally when independently coherent and verified. Before every commit, the agent SHALL prove that no active change-root path is staged, validate the complete message using zmem, create the checkpoint, and inspect its SHA with `zmem show`.
 
-Explicit end-to-end workflow delegation SHALL grant checkpoint commit authority
-for the new commits produced by the playbook's automatically continued stage series. A
-standalone stage action SHALL require separately granted commit authority. This
-authority SHALL NOT include amend, merge, rebase, push, conflict reconciliation,
-callback selection, or inclusion of unrelated work. Missing commit authority or
-any failed verification, zmem validation, commit, or post-commit inspection SHALL
-leave a material gate incomplete.
+Explicit end-to-end workflow delegation SHALL grant checkpoint commit authority for the new source/test commits produced by the playbook. A standalone stage action SHALL require separate authority. Missing authority, staged active-change content, or failed verification, message validation, commit, or post-commit inspection SHALL leave the material gate incomplete.
 
-A skipped stage or a stage with no stage-owned diff SHALL record its observed
-outcome without creating an empty commit. At finalization, the workflow SHALL
-verify that every material completed gate has its checkpoint evidence, archive
-the OpenSpec change, and commit only the remaining finalization-owned diff. It
-SHALL NOT collapse or replace the preceding checkpoint series.
+A skipped stage or a stage with no stage-owned diff SHALL create no empty commit. After normal OpenSpec archival, the moved archive path becomes eligible for a terminal-state commit. After an accepted memory-fold route, the active change SHALL be removed before the zmem-bearing terminal commit and no OpenSpec archive path SHALL be created.
 
-#### Scenario: Commit a material stage gate
-- **WHEN** a workflow stage owns a non-empty coherent diff and checkpoint commit authority is present
-- **THEN** the workflow verifies the stage-owned work, follows `zmem-author-commits`, creates the validated commit series from only its explicit paths or hunks, and records each inspected SHA before declaring the stage completed
+#### Scenario: Commit a material stage without the active change
+- **WHEN** a workflow stage owns a verified coherent source or test diff and checkpoint authority is present
+- **THEN** the workflow commits only the explicit stage paths, excludes the active OpenSpec change root, and records the inspected SHA
 
-#### Scenario: Skip an empty checkpoint
-- **WHEN** a stage is skipped as not applicable or completes with no stage-owned diff
-- **THEN** the workflow records the observed stage outcome without creating an empty commit
+#### Scenario: Keep active planning current but uncommitted
+- **WHEN** stage completion changes tasks or other artifacts under the active change root
+- **THEN** the workflow updates those artifacts in the working tree and excludes them from every incremental commit
 
-#### Scenario: Pause without commit authority
-- **WHEN** a material stage has verified work but its invocation carries no checkpoint commit authority
-- **THEN** the workflow leaves the gate incomplete and pauses before creating a commit
-
-#### Scenario: Carry end-to-end checkpoint authority
-- **WHEN** the owner explicitly delegates the workflow end to end
-- **THEN** automatic progression may create each required stage checkpoint commit without requesting ordinary per-commit approval and gains no authority for other Git operations
+#### Scenario: Reject staged active-change content
+- **WHEN** any proposed checkpoint includes a path under an active OpenSpec change root
+- **THEN** zmem checkpoint handling blocks the commit until those paths are unstaged
 
 #### Scenario: Preserve unrelated work
 - **WHEN** the working tree contains changes outside the material stage-owned diff
-- **THEN** the checkpoint stages only its explicit paths or hunks and leaves the unrelated changes untouched
+- **THEN** the checkpoint stages only its explicit source or test paths and leaves unrelated and active-change paths untouched
 
-#### Scenario: Split only coherent responsibilities
-- **WHEN** one material gate contains multiple distinct responsibilities
-- **THEN** the workflow commits them in dependency order when every intermediate state is coherent and verifiable and keeps them together when a split would knowingly break the repository
+#### Scenario: Keep annotations selective
+- **WHEN** a checkpoint commit contains no durable decision, lesson, decay, cancellation, or registered custom memory
+- **THEN** `zmem-author-commits` validates an ordinary human-readable commit message without requiring an annotation
 
-#### Scenario: Reject a failed checkpoint
-- **WHEN** stage verification, zmem message validation, commit creation, or resulting-commit inspection fails
-- **THEN** the workflow reports the failure and does not declare the material gate completed
+#### Scenario: Commit normal archive state
+- **WHEN** a verified change uses normal OpenSpec archival
+- **THEN** the workflow archives first and only then may commit the resulting archive path with remaining terminal work
 
 #### Scenario: Keep annotations selective
 - **WHEN** a checkpoint commit contains no durable decision, lesson, decay, cancellation, or registered custom memory
@@ -620,28 +592,41 @@ In a monorepo, `zpps-shape-bdd` SHALL shape and bind Gherkin only at an establis
 - **THEN** the workflow exposes the ownership question to its owner rather than selecting a boundary
 
 ### Requirement: Scenarios bind to executable public-system verification
-Every scenario `zpps-shape-bdd` creates or retains SHALL bind to executable verification that exercises the described behavior through the public system. A step implementation that records its own phrase, asserts only that it executed, or observes no system state SHALL NOT satisfy that binding obligation. Verification SHALL be selected by the scenario it serves, and a capability-wide assertion block that runs identically after every scenario in its root SHALL NOT establish scenario coverage.
+Every scenario `zpps-shape-bdd` creates or retains SHALL bind to executable verification that exercises the described behavior through the public system. A step implementation that records its own phrase, matches only literal text, proves only that it executed, or observes no system state SHALL NOT satisfy that binding obligation. Pure counting of files, stages, items, calls, or matches SHALL NOT be BDD acceptance evidence; a count MAY appear only as supplemental evidence after the scenario verifies an observable value, state transition, failure contract, ordering relationship, or other behavioral relationship selected by that scenario.
 
-An obligation that can be expressed only as prose SHALL be recorded as a canonical specification requirement and SHALL NOT be represented by an executable feature scenario. Verification SHALL NOT assert the literal wording of an artifact whose content a canonical requirement already governs. When accepted behavior has no executable public-system observation, `zpps-shape-bdd` SHALL record that obligation as non-BDD with a concrete reason rather than creating an unbound scenario.
+An obligation expressible only as prose SHALL remain a canonical specification requirement and SHALL NOT become an executable feature scenario. Verification SHALL NOT assert the literal wording of a governed artifact. When accepted behavior has no executable public-system observation, `zpps-shape-bdd` SHALL record a concrete non-BDD reason rather than creating an unbound scenario.
 
-`zpps-shape-bdd` SHALL state this binding obligation as its invariant contract. Retained BDD traits SHALL remain contextual and SHALL NOT repeat, replace, waive, or supply a command, target, or completion authority for that contract.
+`zpps-shape-bdd` SHALL state this binding obligation as its invariant contract. Retained BDD traits SHALL remain contextual and SHALL NOT replace or waive it.
 
-#### Scenario: Reject a recording-only binding
-- **WHEN** a scenario's steps record their own phrases or assert only that they executed
-- **THEN** the workflow treats the scenario as unbound and does not count it as behavior coverage
+#### Scenario: Reject text-only verification
+- **WHEN** a proposed BDD scenario succeeds only by finding or comparing literal text
+- **THEN** the workflow treats the scenario as unbound and requires an observable public-system effect
 
-#### Scenario: Reject capability-wide assertion blocks as coverage
-- **WHEN** a capability's verification runs the same assertions after every scenario in its root
-- **THEN** the workflow does not accept those assertions as per-scenario coverage and requires verification selected by the scenario it serves
+#### Scenario: Reject pure counting as behavior
+- **WHEN** a proposed BDD scenario asserts only a number of files, items, stages, calls, or matches
+- **THEN** the workflow rejects it as acceptance evidence even when the expected count matches
+
+#### Scenario: Permit a supplemental count
+- **WHEN** a scenario first verifies its selected observable behavior and a count further constrains that same behavior
+- **THEN** the count may remain supplemental but cannot replace the behavioral assertion
 
 #### Scenario: Route a prose-only obligation to specification
 - **WHEN** an accepted obligation has no executable public-system observation
-- **THEN** the workflow records it as a canonical specification requirement or a concrete non-BDD classification and creates no scenario for it
+- **THEN** the workflow records it as canonical specification content or a concrete non-BDD classification and creates no scenario for it
 
-#### Scenario: Refuse to assert governed artifact wording
-- **WHEN** proposed verification would assert the literal wording of an artifact already governed by a canonical requirement
-- **THEN** the workflow relies on the canonical requirement and does not create that assertion
+### Requirement: Terminal OpenSpec preservation route
+At finalization, the workflow SHALL classify the verified active change as normal-archive or memory-fold eligible. Memory-fold eligibility SHALL require that every durable fact is completely expressible as validated zmem decisions or lessons and that the change carries no current normative behavior, nested or branching logic, failure contract, serialization rule, compatibility boundary, ownership boundary, or other information requiring canonical OpenSpec authority. Any doubt or partial fit SHALL select normal archive.
 
-#### Scenario: Receive the binding obligation from the shaping skill
-- **WHEN** a playbook configures `zpps-shape-bdd` with a qualifying public-system obligation under the current kernel guard
-- **THEN** the shaping skill applies its scenario binding obligation without accepting command, target, or completion authority from a trait
+For normal archive, the workflow SHALL use the selected archive adapter and SHALL NOT commit the change directory until it has moved under `openspec/changes/archive`. For memory-fold, the workflow SHALL prepare and validate the complete zmem-bearing commit message, keep tasks complete, move the active change temporarily outside the worktree for recoverability, create no OpenSpec archive or canonical synchronization, commit the authorized implementation and zmem evidence, inspect the resulting SHA, then discard the temporary planning copy and release coordination truthfully. A failed commit SHALL restore the active change from the temporary copy.
+
+#### Scenario: Fold a simple decision into zmem
+- **WHEN** a verified change only adjusts simple words or variables and every durable rationale fits validated zmem without nested logic or normative behavior
+- **THEN** finalization removes the active change before the zmem-bearing commit and creates no OpenSpec archive path
+
+#### Scenario: Archive non-foldable behavior normally
+- **WHEN** a change contains behavior, branching, nested logic, serialization, compatibility, ownership, or another canonical contract
+- **THEN** finalization rejects memory-fold eligibility and requires normal OpenSpec archive before the change artifacts may be committed
+
+#### Scenario: Restore planning after a failed fold commit
+- **WHEN** the active change has been moved out of the worktree for a memory-fold commit and that commit fails
+- **THEN** the workflow restores the exact active change and leaves the lifecycle incomplete
