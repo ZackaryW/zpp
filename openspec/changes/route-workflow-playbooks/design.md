@@ -19,6 +19,8 @@ when routing prose has no honest executable observation.
   component authority boundaries.
 - Migrate installed owned inventories deterministically without adopting or deleting
   unowned destinations.
+- Publish one consistent `2.1.4` package identity across source, project, lock, CLI,
+  and built-distribution surfaces.
 
 **Non-Goals:**
 
@@ -27,6 +29,7 @@ when routing prose has no honest executable observation.
   routing behavior.
 - Change lifecycle stages, OpenSpec adapters, Bundler coordination, or trait hooks.
 - Treat every unknown request as a ZPP product workflow.
+- Publish a release, create a Git tag, or change dependency versions.
 
 ## Decisions
 
@@ -77,6 +80,19 @@ order. Keep routing classification and one-hop semantics normative in OpenSpec a
 the skill contracts; do not fabricate a runtime router or assert arbitrary Markdown
 phrases as behavior.
 
+### Synchronize the patch release identity
+
+Set the project version, public `zpp.__version__`, and editable `uv.lock` package
+entry to `2.1.4`. This is the next patch after the repository's existing `2.1.3`
+alignment and preserves the established release convention for a compatible product
+increment. Existing distribution verification remains the executable authority for
+project, module, CLI, wheel, and source-distribution agreement; the exact numeric
+release value remains package metadata rather than a new behavioral requirement.
+
+Alternative: advance to `2.2.0`. Rejected because this repository most recently
+released compatible workflow and hook additions as patch increments and the owner
+confirmed `2.1.4` for this release.
+
 ## Risks / Trade-offs
 
 - [More installed entries can appear to add authority] → Describe generic as the
@@ -96,6 +112,8 @@ phrases as behavior.
 2. Add `zpp-generic-workflow`, narrow `zpp-auto`, and reduce legacy to the adapter.
 3. Update the deterministic packaged inventory and lifecycle expectations.
 4. Synchronize the canonical workflow specification and run complete verification.
+5. Synchronize the `2.1.4` package metadata and rerun distribution plus repository
+   verification.
 
 Rollback restores the five-entry hard-cut inventory, moves the generic sequence back
 to `zpp-legacy-workflow`, and restores its former automatic fallback selection.

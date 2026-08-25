@@ -15,6 +15,8 @@ generic work, an explicit compatibility invocation, or not a ZPP workflow at all
 - Restrict `zpp-legacy-workflow` to explicit invocation and one compatibility
   handoff into `zpp-generic-workflow`, with no lifecycle policy of its own.
 - Update the installed workflow inventory and ownership-safe lifecycle projections.
+- Release the completed routing capability as ZPP `2.1.4` and keep project,
+  module, and locked editable-distribution metadata synchronized.
 
 ## Capabilities
 
@@ -31,5 +33,6 @@ None.
 
 Affected areas are packaged workflow skills, automatic routing policy, deterministic
 skill inventory and lifecycle projection, focused artifact tests, the consolidated
-workflow BDD inventory surface, and its canonical specification. No runtime
-dependency, CLI command, trait format, or Bundler state format changes.
+workflow BDD inventory surface, its canonical specification, and package release
+metadata. No runtime dependency, CLI command, trait format, or Bundler state format
+changes.

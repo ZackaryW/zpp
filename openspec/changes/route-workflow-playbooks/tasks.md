@@ -18,3 +18,8 @@
 
 - [x] 4.1 Form the spec-only routing obligations and the installed-inventory trace, then synchronize the consolidated-workflow delta into the canonical specification.
 - [x] 4.2 Run focused and complete Behave and pytest surfaces, lint, format checking, lock validation, build, supported-interpreter evidence, and strict OpenSpec validation.
+
+## 5. Release Version Synchronization
+
+- [ ] 5.1 Set the project, public module, and locked editable-distribution versions to `2.1.4` without changing dependency resolution.
+- [ ] 5.2 Verify project, module, CLI, and built-distribution version agreement, then rerun the complete repository release gates.
