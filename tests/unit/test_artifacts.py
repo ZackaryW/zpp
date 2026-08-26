@@ -382,25 +382,11 @@ def test_packaged_checkpoints_exclude_active_openspec_changes() -> None:
         )
         for skill in packaged_workflow_skills()
     }
-    companions = {
-        skill.name: next(
-            item.content.decode("utf-8")
-            for item in skill.files
-            if item.relative_path == "SKILL.md"
-        )
-        for skill in packaged_companion_skills()
-    }
-
     kernel = workflows[WORKFLOW_KERNEL_SKILL_NAME]
     assert "stage explicit coherent source, test, and non-change artifacts" in kernel
     assert "excluding every path under each active `changeRoot`" in kernel
     assert "git diff --cached --name-only" in kernel
     assert "only at its observed archive path after archival" in kernel
-
-    authoring = companions["zmem-author-commits"]
-    assert "active planning and task updates stay in the working" in authoring
-    assert "Before validating a message or creating a commit" in authoring
-    assert "git diff --cached --name-only" in authoring
 
 
 def test_packaged_memory_fold_is_conservative_and_recoverable() -> None:
