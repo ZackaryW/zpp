@@ -7,104 +7,38 @@ description: Run the complete ordered ZPP playbook for product-bearing repositor
 
 ## Registered execution
 
-Before the first lifecycle stage or operation, identify the exact repository and
-intended OpenSpec change name, then run:
+Before lifecycle work, run:
 
 `zpp workflow run start zpp-scaffold --root <root> --change <change>`
 
-Starting is mandatory and idempotent. It creates only target-scoped reminder
-state; it grants no mutation, checkpoint, archive, abandonment, or bypass
-authority and does not acquire a Bundler lease.
+Follow the returned checklist, including owner edits, as the current stage order.
+Invoke its first pending component with only the custom configuration below and use
+`zpps-workflow-kernel` for shared admission, authority, result, audit, and checkpoint
+mechanics. This playbook selects visible component-result branches; neither reminder
+state, the kernel, nor a component dispatches continuation or supplies missing owner
+authority.
 
-Treat the returned checklist, including direct user edits, as the current stage
-order. For each pending stage, select its mapped component and apply only the
-matching custom configuration and branches below. Ask `zpps-workflow-kernel` to
-check that already selected action and later assess its actual result. Preserve any
-out-of-sequence warning visibly, but do not treat reminder state or the kernel as a
-dispatcher.
+## Custom configuration
 
-Owner-authorized end-to-end mode may follow these declared branches after accepted
-results and carries checkpoint authority only for new coherent stage-owned diffs.
-Checkpoint each material accepted stage through the kernel and
-`zmem-author-commits`; preserve unrelated work and keep every path under the active
-OpenSpec `changeRoot` out of checkpoint commits while continuing to update its tasks
-in the working tree. End-to-end mode never supplies an
-owner decision or missing mutation, archive, abandonment, or bypass authority.
+### Clarify the structure
 
-## Define the structural outcome
+Use `zpps-clarify` to distinguish product-bearing structure from artifact-only
+maintenance, installation, or compatibility work. Identify the owning package or
+application, public composition boundary, required files, and non-goals. Use
+`zpps-explore` only for an exact unresolved repository fact and re-enter.
 
-Custom instruction: distinguish structure required to host accepted product behavior
-from artifact-only maintenance, installation, or compatibility work. Identify the
-owning package/application, public composition boundary, required files, and explicit
-non-goals.
+### Plan the scaffold
 
-Use `zpps-clarify` with the request, roots, conventions evidenced in the repository,
-and owner decisions. Satisfy `exploration-required` through one explicit
-`zpps-explore` use and re-enter. Pause on unresolved structure ownership.
+Use `zpps-new-change` for an explicit scaffold-and-stop request, `zpps-propose-change`
+for a resolved end-to-end scaffold, or the exact update or one-artifact continuation
+operation for an existing change. The plan must name the product-bearing owner and
+exclude OpenSpec installation, generated skills, and compatibility aliases.
 
-## Establish the OpenSpec planning boundary
+### Configure structural stages
 
-Before the first governed mutation, pass the exact resolved repository roots and
-change names plus accepted mutation authority to `zpps-workflow-kernel`. Consume the
-structured result from ZPP's runtime coordination command. Do not resolve or ask for
-store registration, manifest UUID, owner string, environment override, bundle, or
-lease commands in this playbook; ZPP owns those mechanics and reports genuine
-conflicts.
-
-Use `zpps-new-change` and stop at its published scaffold boundary when the owner asked
-only to start planning. For an understood end-to-end scaffold, use
-`zpps-propose-change`; for an existing change, use `zpps-update-change` or one
-explicit `zpps-continue-change` action. Guard and assess every mutation. Continue
-when the plan names the product-bearing owner and excludes OpenSpec installation,
-generated skills, and backwards-compatibility aliases.
-
-## Shape behavior when the scaffold is observable
-
-Use `zpps-shape-bdd` with the accepted scaffold effects. When the scaffold exposes or
-changes public behavior, resolve any `kernel-assessment-required` and require an
-independent RED capability feature with single executable authority. Otherwise
-require the stage itself to return an evidence-backed `skipped: not applicable`;
-never let the playbook manufacture that outcome or fabricate BDD for filesystem
-wording or prompt policy.
-
-## Plan reusable structure
-
-Use `zpps-planning-ponytail` for any reusable bootstrap utility. Assess its plan or
-evidence-backed `skipped: not applicable` as the planning result only. Pause if the
-requested structure conflicts with the repository's real ownership model.
-
-## Mature reusable structure
-
-Use `zpps-mature-utilities` with the exact planning result. Require exact RED/GREEN
-targets for a plan, or require this stage to independently return
-`skipped: not applicable` when planning found no utility responsibility.
-
-## Wire the owning surface
-
-Use `zpps-wire` when the scaffold has an accepted public composition point. If the
-scaffold is structure-only, require the stage to return `skipped: not applicable` and
-preserve focused structural verification evidence. Assess either result through the
-kernel before continuing.
-
-## Form and synchronize specifications
-
-Use `zpps-form-specs`; on `sync-required`, explicitly use `zpps-sync-specs` and
-re-enter for canonical audit.
-
-## Verify repository and change
-
-Use `zpps-verify-repository` for affected and complete tests plus interpreter/lock,
-lint, format, and clean build, then use `zpps-verify-change`, supplying any additional
-repository evidence it signals.
-
-## Finalize and archive
-
-Use `zpps-finalize` with all results. Explicitly satisfy
-`repository-evidence-required` or `change-verification-required` and re-enter. For a
-`memory-fold-required` result, require the owner's explicit selection for the exact
-eligible change, use `zpps-archive-change` in memory-fold mode, assess
-`memory-folded` through the kernel, and re-enter. For `archive-required`, require explicit archive authority and use the exact single or
-bulk archive adapter; it performs any selected specification sync synchronously and
-returns `completed`, `cancelled`, `blocked`, or `failed`. Never infer archive
-authority, and pause on every non-completed result. Submit completed final evidence
-to the kernel; declare completion only from `lifecycle-complete`.
+- Give `zpps-shape-bdd` only externally observable effects. Require its own
+  evidence-backed skip for structure with no public behavior; never fabricate BDD for
+  filesystem wording or prompt policy.
+- Use Ponytail planning and maturation only for a reusable bootstrap utility.
+- Use `zpps-wire` only for an accepted public composition point; structure-only work
+  requires the component's own not-applicable result plus structural evidence.

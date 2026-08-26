@@ -277,17 +277,29 @@ def test_packaged_skills_compose_compact_runtime_contract_guidance() -> None:
             f"zpp workflow run start {name} --root <root> --change <change>" in document
         )
         assert "## Registered execution" in document
+        assert "## Custom configuration" in document
         assert "## Visible stage progression invariant" not in document
         assert all(f"\n## {number}." not in document for number in range(1, 10))
+        assert "validated packaged JSON contract" not in document
+        assert "ZPP runtime coordination" not in document
+
+    kernel = documents[WORKFLOW_KERNEL_SKILL_NAME]
+    assert "## Shared component lifecycle" in kernel
+    assert "On mismatch, stop before its procedure" in kernel
+    assert "direct invocation" in kernel
+    assert "zpp lease acquire" in kernel
+    assert "never initializes OpenSpec" in kernel
 
     for name in (
-        WORKFLOW_KERNEL_SKILL_NAME,
         *WORKFLOW_STAGE_SKILL_NAMES,
         *OPENSPEC_ADAPTER_SKILL_NAMES,
         REPOSITORY_EVIDENCE_SKILL_NAME,
     ):
         document = documents[name]
-        assert document.count("validated packaged JSON contract") == 1
+        assert "validated packaged JSON contract" not in document
+        assert "ZPP runtime coordination" not in document
+        assert "manifest UUID" not in document
+        assert "openspec init" not in document
         assert "On any mismatch, return `component-mismatch`" not in document
 
     assert "mandatory workflow registration" in documents["zpp-auto"]
@@ -379,11 +391,6 @@ def test_packaged_checkpoints_exclude_active_openspec_changes() -> None:
         for skill in packaged_companion_skills()
     }
 
-    for name in COMPLETE_WORKFLOW_SKILL_NAMES:
-        document = workflows[name]
-        assert "keep every path under the active" in document
-        assert "continuing to update its tasks" in document
-
     kernel = workflows[WORKFLOW_KERNEL_SKILL_NAME]
     assert "stage explicit coherent source, test, and non-change artifacts" in kernel
     assert "excluding every path under each active `changeRoot`" in kernel
@@ -429,8 +436,8 @@ def test_packaged_memory_fold_is_conservative_and_recoverable() -> None:
     assert "Never fall back from a failed memory fold" in " ".join(preservation.split())
 
     for name in COMPLETE_WORKFLOW_SKILL_NAMES:
-        assert "`memory-fold-required`" in workflows[name]
-        assert "`memory-folded`" in workflows[name]
+        assert "`memory-fold-required`" not in workflows[name]
+        assert "`memory-folded`" not in workflows[name]
 
     assert "zpp lease abandon --bundle <bundle-uuid>" in kernel
     assert "Record no member archive" in " ".join(kernel.split())

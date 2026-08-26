@@ -5,10 +5,6 @@ description: Discover or compare unresolved package, version, API, remote, repos
 
 # Explore OpenSpec context without mutation
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit evidence discovery
 
 Admit this component only when an active playbook configures this exact exploration
@@ -48,8 +44,7 @@ way.
    on a future artifact of that ID. Do not reproduce configuration blocks as findings.
 
 If the installed executable cannot provide the required structured read interface,
-stop with the failed command and observed error. Never run `openspec init`, install or
-repair skills, generate workflow files, or attempt compatibility behavior.
+stop with the failed command and observed error.
 
 ## Investigate
 

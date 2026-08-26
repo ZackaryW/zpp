@@ -5,10 +5,6 @@ description: Assess one identified OpenSpec change read-only against existing im
 
 # Verify one OpenSpec change
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit change verification
 
 Admit this component only when an active playbook configures this exact semantic
@@ -38,9 +34,8 @@ resolving an exact `repo:<git-root-relative-path-to-openspec-root>` trace locato
 Never guess a store identifier or require registration merely to verify.
 
 Verify at invocation time that the installed executable supports public list,
-structured status, and structured `instructions apply`. Never run `openspec init`,
-load or repair generated `openspec-*` skills, or invoke ZPP lifecycle commands. This
-read-only audit needs no mutation lease. It accepts repository-verification evidence
+structured status, and structured `instructions apply`. This read-only audit needs no
+mutation lease. It accepts repository-verification evidence
 only when the caller explicitly supplies it; it does not invoke another component.
 
 ## Load the schema-driven contract

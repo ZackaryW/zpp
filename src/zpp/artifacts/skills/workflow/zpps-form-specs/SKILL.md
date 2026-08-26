@@ -5,10 +5,6 @@ description: Audit resolved OpenSpec-to-BDD authority and optionally remove BDD-
 
 # Form specifications without duplicate acceptance authority
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit specification formation
 
 Admit this component only when an active playbook configures this exact formation or
@@ -20,16 +16,11 @@ explicit intent for that exact write or exact playbook configuration. Unresolved
 behavior or integration evidence belongs to exploration, and canonical merging is a
 separate synchronization operation.
 
-Accept either playbook configuration or a direct partial invocation. Require the
-accepted contract revision, exact repository and OpenSpec roots, resolved store and
+Require the accepted contract revision, exact repository and OpenSpec roots, resolved store and
 change identities, current binding inventory, mature GREEN evidence, and canonical
-and delta paths reported by OpenSpec. For edits, also require a current kernel
-assessment for the exact roots and change names. The kernel invokes ZPP runtime
-coordination and returns structured leased or explicitly authorized bypass evidence.
-Do not resolve registration, manifest UUIDs, owner identity, environment overrides,
-or bundle commands here. If absent or mismatched, return
-`kernel-assessment-required` or `coordination-conflict` with the precise unresolved
-inputs. A prior playbook delegation is not required.
+and delta paths reported by OpenSpec. For edits, obtain the kernel's matching
+pre-action assessment for the exact roots and change names; otherwise return
+`kernel-assessment-required` or `coordination-conflict` with the unresolved inputs.
 
 When the accepted contract has no mature behavior and no accepted delta requiring
 canonical specification reconciliation, return `skipped: not applicable` with that
@@ -62,8 +53,6 @@ OpenSpec tasks whose text and scope are each fully satisfied by this formation r
 Never mark a partial, adjacent, inferred, or unrelated task complete.
 
 Return `completed`, `skipped: not applicable`, `blocked`, or `sync-required`, with
-`kernel-assessment-required` or `coordination-conflict` when that is the blocking
-reason, plus changed paths
-and the complete audit. Never invoke another `zpps-*` skill, perform canonical
-synchronization, select continuation, expand a lease, checkpoint, archive, or claim
-lifecycle completion.
+`kernel-assessment-required` or `coordination-conflict` when applicable, plus changed
+paths and the complete audit. This stage never performs canonical synchronization or
+archival.

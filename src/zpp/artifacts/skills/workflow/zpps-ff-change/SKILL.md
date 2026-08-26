@@ -5,10 +5,6 @@ description: Fast-forward one fully understood new OpenSpec change through all a
 
 # Fast-forward OpenSpec planning
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit fast-forward planning
 
 Admit this component only when an active playbook configures this exact fast-forward
@@ -40,19 +36,13 @@ change. Ask for clarification only when missing input would materially change th
    existing change.
 
 Verify the required structured `new change`, `status`, and `instructions` interfaces
-at operation time. Report an unavailable interface and stop. Never initialize
-OpenSpec, install or repair skills, invoke generated OpenSpec skills, or emulate an old
-interface.
+at operation time. Report an unavailable interface and stop.
 
 ## Obtain authority and scaffold
 
-Before the first mutation, accept a current kernel guard or request it for this
-already-selected `ff-change` operation using the resolved root and proposed change
-name. The kernel invokes ZPP runtime coordination and returns structured leased or
-explicitly authorized bypass evidence. Do not resolve registration, manifest UUID,
-owner, environment overrides, or bundle commands here. Stop on missing product
-authority or any runtime-reported coordination conflict. Paths remain post-result
-audit evidence.
+Before the first mutation, obtain the kernel's matching pre-action assessment for the
+resolved root and proposed change name; stop on missing mutation authority or
+`coordination-conflict`.
 
 Run `openspec new change <name>` in the sticky scope. Use the configured default
 schema; pass `--schema <name>` only when the caller explicitly selected it. Treat a

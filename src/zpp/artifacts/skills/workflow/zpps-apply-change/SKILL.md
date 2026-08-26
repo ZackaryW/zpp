@@ -5,10 +5,6 @@ description: Implement exact tasks of one existing OpenSpec change only after pr
 
 # Apply one OpenSpec change
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit resolved implementation
 
 Admit this component only when an active playbook configures this exact apply action
@@ -37,20 +33,13 @@ on every store-aware command. Otherwise use the nearest repository-local `opensp
 root for read-only discovery and as a valid `repo:` trace locator. Never substitute a
 store name, directory basename, or invented UUID.
 
-After successful component admission, read-only selection and status discovery may
-occur before obtaining the mutation guard. Before the first edit, require an eligible
-`zpps-workflow-kernel` assessment for this exact apply request.
-Pass the resolved root and change name; the kernel invokes ZPP runtime coordination
-and returns structured leased or explicitly authorized bypass evidence. Do not
-resolve registration, manifest UUID, owner, environment overrides, or bundle commands
-here. Filesystem and repository paths are post-result audit evidence. A direct
-invocation may request the assessment. Stop before mutation on missing product
-authority or any runtime-reported coordination conflict.
+Read-only selection and status discovery may precede the guard. Before the first edit,
+obtain the kernel's eligible pre-action assessment for this exact apply action, root,
+and change; stop on missing mutation authority or `coordination-conflict`.
 
 At invocation time verify that the installed `openspec` executable supports the
 public list, structured status, and structured `instructions apply` interfaces used
-below. Never run `openspec init`, load or repair a generated `openspec-*` skill, or
-invoke a ZPP lifecycle command on the owner's behalf.
+below.
 
 ## Procedure
 

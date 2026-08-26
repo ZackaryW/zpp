@@ -5,10 +5,6 @@ description: Revise exact existing planning artifacts of one resolved OpenSpec c
 
 # Update existing OpenSpec planning
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit planning-artifact revision
 
 Admit this component only when an active playbook configures this exact update or the
@@ -44,8 +40,7 @@ The only editable files are the concrete entries in
 may still be a glob, and never invent another file under that glob.
 
 If a required structured interface is unavailable, stop with the command and observed
-error. Do not initialize OpenSpec, install or repair skills, invoke generated OpenSpec
-skills, or provide compatibility behavior.
+error.
 
 ## Derive proposed revisions
 
@@ -75,14 +70,9 @@ constraints and must not be copied into the artifact.
 
 ## Obtain authority and write confirmed edits
 
-Read-only analysis and proposal of edits does not require coordination. Before the
-first confirmed write, accept a current kernel guard or request it for this
-already-selected `update-change` operation using the resolved root and change name.
-The kernel invokes ZPP runtime coordination and returns structured leased or
-explicitly authorized bypass evidence. Do not resolve registration, manifest UUID,
-owner, environment overrides, or bundle commands here. Stop on missing product
-authority or any runtime-reported coordination conflict. Paths remain post-result
-audit evidence.
+Read-only analysis needs no guard. Before the first confirmed write, obtain the
+kernel's matching pre-action assessment for the resolved root and change name; stop
+on missing mutation authority or `coordination-conflict`.
 
 Apply only confirmed edits to files already listed in `existingOutputPaths`. Verify
 each changed file and rerun `openspec status --change <name> --json` after the accepted

@@ -5,10 +5,6 @@ description: Reconcile accepted owner statements into one read-only product agre
 
 # Clarify the product agreement
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit agreement clarification
 
 Admit this component only when an active playbook configures this exact clarification
@@ -18,8 +14,7 @@ bounded agreement question with the relevant owner inputs identified. Unresolved
 package, version, API, remote, repository, or integration facts belong to
 `zpps-explore`; planning or product edits require a separately admitted mutation.
 
-Accept either playbook configuration or a direct partial invocation. Require the
-selected outcome, exact repository roots, accepted owner statements, and the current
+Require the selected outcome, exact repository roots, accepted owner statements, and the current
 contract evidence available to reconcile. Ask only for a missing value that changes
 this bounded clarification result. Do not require a playbook identity or prior kernel
 delegation; clarification is read-only.
@@ -42,6 +37,4 @@ can explicitly invoke `zpps-explore` and then re-enter clarification. For a requ
 planning mutation, return `planning-operation-required` with the exact operation and
 known targets; the caller selects and invokes the adapter.
 
-Never invoke another `zpps-*` skill, mutate planning or product artifacts, acquire a
-lease, select workflow continuation, authorize a checkpoint, or claim lifecycle
-completion.
+This read-only stage never mutates planning or product artifacts or acquires a lease.

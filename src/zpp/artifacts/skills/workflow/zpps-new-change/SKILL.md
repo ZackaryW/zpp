@@ -5,10 +5,6 @@ description: Scaffold one resolved new OpenSpec change only when that exact plan
 
 # Scaffold one OpenSpec change
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit change scaffolding
 
 Admit this component only when an active playbook configures this exact scaffold or
@@ -45,18 +41,13 @@ operation ends after the scaffold, status, and first ready artifact instructions
 
 Verify at operation time that the installed `openspec` supports the structured
 interfaces this operation needs. On a missing or incompatible interface, report the
-command and error and stop. Do not initialize OpenSpec, install or repair skills, use
-generated OpenSpec skills, or provide compatibility behavior.
+command and error and stop.
 
 ## Obtain mutation authority
 
-Scaffolding is governed mutation. Accept a current kernel guard or request it for this
-already selected `new-change` operation using the resolved root and proposed change
-name. The kernel invokes ZPP runtime coordination and returns structured leased or
-explicitly authorized bypass evidence. Do not resolve registration, manifest UUID,
-owner, environment overrides, or bundle commands here. Stop before mutation on
-missing product authority or any runtime-reported coordination conflict. Paths remain
-post-result evidence and the request does not let the kernel select another operation.
+Scaffolding is governed mutation. Before it, obtain the kernel's matching pre-action
+assessment for the resolved root and proposed change name; stop on missing mutation
+authority or `coordination-conflict`.
 
 ## Scaffold and inspect
 

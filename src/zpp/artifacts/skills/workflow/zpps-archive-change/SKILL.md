@@ -5,10 +5,6 @@ description: Preserve one resolved OpenSpec change by normal archive or an expli
 
 # Preserve one completed OpenSpec change
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit single-change preservation
 
 Admit this component only when an active playbook configures this exact terminal
@@ -39,21 +35,13 @@ every store-aware command. Otherwise use the nearest repository-local `openspec/
 root for read-only discovery and as a valid `repo:` trace locator. Preserve the full
 capability path relative to `specs/`.
 
-After successful component admission, read-only inspection may occur before obtaining
-the mutation guard. Before any canonical-spec write, change move, removal, or
-memory-fold commit, require an eligible `zpps-workflow-kernel` assessment carrying
-explicit authority for the selected preservation mode. Pass
-the resolved root and change name; the kernel invokes ZPP runtime
-coordination and returns structured leased or explicitly authorized bypass evidence.
-Do not resolve registration, manifest UUID, owner, environment overrides, or bundle
-commands here. Canonical, temporary, archive, and committed paths are post-result
-audit evidence. A direct request may obtain this bounded guard. Block before mutation
-on missing mode-specific authority or any runtime-reported coordination conflict.
+Read-only inspection needs no guard. Before canonical-spec write, change move,
+removal, or memory-fold commit, obtain the kernel's eligible pre-action assessment for
+the selected mode, root, change, and mode-specific authority; stop on missing
+authority or `coordination-conflict`.
 
 Verify at invocation time that the installed CLI supports public list, structured
-status, archive/spec instructions where available, and spec validation. Never run
-`openspec init`, load or repair generated `openspec-*` skills, or invoke a ZPP
-lifecycle command.
+status, archive/spec instructions where available, and spec validation.
 
 ## Procedure
 

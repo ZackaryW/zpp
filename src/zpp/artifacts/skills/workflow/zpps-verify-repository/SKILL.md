@@ -5,10 +5,6 @@ description: Run already selected repository verification targets read-only; do 
 
 # Verify repository evidence
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit repository verification
 
 Admit this component only when an active playbook configures this exact verification
@@ -18,8 +14,8 @@ declared command source or an explicit need to resolve only command authority. U
 exploration for unresolved product, dependency, API, or integration evidence, and a
 separate mutating component to repair any observed failure.
 
-Accept playbook configuration or a direct partial invocation. Require exact repository
-roots, changed-path or capability scope, shaped BDD obligations, and either commands
+Require exact repository roots, changed-path or capability scope, shaped BDD
+obligations, and either commands
 resolved from repository configuration or an explicit owner choice. Ask for a choice
 when command authority is ambiguous; never invent executable text. This operation is
 read-only and does not require a kernel delegation.
@@ -38,6 +34,5 @@ alternate relevant verification exists and no shaped obligation remains unsatisf
 
 Return `completed`, `blocked`, or `owner-choice-required`, exact commands, targets,
 exit statuses, material output, coverage of each required layer, and sufficiency gaps.
-Failed or insufficient evidence remains failed. Never invoke another `zpps-*` skill,
-edit planning or product artifacts, judge OpenSpec satisfaction, select continuation,
-expand a lease, authorize a commit, archive, or declare lifecycle completion.
+Failed or insufficient evidence remains failed. This read-only component never edits
+planning or product artifacts or judges OpenSpec satisfaction.

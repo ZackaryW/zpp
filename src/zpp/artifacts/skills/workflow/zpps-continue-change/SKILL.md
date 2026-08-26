@@ -5,10 +5,6 @@ description: Create exactly the next eligible artifact of one resolved OpenSpec 
 
 # Continue one OpenSpec change
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit one-artifact continuation
 
 Admit this component only when an active playbook configures this exact continuation
@@ -39,8 +35,7 @@ only for missing values required to produce this one bounded artifact.
    authority. Never infer an ID or path from a familiar schema.
 
 If the structured list, status, or instruction interface is unavailable, stop with
-the failed command and observed error. Do not initialize OpenSpec, install or repair
-skills, invoke a generated OpenSpec skill, or attempt compatibility behavior.
+the failed command and observed error.
 
 ## Branch on current status
 
@@ -66,12 +61,9 @@ ask the caller before mutation.
 
 ## Obtain authority and create exactly one artifact
 
-Before the write, accept a current kernel guard or request it for this already
-selected `continue-change` operation using the resolved root and change name. The
-kernel invokes ZPP runtime coordination and returns structured leased or explicitly
-authorized bypass evidence. Do not resolve registration, manifest UUID, owner,
-environment overrides, or bundle commands here. Stop on missing product authority or
-any runtime-reported coordination conflict. Paths remain post-result audit evidence.
+Before the write, obtain the kernel's matching pre-action assessment for the resolved
+root and change name; stop on missing mutation authority or
+`coordination-conflict`.
 
 Re-read every non-skipped dependency file from disk. Follow the instruction even when
 the artifact has a familiar name. If it identifies a bounded configured creator,

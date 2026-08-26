@@ -5,10 +5,6 @@ description: Reconcile and create the complete planning set for one resolved pro
 
 # Propose an OpenSpec change
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit complete proposal planning
 
 Admit this component only when an active playbook configures this exact proposal or
@@ -50,19 +46,13 @@ that continuation.
    silently rename the change.
 
 Verify the required structured interfaces at operation time. On an unavailable or
-invalid interface, return the command and error and stop. Never initialize OpenSpec,
-install or repair skills, invoke generated OpenSpec skills, or provide compatibility
-behavior.
+invalid interface, return the command and error and stop.
 
 ## Obtain authority and scaffold
 
-Before mutation, accept a current kernel guard or request it for this already-selected
-`propose-change` operation using the resolved root and proposed change name. Direct
-invocation does not require prior delegation. The kernel invokes ZPP runtime
-coordination and returns structured leased or explicitly authorized bypass evidence.
-Do not resolve registration, manifest UUID, owner, environment overrides, or bundle
-commands here. Stop on missing product authority or any runtime-reported coordination
-conflict. Paths remain post-result audit evidence.
+Before mutation, obtain the kernel's matching pre-action assessment for the resolved
+root and proposed change name; stop on missing mutation authority or
+`coordination-conflict`.
 
 Run `openspec new change <name>` in the sticky scope, passing
 `--schema <schema-name>` only for an explicitly selected schema. The CLI scaffold and

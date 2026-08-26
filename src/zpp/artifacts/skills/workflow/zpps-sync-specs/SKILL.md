@@ -5,10 +5,6 @@ description: Merge a resolved delta-spec selection into canonical specifications
 
 # Synchronize one change's specifications
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit canonical specification synchronization
 
 Admit this component only when an active playbook configures this exact sync or the
@@ -37,18 +33,12 @@ root for read-only discovery and as a valid `repo:` trace locator. A
 `<capability-path>` is the complete path relative to `specs/`; preserve nested paths
 such as `identity/user-auth` and never collapse them to a basename.
 
-After successful component admission, read-only discovery may occur before obtaining
-the mutation guard. Before the first canonical-spec write or capability retirement,
-require an eligible `zpps-workflow-kernel` assessment for this exact sync request.
-Pass the resolved root and change name; the kernel invokes ZPP
-runtime coordination and returns structured leased or explicitly authorized bypass
-evidence. Do not resolve registration, manifest UUID, owner, environment overrides,
-or bundle commands here. Canonical filesystem paths are post-result audit evidence.
-A direct request may obtain this bounded guard. Block before mutation on missing
-product authority or any runtime-reported coordination conflict. Verify the installed
+Read-only discovery needs no guard. Before the first canonical-spec write or
+capability retirement, obtain the kernel's eligible pre-action assessment for this
+exact sync action, root, and change; stop on missing mutation authority or
+`coordination-conflict`. Verify the installed
 CLI supports public list, structured status, structured spec instructions, and spec
-validation. Never run `openspec init`, load or repair generated `openspec-*` skills,
-or invoke a ZPP lifecycle command.
+validation.
 
 ## Resolve the delta set
 

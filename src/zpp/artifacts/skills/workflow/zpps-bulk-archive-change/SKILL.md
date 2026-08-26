@@ -5,10 +5,6 @@ description: Archive an explicitly selected ready set of OpenSpec changes only w
 
 # Bulk archive OpenSpec changes
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit batch archival
 
 Admit this component only when an active playbook configures this exact batch archive
@@ -30,20 +26,13 @@ on every store-aware command. Otherwise use the nearest repository-local `opensp
 root for read-only discovery and as a valid `repo:` trace locator. Never combine
 results from an unscoped repository root with a selected store or invent a store UUID.
 
-After successful component admission, read-only selection and validation may occur
-before obtaining the mutation guard. Before the first canonical write or change move,
-require an eligible `zpps-workflow-kernel` assessment with bulk archive authority.
-Pass every resolved root and confirmed change name; the kernel
-invokes ZPP runtime coordination and returns structured leased or explicitly
-authorized bypass evidence for the complete batch. Do not resolve registration,
-manifest UUIDs, owner identity, environment overrides, or bundle commands here.
-Canonical and archive paths are post-result audit evidence. A direct request may
-obtain this bounded guard. Block the whole batch on missing archive authority or any
-runtime-reported coordination conflict; never silently remove a target.
+Read-only selection and validation need no guard. Before the first canonical write or
+change move, obtain the kernel's eligible pre-action assessment for every resolved
+root and confirmed change with bulk archive authority; stop the whole batch on
+missing authority or `coordination-conflict`.
 
 Verify that the installed CLI supports public list, structured status, archive/spec
-instructions where available, and spec validation. Never run `openspec init`, load or
-repair generated `openspec-*` skills, or invoke a ZPP lifecycle command.
+instructions where available, and spec validation.
 
 ## Select the batch
 

@@ -5,9 +5,31 @@ description: Guard an exact caller-selected ZPP action and its result; never cho
 
 # Guard one selected workflow action
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the readiness and
-procedure below; reminder evidence is advisory and never dispatch authority.
+## Shared component lifecycle
+
+Packaged JSON contracts own component identity, effect, standalone eligibility, and
+result vocabulary. Each bounded component owns only its operation-specific admission,
+inputs, procedure, evidence, failure conditions, and result fields.
+
+For every selected component, compare the immediate operation with that component's
+readiness. On mismatch, stop before its procedure and return `component-mismatch`
+with the selected component, observed operation, missing readiness, and separately
+eligible operation. A component may accept complete playbook configuration or a
+direct invocation; direct use does not require prior playbook delegation.
+
+Read-only work runs without mutation coordination. Before governed mutation, the
+selected component supplies its exact action, roots, change targets, accepted
+revision, predecessor results, intended effects, and owner authority to this kernel.
+The kernel and ZPP runtime own reminder checks, leases, internal coordination values,
+changed-path audit, checkpoints, archive recording, and lifecycle completion. A
+component returns its bounded status, changed paths, unresolved questions, and
+verification evidence, then stops. It never duplicates those lifecycle algorithms,
+selects continuation, or treats a reminder as authority.
+
+An OpenSpec component validates only the public structured interfaces its operation
+uses and stops when one is unavailable. It never initializes OpenSpec, installs or
+repairs generated operation skills, emulates a compatibility interface, or invokes a
+ZPP lifecycle command for the owner.
 
 ## Admit one selected guard assessment
 

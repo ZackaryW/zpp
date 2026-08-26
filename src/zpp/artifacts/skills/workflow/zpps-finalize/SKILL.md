@@ -5,10 +5,6 @@ description: Assemble and assess already supplied phase, verification, and archi
 
 # Assemble final change evidence
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit finalization assessment
 
 Admit this component only when an active playbook configures this exact assessment or
@@ -18,8 +14,7 @@ the evidence currently available for finalization. Discovery, repository executi
 semantic verification, archive mutation, and bundle completion remain separately
 admitted operations even when this assessment later reports they are required.
 
-Accept either playbook configuration or a direct partial invocation. Require the
-accepted contract revision, exact repository and store roots, every change member,
+Require the accepted contract revision, exact repository and store roots, every change member,
 retained Bundler owner and bundle identity when mutation occurred, completed-phase
 and checkpoint evidence, changed-path inventory, and any repository verification,
 semantic verification, and archive results already obtained by the caller. This
@@ -56,7 +51,5 @@ Return one of:
 The caller explicitly invokes the signaled component and re-enters finalization with
 its result. Accept `memory-folded` evidence only when it identifies the inspected
 zmem-bearing commit, proves the active change was removed, proves no archive path was
-created, and carries the exact owner authority. Never invoke another `zpps-*` skill,
-convert insufficient evidence into success, expand a lease, complete a bundle,
-select continuation, authorize a commit, archive or fold a change, or declare
-lifecycle completion.
+created, and carries the exact owner authority. This assessment never converts
+insufficient evidence into success, executes a signaled action, or completes a bundle.

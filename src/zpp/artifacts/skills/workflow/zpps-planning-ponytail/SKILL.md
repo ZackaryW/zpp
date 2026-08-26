@@ -5,10 +5,6 @@ description: Plan resolved utility responsibilities with the Ponytail ladder, re
 
 # Plan utilities with Ponytail
 
-Mechanical identity, effect, standalone eligibility, and result vocabulary come
-from this skill's validated packaged JSON contract. Apply the substantive
-readiness, procedure, failure, and stopping behavior below.
-
 ## Admit utility planning
 
 Admit this component only when an active playbook configures this exact utility plan
@@ -19,15 +15,11 @@ intent; writing a planning artifact additionally requires explicit intent for th
 exact write or exact playbook configuration. Unknown package, API, repository, or
 integration facts belong to `zpps-explore` before utility planning.
 
-Accept either playbook configuration or a direct partial invocation. Require the
-accepted contract revision, exact repository roots, shaped behavior and binding
+Require the accepted contract revision, exact repository roots, shaped behavior and binding
 inventory, dependency evidence, and any predecessor outcome relevant to utility
 planning. This procedure is read-only unless the caller explicitly asks it to write a
-planning artifact. For such a write, require a current kernel assessment with a
-matching action for the exact root and change name. The kernel invokes ZPP runtime
-coordination and returns structured leased or explicitly authorized bypass evidence.
-Do not resolve registration, manifest UUIDs, owner identity, environment overrides,
-or bundle commands here. Otherwise return `kernel-assessment-required` or
+planning artifact. For that write, obtain the kernel's matching pre-action assessment
+for the exact root and change name; otherwise return `kernel-assessment-required` or
 `coordination-conflict` with the unresolved targets.
 
 For each proposed utility responsibility, apply these rungs in order:
@@ -58,6 +50,4 @@ This result completes only `plan-utilities`. It never supplies a
 `mature-utilities` result, authorizes wiring, or lets the caller collapse the two
 stages into one action.
 
-Never invoke another `zpps-*` skill, implement utilities, select workflow
-continuation, mutate OpenSpec incidentally, expand a lease, checkpoint, or claim
-lifecycle completion.
+Do not implement utilities or mutate OpenSpec incidentally.
