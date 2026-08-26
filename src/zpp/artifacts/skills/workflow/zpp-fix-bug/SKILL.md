@@ -53,10 +53,15 @@ existing applicable change or use `zpps-propose-change` for a complete defect pl
 Use scaffold or one-artifact continuation only when explicitly selected. The accepted
 plan must name the regression and exclude adjacent redesign.
 
+### Assess feasibility
+
+After planning, route a `needed` prototype verdict through `zpps-explore` and re-enter
+Clarify before the next registered stage.
+
 ### Configure correction stages
 
-- Give `zpps-shape-bdd` the public failure and require the regression RED through the
-  real system with feature-side authority only.
+- Give `zpps-shape-bdd` an observable public failure and require regression RED
+  through the real system; otherwise require its not-applicable result.
 - Limit Ponytail planning and `zpps-mature-utilities` to the smallest responsibilities
   implicated by the failure; a contradiction returns to clarification or plan update.
 - Give `zpps-wire` the regression, proven correction, and actual public composition

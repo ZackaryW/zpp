@@ -42,7 +42,8 @@ authorization for each such operation.
 ### Clarify the capability
 
 Use `zpps-clarify` to frame one public capability, its consumers, observable behavior,
-compatibility boundary, and acceptance conditions without choosing an implementation.
+compatibility boundary, and acceptance conditions without prematurely fixing an
+implementation.
 Use `zpps-explore` only for an exact `exploration-required` question and re-enter.
 
 ### Plan the capability
@@ -51,6 +52,11 @@ Preserve an explicitly selected change. For an existing plan, select the exact
 `zpps-update-change` or one-artifact `zpps-continue-change` operation. For a resolved
 new capability, use `zpps-propose-change`; use `zpps-new-change` only for an explicit
 scaffold-and-stop request.
+
+### Assess feasibility
+
+After planning, route a `needed` prototype verdict through `zpps-explore` and re-enter
+Clarify before the next registered stage.
 
 ### Configure behavior stages
 

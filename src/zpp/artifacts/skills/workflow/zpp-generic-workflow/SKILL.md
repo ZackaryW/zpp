@@ -49,8 +49,23 @@ specialized playbook after registration. Use `zpps-explore` only for an exact
 
 ### Plan the change
 
-Use an exact `planning-operation-required` signal when present. Otherwise select
+For a bounded correction to instruction artifacts with an owner-supplied file
+boundary and no runtime behavior, use the owning artifact guidance and do not force
+an OpenSpec planning operation merely because the artifact is packaged. Otherwise
+use an exact `planning-operation-required` signal when present, or select
 `zpps-propose-change` for a fully understood new change, `zpps-update-change` for
 existing artifacts, `zpps-continue-change` for one requested next artifact, or
 `zpps-new-change` for scaffold-and-stop. Use `zpps-ff-change` only when the owner
 explicitly requested fast-forward planning for already complete intent.
+
+### Assess feasibility
+
+After any required planning, route a `needed` prototype verdict through
+`zpps-explore` and re-enter Clarify before the next registered stage.
+
+### Apply stage relevance
+
+For the accepted instruction-artifact route, record truthful no-op results for
+inapplicable registered stages. When an OpenSpec-only tail component has no such
+result and no change or bundle exists, use the reminder's owner-edit interface to
+remove that stage rather than fabricate evidence.

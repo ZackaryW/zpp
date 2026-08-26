@@ -27,6 +27,19 @@ accepted intent until the owner explicitly supersedes it or applicable delegated
 decision authority resolves it; recency, existing files, recommendations, and
 selected traits are evidence rather than authority.
 
+Before asking the owner to choose, establish enough background to make the choice
+meaningful. State what is known, what remains uncertain, why the decision affects the
+outcome, and the downstream consequences. Present only credible alternatives, with
+their material benefits, drawbacks, and risks, and give a reasoned recommendation.
+When that analysis is not yet evidence-backed, return `exploration-required` instead
+of presenting premature or artificial choices.
+
+Reconcile the consultation into a compact agreement skeleton before any planning
+operation. Include the intended outcome and consumer, relevant existing knowledge
+and repository context, constraints and non-goals, accepted approach or framework
+decisions when they materially affect the outcome, success conditions, and remaining
+unknowns. Do not repeat questions already settled by accepted input or evidence.
+
 Expose every outcome-changing unresolved policy, serialization choice, compatibility
 boundary, constraint, and acceptance condition. Without applicable delegated
 decision authority, ask one to three focused owner questions at a time, identify the
@@ -39,6 +52,12 @@ substitutes for interaction. With applicable best-decision or full-authority
 delegation, make the bounded decision visibly with its rationale and reconcile the
 whole agreement again. The active playbook, not this component, consumes temporary
 authority or retains persistent authority.
+
+Classify prototype or proof-of-concept applicability for every accepted change.
+Return `not needed` with evidence when current repository and integration knowledge
+already establishes feasibility. Return `needed` only with the exact uncertainty,
+hypothesis, bounded experiment, success and failure observations, and disposal
+boundary. A prototype is evidence gathering, not an automatic implementation phase.
 
 Classify repository-context coverage for the accepted change as `not-applicable`,
 `covered`, or `trait-authoring-required`. When traits cannot affect the change,
@@ -54,8 +73,9 @@ supersedes the accepted revision, invalidating every downstream result derived f
 that older revision.
 
 Return `completed`, `blocked`, or `exploration-required`, together with the accepted
-contract revision, unresolved decisions, roots inspected, evidence, delegated
-decisions and rationales, and repository-context classification. For
+contract revision, agreement skeleton, prototype applicability, unresolved
+decisions, roots inspected, evidence, delegated decisions and rationales, and
+repository-context classification. For
 `exploration-required`, name the exact question and read-only target so the caller
 can explicitly invoke `zpps-explore` and then re-enter clarification. For a requested
 planning mutation, return `planning-operation-required` with the exact operation and

@@ -67,6 +67,8 @@ Invoking `zpp-auto` is not itself an automatic-progression grant. Do not select
 `zpp-legacy-workflow`; that entry is eligible only through explicit owner invocation.
 The selected complete playbook performs its mandatory workflow registration as its
 first lifecycle action; triage neither pre-registers it nor bypasses that boundary.
+Handoff does not satisfy the selected playbook's Clarify readiness or authorize
+planning.
 
 After a playbook invocation, transfer control and do not return to triage. Remain in
 the same workflow invocation until the selected playbook returns an actual blocked or

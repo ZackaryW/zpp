@@ -1,6 +1,6 @@
 ---
 name: zpps-explore
-description: Discover or compare unresolved package, version, API, remote, repository, or integration evidence read-only; do not use for an already resolved mutation.
+description: Discover, compare, or prove unresolved package, API, repository, integration, or feasibility evidence without mutating the repository; do not use for an already resolved mutation.
 ---
 
 # Explore OpenSpec context without mutation
@@ -11,9 +11,10 @@ Admit this component only when an active playbook configures this exact explorat
 or the caller's immediate operation is read-only discovery, comparison, or validation
 of unresolved external or repository evidence. It expressly owns unresolved package
 availability, published versions, APIs, remote sources, repository changes, and
-integration boundaries even when the eventual intent is to mutate dependencies,
-planning, implementation, specifications, or archives. It does not admit an already
-resolved mutation or grant mutation authority.
+integration boundaries. After planning, it may also own an accepted bounded proof of
+concept whose sole purpose is to resolve one feasibility hypothesis, provided the
+experiment uses a disposable workspace and leaves the repository unchanged. It does
+not admit an already resolved mutation or grant mutation authority.
 
 Use this component for open-ended discovery, architecture investigation, requirement
 clarification, and comparison of alternatives. It may be selected by a configured
@@ -61,6 +62,11 @@ stop with the failed command and observed error.
 - When decisions crystallize, identify the affected capability path or existing
   artifact precisely enough for a later planning operation. Preserve a capability's
   full path relative to the authoritative specs root.
+- For a proof of concept, require the accepted hypothesis, success and failure
+  observations, time and scope boundary, and disposal plan before execution. Use a
+  temporary workspace outside the repository, record the exact commands and results,
+  discard the workspace after evidence is captured, and stop if resolving the
+  question would require repository or external-system mutation.
 
 ## Mutation requests
 
@@ -81,7 +87,8 @@ operation request, not authority to invoke it or continue a workflow.
 ## Result and stopping boundary
 
 Return the resolved root, sticky store UUID if any, relevant change identities,
-evidence inspected, findings, alternatives and tradeoffs, unresolved questions, and
-any requested planning operation. Stop after discovery. Do not select or advance a
+evidence inspected, findings, alternatives and tradeoffs, proof-of-concept hypothesis
+and observations when applicable, unresolved questions, and any requested planning
+operation. Stop after discovery. Do not select or advance a
 playbook step, invoke a mutating component, authorize a checkpoint or commit, or claim
 verification or lifecycle completion.

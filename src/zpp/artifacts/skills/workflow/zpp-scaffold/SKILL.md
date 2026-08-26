@@ -53,6 +53,11 @@ for a resolved end-to-end scaffold, or the exact update or one-artifact continua
 operation for an existing change. The plan must name the product-bearing owner and
 exclude OpenSpec installation, generated skills, and compatibility aliases.
 
+### Assess feasibility
+
+After planning, route a `needed` prototype verdict through `zpps-explore` and re-enter
+Clarify before the next registered stage.
+
 ### Configure structural stages
 
 - Give `zpps-shape-bdd` only externally observable effects. Require its own

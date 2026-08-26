@@ -29,6 +29,13 @@ bindings. Keep pure-function case matrices in unit tests, retaining a public BDD
 scenario only when needed to prove system enforcement. Keep non-observable policy as
 normative specification content; never fabricate BDD for it.
 
+A registered stage, defect or feature label, available test runner, desire for a
+regression, or ability to assert artifact wording does not establish public
+observability. Instruction, prompt-policy, documentation, configuration, and other
+artifact-only changes with no public-system effect must return `skipped: not
+applicable`. Do not replace rejected BDD with wording tests that merely match the
+edited skill text.
+
 When classification finds no public-system obligation requiring an executable
 feature contract, return `skipped: not applicable` with the classification evidence.
 This verified no-op requires no mutation guard and changes no artifact.
