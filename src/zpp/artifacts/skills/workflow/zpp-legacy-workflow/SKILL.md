@@ -10,9 +10,11 @@ This entry is compatibility-only. Admit it only when the caller explicitly invok
 consolidated generic workflow. Automatic triage never selects this entry.
 
 Preserve the original request, exact repository roots, accepted classification or
-owner input, owner-authorized end-to-end mode when supplied, and only authority the
-owner supplied. Invoke `zpp-generic-workflow` exactly once with that complete input,
-then transfer control to it for the remainder of the workflow invocation.
+owner input, and only authority the owner supplied. Preserve automatic progression,
+one-Clarify-gate best-decision delegation, and persistent full authority as distinct
+facts without interpreting or expanding them. Preserve separate step-by-step gates
+for Git push, GitHub merge actions, and cloud-environment operations. Invoke `zpp-generic-workflow` exactly once with that complete input, then transfer control
+to it for the remainder of the workflow invocation.
 
 Do not classify the outcome again, copy or execute a lifecycle stage, invoke a
 `zpps-*` component, acquire a lease, mutate governed state, select continuation, add

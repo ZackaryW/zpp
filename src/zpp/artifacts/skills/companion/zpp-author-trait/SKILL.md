@@ -7,7 +7,8 @@ description: Author or revise one repository ZPP TOML trait family with explicit
 
 Operate only for an explicit trait-authoring request. Author repository behavior
 policy, not workflow stages, executable commands, callbacks, or completion
-claims.
+claims. A Clarify result that identifies a repository-context gap is evidence, not
+an authoring request, and does not independently admit this mutation.
 
 ## Establish the family contract
 

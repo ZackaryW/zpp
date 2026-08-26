@@ -73,6 +73,10 @@ Treat explicit owner-authorized end-to-end playbook delegation as checkpoint com
 authority only for new stage-owned commits produced by that playbook. A standalone
 component or stage requires separately granted checkpoint authority. Neither form
 authorizes amend, merge, rebase, push, conflict resolution, or unrelated paths.
+Git push, every GitHub merge action, and any access to or mutation of a cloud
+environment always require separate step-by-step owner authorization for that exact
+operation. Automatic progression, best-decision delegation, full authority,
+mutation authority, checkpoint authority, and bypass authority never supply it.
 
 Return one of `eligible`, `blocked`, `completed`, or `accepted-not-applicable`, plus
 the assessed action identity, reasons, required evidence, authority facts, and any

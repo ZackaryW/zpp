@@ -60,8 +60,10 @@ identify product-workflow shape or an accepted direct artifact route, select
 
 For a selected `zpp-*` playbook, invoke it exactly once. This is an execution handoff,
 not a recommendation or route report. Pass the original request, exact roots,
-accepted classification evidence, accepted owner input, owner-authorized end-to-end
-mode when explicitly granted, and only authority the owner supplied. Do not select
+accepted classification evidence, accepted owner input, and only authority the owner
+supplied. Preserve automatic progression, one-Clarify-gate best-decision delegation,
+and persistent full authority as distinct facts; do not collapse or interpret them.
+Invoking `zpp-auto` is not itself an automatic-progression grant. Do not select
 `zpp-legacy-workflow`; that entry is eligible only through explicit owner invocation.
 The selected complete playbook performs its mandatory workflow registration as its
 first lifecycle action; triage neither pre-registers it nor bypasses that boundary.
@@ -76,6 +78,10 @@ return that operation's actual result without creating workflow reminder state o
 workflow-stage outcomes. For `no-handoff`, report that the request did not establish
 a ZPP product workflow and perform no registration, workflow invocation, or governed
 mutation.
+
+No routed authority authorizes Git push, a GitHub merge action, or access to or
+mutation of a cloud environment. Preserve the requirement for separate step-by-step
+owner authorization when handing off any request that could reach those operations.
 
 Never invoke the kernel directly, mutate governed artifacts during triage, add
 authority, or claim completion on a selected playbook's behalf.
